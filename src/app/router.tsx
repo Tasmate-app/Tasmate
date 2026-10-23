@@ -1,6 +1,7 @@
 import { Navigate, createBrowserRouter } from 'react-router-dom';
 import { GameShell } from '../components/game/GameShell';
 import { HomePage } from '../features/home/HomePage';
+import { WeeklyCalendarPage } from '../features/calendar/WeeklyCalendarPage';
 import { SortiePage } from '../features/sortie/SortiePage';
 import { CompanionsPage } from '../features/companions/CompanionsPage';
 import { FacilitiesPage } from '../features/facilities/FacilitiesPage';
@@ -14,6 +15,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <HomePage /> },
       { path: 'sortie', element: <SortiePage /> },
+      { path: 'calendar', element: <WeeklyCalendarPage /> },
       { path: 'companions', element: <CompanionsPage /> },
       { path: 'facilities', element: <FacilitiesPage /> },
       { path: 'shop', element: <ShopPage /> },

@@ -1,4 +1,11 @@
-export type GameIconName = 'home' | 'sortie' | 'companions' | 'facility' | 'shop' | 'storage';
+export type GameIconName =
+  | 'home'
+  | 'sortie'
+  | 'calendar'
+  | 'companions'
+  | 'facility'
+  | 'shop'
+  | 'storage';
 
 /** ゲームメニュー用のオリジナル線画アイコン（外部素材不使用） */
 export function GameIcon({ name }: { name: GameIconName }) {
@@ -23,6 +30,13 @@ export function GameIcon({ name }: { name: GameIconName }) {
         <>
           <path d="M6 2.5V17.5" />
           <path d="M6 3.5h10.5l-2.8 3.7 2.8 3.8H6" />
+        </>
+      )}
+      {name === 'calendar' && (
+        <>
+          <rect x="3" y="4.5" width="14" height="13" rx="2" />
+          <path d="M3 8.5h14M7 2.8v3.4M13 2.8v3.4" />
+          <path d="M7 12h2M11 12h2M7 15h2M11 15h2" />
         </>
       )}
       {name === 'companions' && (

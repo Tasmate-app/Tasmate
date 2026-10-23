@@ -30,10 +30,79 @@ export interface Task {
   category: string;
   subject?: string;
   estimatedMinutes: number;
+  /** 予定日時（ISO 8601）。既存機能との互換用 */
   scheduledAt?: string;
+  /** 予定日（ローカル日付 YYYY-MM-DD）。週間カレンダーの基準 */
+  scheduledDate?: string;
+  /** 開始時刻（ローカル HH:mm） */
+  startTime?: string;
+  /** 終了時刻（ローカル HH:mm） */
+  endTime?: string;
+  /** 繰り返しルールから生成された予定のルール ID */
+  recurrenceId?: string;
   status: TaskStatus;
   createdAt: string;
   updatedAt: string;
+  /** 削除日時。論理削除し、過去の週次判定を壊さない */
+  archivedAt?: string;
+}
+
+/** 繰り返しタスクのルール（初期対応は週次） */
+export interface RecurrenceRule {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  subject?: string;
+  estimatedMinutes: number;
+  frequency: 'weekly';
+  /** 1=月曜 … 7=日曜 */
+  daysOfWeek: number[];
+  startTime?: string;
+  endTime?: string;
+  /** 適用開始日（ローカル YYYY-MM-DD） */
+  effectiveFrom: string;
+  /** 適用終了日（ローカル YYYY-MM-DD、この日を含む） */
+  effectiveUntil?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 週次判定の状態 */
+export type WeeklyEvaluationStatus = 'achieved' | 'missed' | 'pending' | 'rest';
+
+/** ユーザーの週間継続状態。報酬倍率は連続達成週数から算出する */
+export interface WeeklyProgress {
+  userId: string;
+  /** 週次追跡を開始した週の月曜日 */
+  trackingStartedWeek: string;
+  currentStreak: number;
+  totalSuccessfulWeeks: number;
+  highestStreak: number;
+  lastEvaluatedWeekStart: string | null;
+  updatedAt: string;
+}
+
+/** 週次判定の履歴（対象週ごとに1件） */
+export interface WeeklyEvaluation {
+  id: string;
+  userId: string;
+  weekStart: string;
+  weekEnd: string;
+  status: WeeklyEvaluationStatus;
+  eligibleTaskCount: number;
+  completedTaskCount: number;
+  /** 対象タスクが0件のときは null */
+  completionRate: number | null;
+  streakBefore: number;
+  streakAfter: number;
+  multiplierBefore: number;
+  multiplierAfter: number;
+  evaluatedAt: string;
+  ruleVersion: string;
+  /** 判定に使用したタスク ID のスナップショット */
+  taskIds: string[];
 }
 
 /** 作業セッション（一回分の取り組み記録） */
@@ -66,6 +135,10 @@ export interface RewardRecord {
   workSessionId: string;
   inputSummary: string;
   proposedReward: RewardBundle;
+  /** 週間継続倍率を適用する前の確定報酬 */
+  baseReward?: RewardBundle;
+  /** 適用した週間継続倍率（未適用・旧データでは未設定） */
+  rewardMultiplier?: number;
   finalReward: RewardBundle;
   reason: string;
   createdAt: string;

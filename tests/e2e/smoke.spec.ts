@@ -65,3 +65,33 @@ test('ショップと倉庫が表示される', async ({ page }) => {
   await expect(page.getByRole('heading', { name: '倉庫' })).toBeVisible();
   await expect(page.getByRole('heading', { name: '報酬履歴' })).toBeVisible();
 });
+
+test('週間カレンダーで予定と繰り返しを作成できる', async ({ page }) => {
+  await page.goto('/calendar');
+  await expect(page.getByRole('heading', { name: '週間カレンダー' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '直近の記録' })).toBeVisible();
+
+  await page.getByRole('button', { name: '予定を追加', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '予定を追加' });
+  await dialog.getByLabel('予定名（必須）').fill('カレンダーE2E予定');
+  await dialog.getByRole('button', { name: '予定を追加' }).click();
+  await expect(page.getByText('カレンダーE2E予定', { exact: true }).first()).toBeVisible();
+
+  await page.getByRole('button', { name: '予定を追加', exact: true }).click();
+  const repeatDialog = page.getByRole('dialog', { name: '予定を追加' });
+  await repeatDialog.getByLabel('予定名（必須）').fill('毎朝の復習');
+  await repeatDialog.getByLabel('毎週くり返す').check();
+  await repeatDialog.getByRole('button', { name: '予定を追加' }).click();
+  await expect(page.getByRole('heading', { name: '繰り返し予定' })).toBeVisible();
+  await expect(page.getByText('毎朝の復習', { exact: true }).first()).toBeVisible();
+});
+
+test('週間カレンダーは狭い画面で横スクロールしない', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  await page.goto('/calendar');
+  await expect(page.getByRole('heading', { name: '週間カレンダー' })).toBeVisible();
+  const noOverflow = await page.evaluate(
+    () => document.documentElement.scrollWidth <= window.innerWidth,
+  );
+  expect(noOverflow).toBe(true);
+});

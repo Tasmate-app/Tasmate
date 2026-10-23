@@ -14,8 +14,19 @@ export function RewardHistory() {
         </p>
       ) : (
         <ul className="list">
-          {rewards.slice(0, 20).map((r) => (
+          {rewards.slice(0, 20).map((r) => {
+            const multiplier = r.rewardMultiplier ?? 1;
+            const baseReward = r.baseReward ?? r.finalReward;
+            return (
             <li key={r.id} className="list-item">
+              {multiplier > 1 && (
+                <div className="reward-multiplier">
+                  <span>週間継続倍率 ×{multiplier.toFixed(2)}</span>
+                  <span className="list-item__meta">
+                    基本報酬: 通貨 {baseReward.currency} / 経験値 {baseReward.experience}
+                  </span>
+                </div>
+              )}
               <div className="list-item__title">
                 通貨 +{r.finalReward.currency} ／ 経験値 +{r.finalReward.experience}
                 {Object.entries(r.finalReward.materials).map(([id, qty]) => (
@@ -30,7 +41,8 @@ export function RewardHistory() {
               </div>
               <div className="list-item__meta">{r.reason}</div>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
     </Card>

@@ -35,10 +35,31 @@
 | category | 勉強・作業などのカテゴリ |
 | subject | 勉強科目（任意） |
 | estimatedMinutes | 予定時間 |
-| scheduledAt | 予定日時（任意） |
+| scheduledAt | 予定日時（任意、旧データ互換） |
+| scheduledDate | 予定日（ローカル日付キー） |
+| startTime / endTime | 同日の開始・終了時刻（任意） |
+| recurrenceId | 生成元の繰り返しルール ID（任意） |
+| archivedAt | 論理削除日時（任意） |
 | status | planned / active / completed / cancelled など |
 | createdAt | 作成日時 |
 | updatedAt | 更新日時 |
+
+### RecurrenceRule
+
+毎週の予定を生成するルール。
+
+| フィールド案 | 意味 |
+|---|---|
+| id | ルール ID |
+| title / description | 予定名・内容 |
+| category / subject | カテゴリ・科目 |
+| estimatedMinutes | 予定時間 |
+| frequency | 現状は weekly |
+| daysOfWeek | 繰り返す曜日（1=月〜7=日） |
+| startTime / endTime | 同日の時刻（任意） |
+| effectiveFrom / effectiveUntil | 適用開始日・終了日 |
+| isActive | 有効状態 |
+| createdAt / updatedAt | 作成・更新日時 |
 
 ### WorkSession
 
@@ -66,10 +87,45 @@
 | workSessionId | 対象セッション ID |
 | inputSummary | AI に渡した入力の要約 |
 | proposedReward | AI の報酬提案 |
+| baseReward | 週間倍率を適用する前の確定報酬（任意） |
+| rewardMultiplier | 適用した週間継続倍率（任意・旧データは1） |
 | finalReward | 検証後に確定した報酬 |
 | reason | 報酬理由 |
 | createdAt | 確定日時 |
 | status | pending / approved / rejected など |
+
+### WeeklyProgress
+
+週間継続の現在状態。ランクと倍率は保存せず、`currentStreak` から算出する。
+
+| フィールド案 | 意味 |
+|---|---|
+| userId | 対象ユーザー（現状は `local-user`） |
+| trackingStartedWeek | 集計を開始した週の月曜日 |
+| currentStreak | 現在の連続達成週数 |
+| totalSuccessfulWeeks | 累計達成週数 |
+| highestStreak | 最高連続達成週数 |
+| lastEvaluatedWeekStart | 最後に判定した週 |
+| updatedAt | 更新日時 |
+
+### WeeklyEvaluation
+
+1週間ごとの判定履歴。`weekStart` は一意。
+
+| フィールド案 | 意味 |
+|---|---|
+| id / userId | 判定 ID・対象ユーザー |
+| weekStart / weekEnd | 対象週の開始日（月曜）と終了日（翌週月曜） |
+| status | achieved / missed / pending / rest |
+| eligibleTaskCount / completedTaskCount | 対象数・完了数 |
+| completionRate | 達成率（対象0件は null） |
+| streakBefore / streakAfter | 判定前後の連続週数 |
+| multiplierBefore / multiplierAfter | 判定前後の報酬倍率 |
+| evaluatedAt | 判定日時 |
+| ruleVersion | 判定ルールのバージョン |
+| taskIds | 判定対象タスク ID |
+
+休息週は `restWeeks` に週開始日を保持する。週次判定は未判定の過去週を古い順に処理し、同じ週を再判定しない。
 
 ### CharacterDefinition / OwnedCharacter
 

@@ -37,6 +37,8 @@ npm run e2e        # Playwright スモークテスト（dev サーバーを自�
   コンテキストパネルが開き、詳細・育成・強化へ進める
 - `/sortie` 出撃：クエスト選択、作業中（タイマー・探索進行）、完了リザルトを分離表示。
   クエスト作成は独立したモーダル
+- `/calendar` 計画：週間カレンダー、繰り返し予定、80%週間達成、連続達成ランク、
+  報酬倍率、休息週、週次判定履歴。予定は時刻付き・時刻なしの両方に対応
 - `/companions` 仲間：一覧から選んで専用ステータス画面を開く（戻る操作で一覧へ）
 - `/facilities` 施設：一覧から選んで詳細（生産・コスト・稼働切替・強化）を開く
 - `/shop` ショップ：施設強化の購入（家具・コスチュームは準備中）
@@ -49,6 +51,10 @@ npm run e2e        # Playwright スモークテスト（dev サーバーを自�
   `src/stores/appStore.ts` のアクション経由で `src/services/storage.ts` が読み書きする。
 - タイマーは開始時刻を基準に経過時間を算出するため、再読み込み・バックグラウンド化後も
   作業状態が復元される。
+- 週次判定は未判定の過去週を古い順に処理し、`weekStart` 単位で冪等に記録する。
+  週の開始は月曜 00:00（ローカル時刻）、達成条件は80%以上。
+- 週間カレンダー・継続報酬の仕様は
+  [`docs/06_weekly_calendar_and_streak.md`](docs/06_weekly_calendar_and_streak.md) を参照。
 - Supabase / AI API の接続は後続フェーズ。AI 報酬は `src/services/rewardService.ts` に
   集約済みで、暫定ルール（`src/domain/`）がフォールバックとして残る設計。
 
@@ -68,6 +74,7 @@ npm run e2e        # Playwright スモークテスト（dev サーバーを自�
 - [`docs/03_feature_list.md`](docs/03_feature_list.md)：機能一覧、優先度、MVP の範囲
 - [`docs/04_data_design.md`](docs/04_data_design.md)：データモデルのたたき台
 - [`docs/05_roadmap_and_open_questions.md`](docs/05_roadmap_and_open_questions.md)：開発段階、未決定事項
+- [`docs/06_weekly_calendar_and_streak.md`](docs/06_weekly_calendar_and_streak.md)：週間カレンダー、繰り返し、達成判定、継続報酬
 - [`docs/characters/voxel-character-standard.md`](docs/characters/voxel-character-standard.md)：基準ボクセルキャラクターの寸法・座標・テクスチャ・書き出し規格
 - [`docs/characters/parts-and-naming.md`](docs/characters/parts-and-naming.md)：パーツ階層と命名規則
 

@@ -1,6 +1,7 @@
 import { billableMinutes } from '../domain/session';
 import { finalizeReward, proposeReward } from '../domain/reward';
-import { BALANCE } from '../domain/constants';
+import { BALANCE, WEEKLY_RULES } from '../domain/constants';
+import { applyRewardMultiplier } from '../domain/weekly';
 import { CHARACTER_DEFINITIONS, DESTINATIONS, FACILITY_DEFINITIONS } from '../data/seed';
 import type {
   OwnedCharacter,
@@ -31,11 +32,13 @@ export interface ComputeRewardArgs {
   facilities: OwnedFacility[];
   elapsedSec: number;
   nowIso: string;
+  /** タスク完了時点で有効な週間継続倍率 */
+  rewardMultiplier: number;
 }
 
 /** セッションの報酬レコードを生成する（検証済み・確定済み） */
 export function computeSessionReward(args: ComputeRewardArgs): RewardRecord {
-  const { session, task, characters, facilities, elapsedSec, nowIso } = args;
+  const { session, task, characters, facilities, elapsedSec, nowIso, rewardMultiplier } = args;
   const minutes = billableMinutes(elapsedSec, BALANCE.minimumBillableSeconds);
   const destination =
     DESTINATIONS.find((d) => d.id === session.destinationId) ?? DESTINATIONS[0];
@@ -50,16 +53,25 @@ export function computeSessionReward(args: ComputeRewardArgs): RewardRecord {
     facilityDefinitions: FACILITY_DEFINITIONS,
     completed,
   });
-  const finalReward = finalizeReward(bundle);
+  const baseReward = finalizeReward(bundle);
+  const appliedMultiplier =
+    completed && WEEKLY_RULES.rewardMultiplier.appliesToTaskCompletion
+      ? Math.max(1, Number.isFinite(rewardMultiplier) ? rewardMultiplier : 1)
+      : 1;
+  const finalReward = finalizeReward(applyRewardMultiplier(baseReward, appliedMultiplier));
 
   const taskLabel = task !== undefined ? `「${task.title}」` : 'タスク';
+  const multiplierLabel =
+    appliedMultiplier > 1 ? ` / 週間継続倍率 ×${appliedMultiplier.toFixed(2)}` : '';
   return {
     id: `reward-${session.id}`,
     workSessionId: session.id,
     inputSummary: `${taskLabel} / ${minutes.toFixed(1)}分 / ${completed ? '完了' : '中断'} / ${destination.name}`,
     proposedReward: bundle,
+    baseReward,
+    rewardMultiplier: appliedMultiplier,
     finalReward,
-    reason,
+    reason: `${reason}${multiplierLabel}`,
     createdAt: nowIso,
     status: 'approved',
   };
