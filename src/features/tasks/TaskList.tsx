@@ -8,8 +8,9 @@ export function TaskList() {
   const tasks = useAppStore((s) => s.tasks);
   const activeSession = useAppStore((s) => s.activeSession);
   const deleteTask = useAppStore((s) => s.deleteTask);
+  const visibleTasks = tasks.filter((task) => task.archivedAt === undefined);
 
-  if (tasks.length === 0) {
+  if (visibleTasks.length === 0) {
     return (
       <Card title="タスク一覧">
         <p className="list-item__meta">タスクはまだありません。上のフォームから作成してください。</p>
@@ -33,7 +34,7 @@ export function TaskList() {
   return (
     <Card title="タスク一覧">
       <ul className="list">
-        {tasks.map((t) => (
+        {visibleTasks.map((t) => (
           <li key={t.id} className="list-item">
             <div className="list-item__title">{t.title}</div>
             <div className="list-item__meta">

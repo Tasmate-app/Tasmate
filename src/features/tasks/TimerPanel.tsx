@@ -33,7 +33,9 @@ export function TimerPanel() {
     [activeSession, now],
   );
 
-  const plannedTasks = tasks.filter((t) => t.status === 'planned');
+  const plannedTasks = tasks.filter(
+    (t) => t.status === 'planned' && t.archivedAt === undefined,
+  );
   const lastReward = rewards.find((r) => r.id === lastRewardId) ?? null;
 
   const toggleCharacter = (id: string) => {

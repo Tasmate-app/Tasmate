@@ -20,7 +20,9 @@ export function QuestBoard() {
   const [characterIds, setCharacterIds] = useState<string[]>(['c-hinata']);
   const [modalOpen, setModalOpen] = useState(false);
 
-  const plannedTasks = tasks.filter((t) => t.status === 'planned');
+  const plannedTasks = tasks.filter(
+    (t) => t.status === 'planned' && t.archivedAt === undefined,
+  );
   const selectedTask = plannedTasks.find((t) => t.id === selectedTaskId) ?? plannedTasks[0] ?? null;
   const destination = DESTINATIONS.find((d) => d.id === destinationId);
 
