@@ -1,4 +1,5 @@
 import { MATERIAL_NAMES } from '../../domain/constants';
+import { remainingRestSeconds } from '../../domain/rest';
 import { formatElapsed } from '../../domain/session';
 import { useNow } from '../../hooks/useNow';
 import { sessionElapsedSeconds, useAppStore } from '../../stores/appStore';
@@ -13,11 +14,14 @@ const MATERIAL_DOT_COLORS: Record<string, string> = {
 export function GameHUD() {
   const inventory = useAppStore((s) => s.inventory);
   const activeSession = useAppStore((s) => s.activeSession);
+  const restSession = useAppStore((s) => s.restSession);
   const tasks = useAppStore((s) => s.tasks);
 
   const isWorking = activeSession !== null;
-  const now = useNow(1000, isWorking && activeSession.state === 'running');
+  const isResting = restSession?.state === 'active';
+  const now = useNow(1000, (isWorking && activeSession.state === 'running') || isResting);
   const elapsed = sessionElapsedSeconds(activeSession, now);
+  const restRemaining = restSession !== null ? remainingRestSeconds(restSession, now) : 0;
   const activeTaskTitle = tasks.find((t) => t.id === activeSession?.taskId)?.title;
 
   return (
@@ -68,6 +72,12 @@ export function GameHUD() {
               {activeSession.state === 'paused' ? '停止中' : '作業中'}
             </span>{' '}
             <strong>{formatElapsed(elapsed)}</strong>
+          </span>
+        )}
+        {isResting && (
+          <span className="game-res game-res--rest" title="休憩中">
+            <span className="game-res__label">休憩中</span>{' '}
+            <strong>{formatElapsed(restRemaining)}</strong>
           </span>
         )}
       </div>

@@ -28,6 +28,20 @@ test('クエストを作成できる', async ({ page }) => {
   await expect(page.getByText('E2Eテストクエスト', { exact: true }).first()).toBeVisible();
 });
 
+test('作業完了後に休憩を提案し、設定した時間で休憩を開始できる', async ({ page }) => {
+  await page.goto('/sortie');
+  await page.getByRole('button', { name: '新しいクエストを作成' }).click();
+  await page.getByLabel('クエスト名（必須）').fill('休憩テストクエスト');
+  await page.getByRole('button', { name: 'クエストを追加' }).click();
+  await page.getByRole('button', { name: '出撃（作業開始）' }).click();
+  await expect(page.getByRole('heading', { name: '作業中' })).toBeVisible();
+  await page.getByRole('button', { name: '完了' }).click();
+  await expect(page.getByLabel('休憩の提案')).toBeVisible();
+  await page.getByLabel('休憩時間（分）').fill('10');
+  await page.getByRole('button', { name: '休憩をはじめる' }).click();
+  await expect(page.getByLabel('休憩中')).toBeVisible();
+});
+
 test('仲間一覧から詳細を開いて戻れる', async ({ page }) => {
   await page.goto('/companions');
   await expect(page.getByRole('heading', { name: '仲間' })).toBeVisible();
