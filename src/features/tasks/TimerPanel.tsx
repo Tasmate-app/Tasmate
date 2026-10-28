@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
@@ -36,7 +36,17 @@ export function TimerPanel() {
   const plannedTasks = tasks.filter(
     (t) => t.status === 'planned' && t.archivedAt === undefined,
   );
+  const selectedTask = plannedTasks.find((t) => t.id === taskId);
   const lastReward = rewards.find((r) => r.id === lastRewardId) ?? null;
+
+  // 完了・削除などで選択肢から消えたタスク ID を保持し続けない
+  useEffect(() => {
+    if (taskId === '') return;
+    const stillPlanned = tasks.some(
+      (t) => t.id === taskId && t.status === 'planned' && t.archivedAt === undefined,
+    );
+    if (!stillPlanned) setTaskId('');
+  }, [taskId, tasks]);
 
   const toggleCharacter = (id: string) => {
     setCharacterIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
@@ -49,7 +59,7 @@ export function TimerPanel() {
   };
 
   if (activeSession === null) {
-    const taskSelected = taskId !== '' || plannedTasks.length === 0;
+    const taskSelected = selectedTask !== undefined;
     return (
       <Card title="出撃（作業セッション開始）">
         {plannedTasks.length === 0 ? (
@@ -105,8 +115,8 @@ export function TimerPanel() {
             <Button
               disabled={!taskSelected || characterIds.length === 0}
               onClick={() => {
-                const target = taskId !== '' ? taskId : plannedTasks[0].id;
-                startSession(target, destinationId, characterIds);
+                if (selectedTask === undefined) return;
+                startSession(selectedTask.id, destinationId, characterIds);
                 setLastRewardId(null);
               }}
             >
