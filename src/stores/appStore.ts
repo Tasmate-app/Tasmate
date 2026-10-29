@@ -159,6 +159,49 @@ function sanitizeRecurrenceSchedule(
   return { daysOfWeek: days, startTime: start, endTime: end };
 }
 
+function isRuleArchivedOccurrence(task: Task, ruleId: string, dateKey: string): boolean {
+  if (
+    task.recurrenceId !== ruleId ||
+    task.archivedAt === undefined ||
+    task.archiveReason !== 'rule'
+  ) {
+    return false;
+  }
+  return (
+    task.scheduledDate === dateKey ||
+    (task.scheduledDate === undefined && task.scheduledAt?.startsWith(dateKey) === true)
+  );
+}
+
+/** 曜日の再追加などでルール変更時にアーカイブした予定を復元する */
+function restoreRuleArchivedOccurrences(
+  rule: RecurrenceRule,
+  tasks: Task[],
+  dateKey: string,
+  timestamp: string,
+): Task[] {
+  let changed = false;
+  const result = tasks.map((task) => {
+    if (!isRuleArchivedOccurrence(task, rule.id, dateKey)) return task;
+    changed = true;
+    return {
+      ...task,
+      title: rule.title,
+      description: rule.description,
+      category: rule.category,
+      subject: rule.subject,
+      estimatedMinutes: rule.estimatedMinutes,
+      startTime: rule.startTime,
+      endTime: rule.endTime,
+      scheduledAt: combineDateAndTime(dateKey, rule.startTime),
+      archivedAt: undefined,
+      archiveReason: undefined,
+      updatedAt: timestamp,
+    };
+  });
+  return changed ? result : tasks;
+}
+
 function generateOccurrencesForWeek(
   rule: RecurrenceRule,
   tasks: Task[],
@@ -167,6 +210,7 @@ function generateOccurrencesForWeek(
 ): Task[] {
   let result = tasks;
   for (const dateKey of occurrenceDatesForWeek(rule, weekStart)) {
+    result = restoreRuleArchivedOccurrences(rule, result, dateKey, timestamp);
     if (occurrenceExists(result, rule.id, dateKey)) continue;
     result = [...result, buildOccurrenceTask(rule, dateKey, newId('task'), timestamp)];
   }
@@ -185,7 +229,7 @@ function applyRuleToUpcomingOccurrences(
     const dateKey = task.scheduledDate;
     if (dateKey === undefined || dateKey < todayKey) return task;
     if (!rule.isActive || !occurrenceDatesForWeek(rule, weekStartKeyFromDateKey(dateKey)).includes(dateKey)) {
-      return { ...task, archivedAt: nowIso(), updatedAt: nowIso() };
+      return { ...task, archivedAt: nowIso(), archiveReason: 'rule' as const, updatedAt: nowIso() };
     }
     return {
       ...task,
@@ -263,8 +307,8 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       const timestamp = nowIso();
       return {
         tasks: s.tasks.map((t) =>
-          t.id === id && t.archivedAt === undefined
-            ? { ...t, archivedAt: timestamp, updatedAt: timestamp }
+          t.id === id
+            ? { ...t, archivedAt: timestamp, archiveReason: 'user' as const, updatedAt: timestamp }
             : t,
         ),
       };
@@ -386,7 +430,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
           task.archivedAt === undefined &&
           task.scheduledDate !== undefined &&
           task.scheduledDate >= todayKey
-            ? { ...task, archivedAt: timestamp, updatedAt: timestamp }
+            ? { ...task, archivedAt: timestamp, archiveReason: 'rule' as const, updatedAt: timestamp }
             : task,
         ),
       };

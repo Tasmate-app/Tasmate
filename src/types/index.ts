@@ -7,6 +7,9 @@
 /** タスクの状態 */
 export type TaskStatus = 'planned' | 'active' | 'completed' | 'cancelled';
 
+/** タスクのアーカイブ理由。繰り返しルール変更によるものは再追加時に復元する */
+export type TaskArchiveReason = 'user' | 'rule';
+
 /** 作業セッションの結果 */
 export type SessionResult = 'completed' | 'interrupted';
 
@@ -45,6 +48,8 @@ export interface Task {
   updatedAt: string;
   /** 削除日時。論理削除し、過去の週次判定を壊さない */
   archivedAt?: string;
+  /** アーカイブ理由。未設定は旧データまたはユーザー削除として扱う */
+  archiveReason?: TaskArchiveReason;
 }
 
 /** 繰り返しタスクのルール（初期対応は週次） */
