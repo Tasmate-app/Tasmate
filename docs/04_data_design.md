@@ -40,6 +40,7 @@
 | startTime / endTime | 同日の開始・終了時刻（任意） |
 | recurrenceId | 生成元の繰り返しルール ID（任意） |
 | archivedAt | 論理削除日時（任意） |
+| archiveReason | アーカイブ理由。user / rule（任意） |
 | status | planned / active / completed / cancelled など |
 | createdAt | 作成日時 |
 | updatedAt | 更新日時 |
