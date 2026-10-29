@@ -48,7 +48,7 @@ export function proposeReward(input: WorkOutcomeInput): ProposedReward {
     input.characters,
     input.characterDefinitions,
     input.destination,
-    undefined,
+    input.assignedCharacterIds,
   );
   const production = calculateFacilityProduction(minutes, input.facilities, input.facilityDefinitions);
 

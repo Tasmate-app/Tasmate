@@ -34,6 +34,32 @@ describe('旧保存データの正規化', () => {
     expect(normalized.weeklyEvaluations).toEqual([]);
     expect(normalized.restWeeks).toEqual([]);
     expect(normalized.weeklyProgress.trackingStartedWeek).toBe('2026-10-19');
+    expect(normalized.restSession).toBeNull();
+    expect(normalized.supportEvents).toEqual([]);
+  });
+
+  it('不正な休息・応援イベントを保存データから除去する', () => {
+    const legacy = {
+      version: 1,
+      tasks: [],
+      sessionHistory: [],
+      inventory: { currency: 0, materials: {} },
+      characters: [],
+      facilities: [],
+      rewards: [],
+      appliedRewardSessionIds: [],
+      restSession: { id: 'rest-broken' },
+      supportEvents: [
+        { id: 'event-ok', kind: 'rest-complete', characterId: 'c-hinata', message: '完了', createdAt: '2026-10-01T00:00:00.000Z' },
+        { id: 'event-broken', kind: 'unknown' },
+      ],
+    } as unknown as AppState;
+
+    const normalized = normalizeAppState(legacy, new Date(2026, 9, 23, 12));
+    expect(normalized.restSession).toBeNull();
+    expect(normalized.supportEvents).toHaveLength(1);
+    expect(normalized.supportEvents[0].id).toBe('event-ok');
+    expect(normalized.supportEvents[0].seen).toBe(false);
   });
 
   it('倍率情報を持たない旧報酬を等倍として補完する', () => {
@@ -66,5 +92,28 @@ describe('旧保存データの正規化', () => {
     const normalized = normalizeAppState(legacy, new Date(2026, 9, 23, 12));
     expect(normalized.rewards[0].rewardMultiplier).toBe(1);
     expect(normalized.rewards[0].baseReward).toEqual(finalReward);
+  });
+
+  it('欠損・不正な所持素材を 0 に正規化する', () => {
+    const legacy = {
+      version: 1,
+      tasks: [],
+      sessionHistory: [],
+      inventory: {
+        currency: Number.NaN,
+        materials: { shard_sun: 3, shard_moon: Number.NaN, shard_star: -2 },
+      },
+      characters: [],
+      facilities: [],
+      rewards: [],
+      appliedRewardSessionIds: [],
+    } as unknown as AppState;
+
+    const normalized = normalizeAppState(legacy, new Date(2026, 9, 23, 12));
+
+    expect(normalized.inventory).toEqual({
+      currency: 0,
+      materials: { shard_sun: 3, shard_moon: 0, shard_star: 0 },
+    });
   });
 });

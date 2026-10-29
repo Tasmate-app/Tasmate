@@ -34,6 +34,21 @@ export const BALANCE = {
   facilityUpgradeCostPerLevel: 80,
   /** ごく短い作業（分未満・数秒）を切り捨てる下限（秒） */
   minimumBillableSeconds: 60,
+  /** 休憩として設定できる時間の下限・上限（分） */
+  minRestMinutes: 1,
+  maxRestMinutes: 60,
+  /** 作業時間に応じた休憩の推奨時間（分）。上から順に判定する */
+  restSuggestionThresholds: [
+    { workMinutes: 90, restMinutes: 20 },
+    { workMinutes: 50, restMinutes: 15 },
+    { workMinutes: 25, restMinutes: 10 },
+  ],
+  /** この時間内に次の作業を始め、休憩を完了していなければ連続作業とみなす */
+  consecutiveWorkWindowMinutes: 30,
+  /** 連続作業がこの時間を超えたら応援イベントを出す（分） */
+  longWorkSupportMinutes: 50,
+  /** 応援イベントの保持上限（古いものから削除） */
+  maxSupportEvents: 20,
 } as const;
 
 /**

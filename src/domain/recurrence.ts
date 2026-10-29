@@ -29,6 +29,16 @@ export function occurrenceDatesForWeek(rule: RecurrenceRule, weekStart: string):
     .filter((dateKey) => ruleAppliesOnDate(rule, dateKey));
 }
 
+/** タスクがルール上で対応する予定日。移動済みなら元の予定日を優先する */
+function occurrenceDateKey(task: Task): string | undefined {
+  if (task.originalScheduledDate !== undefined) return task.originalScheduledDate;
+  if (task.scheduledDate !== undefined) return task.scheduledDate;
+  if (task.scheduledAt !== undefined && task.scheduledAt.length >= 10) {
+    return task.scheduledAt.slice(0, 10);
+  }
+  return undefined;
+}
+
 /** 同じルール・同じ予定日のタスクが既に存在するか（削除済みも含む） */
 export function occurrenceExists(
   tasks: Task[],
@@ -36,10 +46,7 @@ export function occurrenceExists(
   dateKey: string,
 ): boolean {
   return tasks.some(
-    (task) =>
-      task.recurrenceId === ruleId &&
-      (task.scheduledDate === dateKey ||
-        (task.scheduledDate === undefined && task.scheduledAt?.startsWith(dateKey) === true)),
+    (task) => task.recurrenceId === ruleId && occurrenceDateKey(task) === dateKey,
   );
 }
 
