@@ -67,4 +67,27 @@ describe('旧保存データの正規化', () => {
     expect(normalized.rewards[0].rewardMultiplier).toBe(1);
     expect(normalized.rewards[0].baseReward).toEqual(finalReward);
   });
+
+  it('欠損・不正な所持素材を 0 に正規化する', () => {
+    const legacy = {
+      version: 1,
+      tasks: [],
+      sessionHistory: [],
+      inventory: {
+        currency: Number.NaN,
+        materials: { shard_sun: 3, shard_moon: Number.NaN, shard_star: -2 },
+      },
+      characters: [],
+      facilities: [],
+      rewards: [],
+      appliedRewardSessionIds: [],
+    } as unknown as AppState;
+
+    const normalized = normalizeAppState(legacy, new Date(2026, 9, 23, 12));
+
+    expect(normalized.inventory).toEqual({
+      currency: 0,
+      materials: { shard_sun: 3, shard_moon: 0, shard_star: 0 },
+    });
+  });
 });

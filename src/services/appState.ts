@@ -1,5 +1,6 @@
 import type {
   Inventory,
+  MaterialId,
   OwnedCharacter,
   OwnedFacility,
   RecurrenceRule,
@@ -64,6 +65,32 @@ export function initialAppState(): AppState {
     weeklyEvaluations: [],
     weeklyProgress: emptyWeeklyProgress(now),
     restWeeks: [],
+  };
+}
+
+const MATERIAL_IDS: readonly MaterialId[] = ['shard_sun', 'shard_moon', 'shard_star'];
+
+function toFiniteNonNegative(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? Math.max(0, Math.floor(value))
+    : 0;
+}
+
+/** 旧データで欠けている通貨・素材を 0 として補完する */
+function normalizeInventory(value: unknown): Inventory {
+  const source =
+    typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
+  const rawMaterials =
+    typeof source['materials'] === 'object' && source['materials'] !== null
+      ? (source['materials'] as Record<string, unknown>)
+      : {};
+  const materials = {} as Record<MaterialId, number>;
+  for (const id of MATERIAL_IDS) {
+    materials[id] = toFiniteNonNegative(rawMaterials[id]);
+  }
+  return {
+    currency: toFiniteNonNegative(source['currency']),
+    materials,
   };
 }
 
@@ -149,6 +176,7 @@ export function normalizeAppState(state: AppState, now: Date = new Date()): AppS
   return {
     ...state,
     tasks,
+    inventory: normalizeInventory(state.inventory),
     rewards,
     recurrenceRules,
     weeklyEvaluations,
