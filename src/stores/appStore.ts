@@ -25,13 +25,24 @@ import {
   occurrenceDatesForWeek,
   occurrenceExists,
 } from '../domain/recurrence';
-import { WEEKLY_RULES } from '../domain/constants';
+import { BALANCE, WEEKLY_RULES } from '../domain/constants';
+import {
+  clampRestMinutes,
+  isConsecutiveWork,
+  isRestDue,
+  supportMessage,
+} from '../domain/rest';
 import { initialAppState, type AppState } from '../services/appState';
 import { loadAppState, saveAppState } from '../services/storage';
 import { computeSessionReward } from '../services/rewardService';
+import { CHARACTER_DEFINITIONS } from '../data/seed';
 import type {
+  OwnedCharacter,
   RecurrenceRule,
+  RestSession,
   SessionResult,
+  SupportEvent,
+  SupportEventKind,
   Task,
   WeeklyEvaluation,
   WorkSession,
@@ -92,6 +103,17 @@ interface AppActions {
   finishSession: (result: SessionResult) => string | null;
   cancelSession: () => void;
 
+  /** 休憩を開始する。時間は有効範囲に丸められる */
+  startRest: (plannedMinutes: number, sourceSessionId?: string) => void;
+  /** 設定時間が経過した休憩を完了し、応援イベントを追加する */
+  completeRest: () => void;
+  /** 進行中の休憩を切り上げる */
+  skipRest: () => void;
+  /** 長時間の連続作業を検出したら応援イベントを一度だけ追加する */
+  checkLongWorkSupport: () => void;
+  /** 応援イベントを確認済みにする */
+  acknowledgeSupportEvent: (id: string) => void;
+
   levelUpCharacter: (definitionId: string) => boolean;
   upgradeFacility: (definitionId: string) => boolean;
   toggleFacility: (definitionId: string) => void;
@@ -120,6 +142,46 @@ export function sessionElapsedSeconds(session: WorkSession | null, nowMs: number
 /** 現在の連続達成週数に対応する報酬倍率 */
 export function currentWeeklyMultiplier(state: Pick<AppState, 'weeklyProgress'>): number {
   return multiplierForStreak(state.weeklyProgress.currentStreak);
+}
+
+/** 応援イベントを出すキャラクターを決める（派遣キャラ優先、いなければ所持キャラ） */
+function pickSupportCharacterId(
+  session: WorkSession | undefined,
+  characters: OwnedCharacter[],
+): string {
+  const assignedId = session?.assignedCharacterIds[0];
+  if (
+    assignedId !== undefined &&
+    CHARACTER_DEFINITIONS.some((definition) => definition.id === assignedId)
+  ) {
+    return assignedId;
+  }
+  return characters[0]?.definitionId ?? CHARACTER_DEFINITIONS[0].id;
+}
+
+function characterName(characterId: string): string {
+  return CHARACTER_DEFINITIONS.find((definition) => definition.id === characterId)?.name ?? '仲間';
+}
+
+function createSupportEvent(
+  kind: SupportEventKind,
+  characterId: string,
+  workSessionId: string | undefined,
+  createdAt: string,
+): SupportEvent {
+  return {
+    id: newId('support'),
+    kind,
+    characterId,
+    message: supportMessage(kind, characterName(characterId)),
+    createdAt,
+    workSessionId,
+    seen: false,
+  };
+}
+
+function appendSupportEvent(events: SupportEvent[], event: SupportEvent): SupportEvent[] {
+  return [event, ...events].slice(0, BALANCE.maxSupportEvents);
 }
 
 /** 現在の週（未判定）の集計。画面表示用 */
@@ -182,6 +244,13 @@ function applyRuleToUpcomingOccurrences(
   return tasks.map((task) => {
     if (task.recurrenceId !== rule.id) return task;
     if (task.archivedAt !== undefined || task.status === 'completed') return task;
+    // 日付を移動した単発の変更は、ルール変更で上書き・アーカイブしない
+    if (
+      task.originalScheduledDate !== undefined &&
+      task.originalScheduledDate !== task.scheduledDate
+    ) {
+      return task;
+    }
     const dateKey = task.scheduledDate;
     if (dateKey === undefined || dateKey < todayKey) return task;
     if (!rule.isActive || !occurrenceDatesForWeek(rule, weekStartKeyFromDateKey(dateKey)).includes(dateKey)) {
@@ -237,6 +306,16 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       tasks: s.tasks.map((t) => {
         if (t.id !== id) return t;
         const merged: Task = { ...t, ...patch, updatedAt: nowIso() };
+        if (
+          'scheduledDate' in patch &&
+          patch.scheduledDate !== t.scheduledDate &&
+          t.recurrenceId !== undefined &&
+          t.originalScheduledDate === undefined &&
+          t.scheduledDate !== undefined
+        ) {
+          // 繰り返し予定の日付移動は「その回だけ」の変更として元の日付を保持する
+          merged.originalScheduledDate = t.scheduledDate;
+        }
         if ('scheduledDate' in patch || 'startTime' in patch || 'endTime' in patch) {
           const schedule = sanitizeSchedule(
             merged.scheduledDate,
@@ -405,24 +484,47 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     }),
 
   startSession: (taskId, destinationId, characterIds) => {
-    const { activeSession, tasks } = get();
+    const { activeSession, tasks, sessionHistory, restSession, characters, supportEvents } = get();
     if (activeSession !== null) return; // 同時進行は1件まで（仮仕様）
-    const task = tasks.find((t) => t.id === taskId && t.archivedAt === undefined);
+    const task = tasks.find(
+      (t) => t.id === taskId && t.archivedAt === undefined && t.status === 'planned',
+    );
     if (task === undefined) return;
     if (characterIds.length === 0) return;
+    const startedAt = nowIso();
     const session: WorkSession = {
       id: newId('session'),
       taskId,
-      startedAt: nowIso(),
+      startedAt,
       accumulatedSeconds: 0,
       pausedAt: undefined,
       state: 'running',
       destinationId,
       assignedCharacterIds: characterIds,
     };
+    const previousSession = sessionHistory[0];
+    const encourage = isConsecutiveWork({
+      previousSessionEndedAt: previousSession?.endedAt,
+      nowMs: Date.parse(startedAt),
+      restSession,
+    });
+    const nextSupportEvents = encourage
+      ? appendSupportEvent(
+          supportEvents,
+          createSupportEvent(
+            'consecutive-work',
+            pickSupportCharacterId(previousSession, characters),
+            previousSession?.id,
+            startedAt,
+          ),
+        )
+      : supportEvents;
     set((s) => ({
       activeSession: session,
       tasks: s.tasks.map((t) => (t.id === taskId ? { ...t, status: 'active' as const } : t)),
+      // 休憩中に次の作業を始めた場合は、休憩を切り上げたものとして扱う
+      restSession: s.restSession?.state === 'active' ? null : s.restSession,
+      supportEvents: nextSupportEvents,
     }));
   },
 
@@ -494,14 +596,17 @@ export const useAppStore = create<AppStore>()((set, get) => ({
           : t,
       ),
       inventory: {
-        currency: prev.inventory.currency + record.finalReward.currency,
+        currency: (prev.inventory?.currency ?? 0) + record.finalReward.currency,
         materials: {
           shard_sun:
-            prev.inventory.materials.shard_sun + (record.finalReward.materials.shard_sun ?? 0),
+            (prev.inventory?.materials?.shard_sun ?? 0) +
+            (record.finalReward.materials.shard_sun ?? 0),
           shard_moon:
-            prev.inventory.materials.shard_moon + (record.finalReward.materials.shard_moon ?? 0),
+            (prev.inventory?.materials?.shard_moon ?? 0) +
+            (record.finalReward.materials.shard_moon ?? 0),
           shard_star:
-            prev.inventory.materials.shard_star + (record.finalReward.materials.shard_star ?? 0),
+            (prev.inventory?.materials?.shard_star ?? 0) +
+            (record.finalReward.materials.shard_star ?? 0),
         },
       },
       characters: prev.characters.map((c) =>
@@ -525,6 +630,66 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       ),
     }));
   },
+
+  startRest: (plannedMinutes, sourceSessionId) => {
+    const { sessionHistory } = get();
+    const startedAt = nowIso();
+    const source = sourceSessionId ?? sessionHistory[0]?.id;
+    const rest: RestSession = {
+      id: newId('rest'),
+      startedAt,
+      plannedMinutes: clampRestMinutes(plannedMinutes),
+      sourceSessionId: source,
+      state: 'active',
+    };
+    set({ restSession: rest });
+  },
+
+  completeRest: () => {
+    const s = get();
+    const rest = s.restSession;
+    if (rest === null || !isRestDue(rest, Date.now())) return;
+    const endedAt = nowIso();
+    const source =
+      rest.sourceSessionId !== undefined
+        ? s.sessionHistory.find((session) => session.id === rest.sourceSessionId)
+        : s.sessionHistory[0];
+    const supporterId = pickSupportCharacterId(source, s.characters);
+    const event = createSupportEvent('rest-complete', supporterId, source?.id, endedAt);
+    set((prev) => ({
+      restSession: { ...rest, state: 'completed', endedAt },
+      supportEvents: appendSupportEvent(prev.supportEvents, event),
+    }));
+  },
+
+  skipRest: () =>
+    set((s) => (s.restSession?.state === 'active' ? { restSession: null } : s)),
+
+  checkLongWorkSupport: () => {
+    const s = get();
+    const session = s.activeSession;
+    if (session === null || session.state !== 'running') return;
+    if (
+      s.supportEvents.some(
+        (event) => event.kind === 'long-work' && event.workSessionId === session.id,
+      )
+    ) {
+      return;
+    }
+    const elapsed = sessionElapsedSeconds(session, Date.now());
+    if (elapsed < BALANCE.longWorkSupportMinutes * 60) return;
+    const createdAt = nowIso();
+    const supporterId = pickSupportCharacterId(session, s.characters);
+    const event = createSupportEvent('long-work', supporterId, session.id, createdAt);
+    set((prev) => ({ supportEvents: appendSupportEvent(prev.supportEvents, event) }));
+  },
+
+  acknowledgeSupportEvent: (id) =>
+    set((s) => ({
+      supportEvents: s.supportEvents.map((event) =>
+        event.id === id ? { ...event, seen: true } : event,
+      ),
+    })),
 
   levelUpCharacter: (definitionId) => {
     const s = get();
@@ -675,6 +840,8 @@ useAppStore.subscribe((state) => {
     weeklyEvaluations: state.weeklyEvaluations,
     weeklyProgress: state.weeklyProgress,
     restWeeks: state.restWeeks,
+    restSession: state.restSession,
+    supportEvents: state.supportEvents,
   };
   saveAppState(snapshot);
 });
