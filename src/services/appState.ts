@@ -1,15 +1,22 @@
 import type {
   Inventory,
+  MaterialId,
   OwnedCharacter,
   OwnedFacility,
   RecurrenceRule,
   RewardRecord,
   Task,
   WeeklyEvaluation,
+  WeeklyEvaluationStatus,
   WeeklyProgress,
   WorkSession,
+  WorkSessionState,
 } from '../types/index';
-import { emptyWeeklyProgress, taskScheduledDateKey } from '../domain/weekly';
+import {
+  emptyWeeklyProgress,
+  isValidDateKey,
+  taskScheduledDateKey,
+} from '../domain/weekly';
 
 /**
  * 永続化されるアプリ全体の状態。
@@ -67,20 +74,227 @@ export function initialAppState(): AppState {
   };
 }
 
+type UnknownRecord = Record<string, unknown>;
+
+const MATERIAL_IDS: readonly MaterialId[] = ['shard_sun', 'shard_moon', 'shard_star'];
+const TASK_STATUSES = new Set(['planned', 'active', 'completed', 'cancelled']);
+const SESSION_STATES = new Set<WorkSessionState>(['idle', 'running', 'paused']);
+const SESSION_RESULTS = new Set(['completed', 'interrupted']);
+const WEEKLY_STATUSES = new Set<WeeklyEvaluationStatus>([
+  'achieved',
+  'missed',
+  'pending',
+  'rest',
+]);
+
+function isRecord(value: unknown): value is UnknownRecord {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+function toFiniteNonNegative(value: unknown): number {
+  return isFiniteNumber(value) ? Math.max(0, Math.floor(value)) : 0;
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((entry) => typeof entry === 'string');
+}
+
+function normalizeInventory(value: unknown): Inventory {
+  const source = isRecord(value) ? value : {};
+  const rawMaterials = isRecord(source['materials']) ? source['materials'] : {};
+  const materials = {} as Record<MaterialId, number>;
+  for (const id of MATERIAL_IDS) {
+    materials[id] = toFiniteNonNegative(rawMaterials[id]);
+  }
+  return {
+    currency: toFiniteNonNegative(source['currency']),
+    materials,
+  };
+}
+
+function isTask(value: unknown): value is Task {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value['id'] === 'string' &&
+    typeof value['title'] === 'string' &&
+    typeof value['description'] === 'string' &&
+    typeof value['category'] === 'string' &&
+    isFiniteNumber(value['estimatedMinutes']) &&
+    typeof value['status'] === 'string' &&
+    TASK_STATUSES.has(value['status']) &&
+    typeof value['createdAt'] === 'string' &&
+    typeof value['updatedAt'] === 'string'
+  );
+}
+
+function isWorkSession(value: unknown): value is WorkSession {
+  if (!isRecord(value)) return false;
+  if (
+    typeof value['id'] !== 'string' ||
+    typeof value['taskId'] !== 'string' ||
+    typeof value['startedAt'] !== 'string' ||
+    !isFiniteNumber(value['accumulatedSeconds']) ||
+    typeof value['state'] !== 'string' ||
+    !SESSION_STATES.has(value['state'] as WorkSessionState) ||
+    typeof value['destinationId'] !== 'string' ||
+    !isStringArray(value['assignedCharacterIds'])
+  ) {
+    return false;
+  }
+  if (
+    value['result'] !== undefined &&
+    (typeof value['result'] !== 'string' ||
+      !SESSION_RESULTS.has(value['result'] as string))
+  ) {
+    return false;
+  }
+  return true;
+}
+
+function isOwnedCharacter(value: unknown): value is OwnedCharacter {
+  return (
+    isRecord(value) &&
+    typeof value['definitionId'] === 'string' &&
+    isFiniteNumber(value['level']) &&
+    isFiniteNumber(value['experience'])
+  );
+}
+
+function isOwnedFacility(value: unknown): value is OwnedFacility {
+  return (
+    isRecord(value) &&
+    typeof value['definitionId'] === 'string' &&
+    isFiniteNumber(value['level']) &&
+    typeof value['enabled'] === 'boolean'
+  );
+}
+
+function isRewardBundle(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  return (
+    isFiniteNumber(value['currency']) &&
+    isFiniteNumber(value['experience']) &&
+    isRecord(value['materials'])
+  );
+}
+
+function isRewardRecord(value: unknown): value is RewardRecord {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value['id'] === 'string' &&
+    typeof value['workSessionId'] === 'string' &&
+    typeof value['inputSummary'] === 'string' &&
+    isRewardBundle(value['proposedReward']) &&
+    isRewardBundle(value['finalReward']) &&
+    typeof value['reason'] === 'string' &&
+    typeof value['createdAt'] === 'string' &&
+    (value['status'] === 'pending' ||
+      value['status'] === 'approved' ||
+      value['status'] === 'rejected')
+  );
+}
+
+function isRecurrenceRule(value: unknown): value is RecurrenceRule {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value['id'] === 'string' &&
+    typeof value['title'] === 'string' &&
+    typeof value['description'] === 'string' &&
+    typeof value['category'] === 'string' &&
+    isFiniteNumber(value['estimatedMinutes']) &&
+    value['frequency'] === 'weekly' &&
+    Array.isArray(value['daysOfWeek']) &&
+    value['daysOfWeek'].every(
+      (day) => Number.isInteger(day) && (day as number) >= 1 && (day as number) <= 7,
+    ) &&
+    typeof value['effectiveFrom'] === 'string' &&
+    isValidDateKey(value['effectiveFrom']) &&
+    typeof value['isActive'] === 'boolean' &&
+    typeof value['createdAt'] === 'string' &&
+    typeof value['updatedAt'] === 'string'
+  );
+}
+
+function isWeeklyEvaluation(value: unknown): value is WeeklyEvaluation {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value['id'] === 'string' &&
+    typeof value['userId'] === 'string' &&
+    typeof value['weekStart'] === 'string' &&
+    isValidDateKey(value['weekStart']) &&
+    typeof value['status'] === 'string' &&
+    WEEKLY_STATUSES.has(value['status'] as WeeklyEvaluationStatus) &&
+    isFiniteNumber(value['eligibleTaskCount']) &&
+    isFiniteNumber(value['completedTaskCount']) &&
+    typeof value['evaluatedAt'] === 'string' &&
+    isStringArray(value['taskIds'])
+  );
+}
+
 /** 保存データの簡易検証（破損データから起動不能になるのを防ぐ） */
 export function isValidAppState(value: unknown): value is AppState {
-  if (typeof value !== 'object' || value === null) return false;
-  const v = value as Record<string, unknown>;
-  return (
-    v['version'] === 1 &&
-    Array.isArray(v['tasks']) &&
-    Array.isArray(v['sessionHistory']) &&
-    typeof v['inventory'] === 'object' &&
-    Array.isArray(v['characters']) &&
-    Array.isArray(v['facilities']) &&
-    Array.isArray(v['rewards']) &&
-    Array.isArray(v['appliedRewardSessionIds'])
-  );
+  if (!isRecord(value)) return false;
+  if (value['version'] !== 1) return false;
+  if (
+    !Array.isArray(value['tasks']) ||
+    !Array.isArray(value['sessionHistory']) ||
+    !Array.isArray(value['characters']) ||
+    !Array.isArray(value['facilities']) ||
+    !Array.isArray(value['rewards']) ||
+    !Array.isArray(value['appliedRewardSessionIds'])
+  ) {
+    return false;
+  }
+
+  if (!isRecord(value['inventory'])) return false;
+  const inventory = value['inventory'];
+  if (inventory['currency'] !== undefined && !isFiniteNumber(inventory['currency'])) {
+    return false;
+  }
+  if (inventory['materials'] !== undefined) {
+    if (!isRecord(inventory['materials'])) return false;
+    const materials = inventory['materials'];
+    for (const id of MATERIAL_IDS) {
+      if (materials[id] !== undefined && !isFiniteNumber(materials[id])) return false;
+    }
+  }
+
+  if (
+    value['activeSession'] !== undefined &&
+    value['activeSession'] !== null &&
+    !isWorkSession(value['activeSession'])
+  ) {
+    return false;
+  }
+
+  if (
+    value['weeklyProgress'] !== undefined &&
+    !isRecord(value['weeklyProgress'])
+  ) {
+    return false;
+  }
+
+  if (
+    value['recurrenceRules'] !== undefined &&
+    !Array.isArray(value['recurrenceRules'])
+  ) {
+    return false;
+  }
+  if (
+    value['weeklyEvaluations'] !== undefined &&
+    !Array.isArray(value['weeklyEvaluations'])
+  ) {
+    return false;
+  }
+  if (value['restWeeks'] !== undefined && !Array.isArray(value['restWeeks'])) {
+    return false;
+  }
+
+  return true;
 }
 
 function normalizeTask(task: Task): Task {
@@ -102,36 +316,80 @@ function normalizeReward(reward: RewardRecord): RewardRecord {
  * 既存のタスク・報酬・セッションは変更しない。
  */
 export function normalizeAppState(state: AppState, now: Date = new Date()): AppState {
-  const candidate = state as AppState & {
-    recurrenceRules?: RecurrenceRule[];
-    weeklyEvaluations?: WeeklyEvaluation[];
-    weeklyProgress?: WeeklyProgress;
-    restWeeks?: string[];
-  };
-  const tasks = state.tasks.map(normalizeTask);
-  const rewards = state.rewards.map(normalizeReward);
-  const recurrenceRules = Array.isArray(candidate.recurrenceRules)
-    ? candidate.recurrenceRules
+  const source = state as unknown as UnknownRecord;
+  const tasks = (Array.isArray(source['tasks']) ? source['tasks'] : [])
+    .filter(isTask)
+    .map(normalizeTask);
+  const sessionHistory = (Array.isArray(source['sessionHistory'])
+    ? source['sessionHistory']
+    : []
+  ).filter(isWorkSession);
+  const rawActiveSession = source['activeSession'];
+  const activeSession =
+    rawActiveSession !== undefined && rawActiveSession !== null && isWorkSession(rawActiveSession)
+      ? rawActiveSession
+      : null;
+  const characters = (Array.isArray(source['characters']) ? source['characters'] : []).filter(
+    isOwnedCharacter,
+  );
+  const facilities = (Array.isArray(source['facilities']) ? source['facilities'] : []).filter(
+    isOwnedFacility,
+  );
+  const rewards = (Array.isArray(source['rewards']) ? source['rewards'] : [])
+    .filter(isRewardRecord)
+    .map(normalizeReward);
+  const appliedRewardSessionIds = isStringArray(source['appliedRewardSessionIds'])
+    ? Array.from(new Set(source['appliedRewardSessionIds']))
     : [];
-  const weeklyEvaluations = Array.isArray(candidate.weeklyEvaluations)
-    ? candidate.weeklyEvaluations
-    : [];
-  const restWeeks = Array.isArray(candidate.restWeeks)
-    ? candidate.restWeeks.filter((week): week is string => typeof week === 'string')
-    : [];
+  const recurrenceRules = (
+    Array.isArray(source['recurrenceRules']) ? source['recurrenceRules'] : []
+  ).filter(isRecurrenceRule);
+  const weeklyEvaluations = (
+    Array.isArray(source['weeklyEvaluations']) ? source['weeklyEvaluations'] : []
+  ).filter(isWeeklyEvaluation);
+  const restWeeks = Array.from(
+    new Set(
+      (Array.isArray(source['restWeeks']) ? source['restWeeks'] : []).filter(
+        (week): week is string => typeof week === 'string' && isValidDateKey(week),
+      ),
+    ),
+  ).sort();
 
-  const savedProgress = candidate.weeklyProgress;
-  let weeklyProgress =
-    savedProgress !== undefined &&
-    typeof savedProgress.currentStreak === 'number' &&
-    typeof savedProgress.totalSuccessfulWeeks === 'number' &&
-    typeof savedProgress.highestStreak === 'number'
-      ? { ...savedProgress }
-      : emptyWeeklyProgress(now);
+  const savedProgress = source['weeklyProgress'];
+  const hasProgress =
+    isRecord(savedProgress) &&
+    typeof savedProgress['currentStreak'] === 'number' &&
+    typeof savedProgress['totalSuccessfulWeeks'] === 'number' &&
+    typeof savedProgress['highestStreak'] === 'number';
+  let weeklyProgress: WeeklyProgress = hasProgress
+    ? { ...(savedProgress as unknown as WeeklyProgress) }
+    : emptyWeeklyProgress(now);
 
-  if (typeof weeklyProgress.trackingStartedWeek !== 'string') {
-    weeklyProgress = { ...weeklyProgress, trackingStartedWeek: emptyWeeklyProgress(now).trackingStartedWeek };
+  if (!isValidDateKey(weeklyProgress.trackingStartedWeek)) {
+    weeklyProgress = {
+      ...weeklyProgress,
+      trackingStartedWeek: emptyWeeklyProgress(now).trackingStartedWeek,
+    };
   }
+  if (
+    weeklyProgress.lastEvaluatedWeekStart !== null &&
+    (typeof weeklyProgress.lastEvaluatedWeekStart !== 'string' ||
+      !isValidDateKey(weeklyProgress.lastEvaluatedWeekStart))
+  ) {
+    weeklyProgress = { ...weeklyProgress, lastEvaluatedWeekStart: null };
+  }
+  weeklyProgress = {
+    ...weeklyProgress,
+    userId:
+      typeof weeklyProgress.userId === 'string' ? weeklyProgress.userId : 'local-user',
+    currentStreak: toFiniteNonNegative(weeklyProgress.currentStreak),
+    totalSuccessfulWeeks: toFiniteNonNegative(weeklyProgress.totalSuccessfulWeeks),
+    highestStreak: toFiniteNonNegative(weeklyProgress.highestStreak),
+    updatedAt:
+      typeof weeklyProgress.updatedAt === 'string'
+        ? weeklyProgress.updatedAt
+        : now.toISOString(),
+  };
 
   const latestEvaluation = weeklyEvaluations.reduce<string | null>(
     (latest, evaluation) =>
@@ -147,9 +405,15 @@ export function normalizeAppState(state: AppState, now: Date = new Date()): AppS
   }
 
   return {
-    ...state,
+    version: 1,
     tasks,
+    activeSession,
+    sessionHistory,
+    inventory: normalizeInventory(source['inventory']),
+    characters,
+    facilities,
     rewards,
+    appliedRewardSessionIds,
     recurrenceRules,
     weeklyEvaluations,
     weeklyProgress,

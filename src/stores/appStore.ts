@@ -575,11 +575,13 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     const now = new Date(nowMs);
     const currentWeek = weekStartKey(now);
     const lastDueWeek = previousWeekStartKey(currentWeek);
+    const lastEvaluatedWeekStart = state.weeklyProgress?.lastEvaluatedWeekStart;
     const startWeek =
-      state.weeklyProgress.lastEvaluatedWeekStart !== null
-        ? nextWeekStartKey(state.weeklyProgress.lastEvaluatedWeekStart)
-        : state.weeklyProgress.trackingStartedWeek;
+      typeof lastEvaluatedWeekStart === 'string' && isValidDateKey(lastEvaluatedWeekStart)
+        ? nextWeekStartKey(lastEvaluatedWeekStart)
+        : state.weeklyProgress?.trackingStartedWeek;
 
+    if (startWeek === undefined || !isValidDateKey(startWeek)) return [];
     if (startWeek > lastDueWeek) return [];
 
     const existingWeeks = new Set(state.weeklyEvaluations.map((evaluation) => evaluation.weekStart));
