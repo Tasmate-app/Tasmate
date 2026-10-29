@@ -596,14 +596,17 @@ export const useAppStore = create<AppStore>()((set, get) => ({
           : t,
       ),
       inventory: {
-        currency: prev.inventory.currency + record.finalReward.currency,
+        currency: (prev.inventory?.currency ?? 0) + record.finalReward.currency,
         materials: {
           shard_sun:
-            prev.inventory.materials.shard_sun + (record.finalReward.materials.shard_sun ?? 0),
+            (prev.inventory?.materials?.shard_sun ?? 0) +
+            (record.finalReward.materials.shard_sun ?? 0),
           shard_moon:
-            prev.inventory.materials.shard_moon + (record.finalReward.materials.shard_moon ?? 0),
+            (prev.inventory?.materials?.shard_moon ?? 0) +
+            (record.finalReward.materials.shard_moon ?? 0),
           shard_star:
-            prev.inventory.materials.shard_star + (record.finalReward.materials.shard_star ?? 0),
+            (prev.inventory?.materials?.shard_star ?? 0) +
+            (record.finalReward.materials.shard_star ?? 0),
         },
       },
       characters: prev.characters.map((c) =>
