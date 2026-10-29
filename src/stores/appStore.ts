@@ -469,7 +469,9 @@ export const useAppStore = create<AppStore>()((set, get) => ({
   startSession: (taskId, destinationId, characterIds) => {
     const { activeSession, tasks, sessionHistory, restSession, characters, supportEvents } = get();
     if (activeSession !== null) return; // 同時進行は1件まで（仮仕様）
-    const task = tasks.find((t) => t.id === taskId && t.archivedAt === undefined);
+    const task = tasks.find(
+      (t) => t.id === taskId && t.archivedAt === undefined && t.status === 'planned',
+    );
     if (task === undefined) return;
     if (characterIds.length === 0) return;
     const startedAt = nowIso();
