@@ -61,6 +61,29 @@ describe('proposeReward', () => {
     expect(bundle.currency).toBe(0);
     expect(bundle.experience).toBe(0);
   });
+
+  it('中断時の施設生産素材に報酬係数を二重適用しない', () => {
+    const { bundle } = proposeReward(
+      makeInput({
+        workMinutes: 25,
+        characters: [],
+        facilities: [{ definitionId: 'f-star', level: 1, enabled: true }],
+        facilityDefinitions: [
+          {
+            id: 'f-star',
+            name: '星屑ハウス',
+            type: 'material',
+            description: '',
+            baseProductionPerMinute: 0.4,
+            materialId: 'shard_star',
+          },
+        ],
+        completed: false,
+      }),
+    );
+
+    expect(bundle.materials['shard_star']).toBe(5);
+  });
 });
 
 describe('finalizeReward', () => {
