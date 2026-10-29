@@ -1,6 +1,11 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest';
-import { weekEndExclusiveKey } from '../src/domain/weekly';
+import {
+  addDaysToKey,
+  nextWeekStartKey,
+  weekEndExclusiveKey,
+  weekStartKey,
+} from '../src/domain/weekly';
 import { initialAppState } from '../src/services/appState';
 import { useAppStore } from '../src/stores/appStore';
 import type { Task, WeeklyProgress } from '../src/types/index';
@@ -183,6 +188,83 @@ describe('繰り返し予定のストア統合', () => {
     ).toHaveLength(4);
   });
 
+  it('曜日を削除して再追加するとルール変更でアーカイブした予定を復元する', () => {
+    const weekStart = nextWeekStartKey(weekStartKey(new Date()));
+    const wednesday = addDaysToKey(weekStart, 2);
+    const ruleId = useAppStore.getState().createRecurrenceRule({
+      title: '週次テスト',
+      description: '',
+      category: '勉強',
+      estimatedMinutes: 30,
+      daysOfWeek: [1, 3],
+      effectiveFrom: weekStart,
+    });
+    const liveCount = () =>
+      useAppStore
+        .getState()
+        .tasks.filter(
+          (task) =>
+            task.recurrenceId === ruleId &&
+            task.scheduledDate === wednesday &&
+            task.archivedAt === undefined,
+        ).length;
+
+    expect(liveCount()).toBe(1);
+    useAppStore.getState().updateRecurrenceRule(ruleId, { daysOfWeek: [1] });
+    expect(liveCount()).toBe(0);
+    const archived = useAppStore
+      .getState()
+      .tasks.find((task) => task.recurrenceId === ruleId && task.scheduledDate === wednesday);
+    expect(archived?.archiveReason).toBe('rule');
+
+    useAppStore.getState().updateRecurrenceRule(ruleId, { daysOfWeek: [1, 3] });
+    useAppStore.getState().ensureRecurringOccurrencesForWeek(weekStart);
+
+    expect(liveCount()).toBe(1);
+    const restored = useAppStore
+      .getState()
+      .tasks.find((task) => task.recurrenceId === ruleId && task.scheduledDate === wednesday);
+    expect(restored?.id).toBe(archived?.id);
+    expect(restored?.archivedAt).toBeUndefined();
+    expect(restored?.archiveReason).toBeUndefined();
+  });
+
+  it('ユーザーが削除した予定は曜日を再追加しても復元しない', () => {
+    const weekStart = nextWeekStartKey(weekStartKey(new Date()));
+    const wednesday = addDaysToKey(weekStart, 2);
+    const ruleId = useAppStore.getState().createRecurrenceRule({
+      title: '週次テスト',
+      description: '',
+      category: '勉強',
+      estimatedMinutes: 30,
+      daysOfWeek: [1, 3],
+      effectiveFrom: weekStart,
+    });
+    const occurrence = useAppStore
+      .getState()
+      .tasks.find((task) => task.recurrenceId === ruleId && task.scheduledDate === wednesday);
+    expect(occurrence).toBeDefined();
+
+    useAppStore.getState().deleteTask(occurrence?.id ?? '');
+    useAppStore.getState().updateRecurrenceRule(ruleId, { daysOfWeek: [1] });
+    useAppStore.getState().updateRecurrenceRule(ruleId, { daysOfWeek: [1, 3] });
+    useAppStore.getState().ensureRecurringOccurrencesForWeek(weekStart);
+
+    const deleted = useAppStore
+      .getState()
+      .tasks.find((task) => task.recurrenceId === ruleId && task.scheduledDate === wednesday);
+    expect(deleted?.archivedAt).toBeDefined();
+    expect(deleted?.archiveReason).toBe('user');
+    expect(
+      useAppStore
+        .getState()
+        .tasks.filter(
+          (task) =>
+            task.recurrenceId === ruleId &&
+            task.scheduledDate === wednesday &&
+            task.archivedAt === undefined,
+        ),
+    ).toHaveLength(0);
   it('繰り返し予定の日付を移動すると元の日の予定を再生成しない', () => {
     const ruleId = useAppStore.getState().createRecurrenceRule({
       title: '朝の読書',
