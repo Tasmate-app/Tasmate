@@ -244,6 +244,13 @@ function applyRuleToUpcomingOccurrences(
   return tasks.map((task) => {
     if (task.recurrenceId !== rule.id) return task;
     if (task.archivedAt !== undefined || task.status === 'completed') return task;
+    // 日付を移動した単発の変更は、ルール変更で上書き・アーカイブしない
+    if (
+      task.originalScheduledDate !== undefined &&
+      task.originalScheduledDate !== task.scheduledDate
+    ) {
+      return task;
+    }
     const dateKey = task.scheduledDate;
     if (dateKey === undefined || dateKey < todayKey) return task;
     if (!rule.isActive || !occurrenceDatesForWeek(rule, weekStartKeyFromDateKey(dateKey)).includes(dateKey)) {
@@ -299,6 +306,16 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       tasks: s.tasks.map((t) => {
         if (t.id !== id) return t;
         const merged: Task = { ...t, ...patch, updatedAt: nowIso() };
+        if (
+          'scheduledDate' in patch &&
+          patch.scheduledDate !== t.scheduledDate &&
+          t.recurrenceId !== undefined &&
+          t.originalScheduledDate === undefined &&
+          t.scheduledDate !== undefined
+        ) {
+          // 繰り返し予定の日付移動は「その回だけ」の変更として元の日付を保持する
+          merged.originalScheduledDate = t.scheduledDate;
+        }
         if ('scheduledDate' in patch || 'startTime' in patch || 'endTime' in patch) {
           const schedule = sanitizeSchedule(
             merged.scheduledDate,

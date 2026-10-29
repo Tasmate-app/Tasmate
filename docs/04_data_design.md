@@ -39,6 +39,7 @@
 | scheduledDate | 予定日（ローカル日付キー） |
 | startTime / endTime | 同日の開始・終了時刻（任意） |
 | recurrenceId | 生成元の繰り返しルール ID（任意） |
+| originalScheduledDate | 日付移動前のルール上の予定日（任意） |
 | archivedAt | 論理削除日時（任意） |
 | status | planned / active / completed / cancelled など |
 | createdAt | 作成日時 |
