@@ -40,6 +40,11 @@ export interface Task {
   endTime?: string;
   /** 繰り返しルールから生成された予定のルール ID */
   recurrenceId?: string;
+  /**
+   * 繰り返し予定を別の日へ移動した場合の、ルール上の元の予定日。
+   * 元の日の予定が再生成されるのを防ぐために保持する。
+   */
+  originalScheduledDate?: string;
   status: TaskStatus;
   createdAt: string;
   updatedAt: string;
