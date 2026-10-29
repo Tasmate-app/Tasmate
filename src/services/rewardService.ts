@@ -47,6 +47,7 @@ export function computeSessionReward(args: ComputeRewardArgs): RewardRecord {
   const { bundle, reason } = proposeReward({
     workMinutes: minutes,
     characters,
+    assignedCharacterIds: session.assignedCharacterIds,
     characterDefinitions: CHARACTER_DEFINITIONS,
     destination,
     facilities,

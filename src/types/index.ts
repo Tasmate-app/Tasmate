@@ -241,6 +241,8 @@ export interface Inventory {
 export interface WorkOutcomeInput {
   workMinutes: number;
   characters: OwnedCharacter[];
+  /** 派遣したキャラクター。未指定の場合は所持キャラクター全員を対象にする */
+  assignedCharacterIds?: string[];
   characterDefinitions: CharacterDefinition[];
   destination: Destination;
   facilities: OwnedFacility[];
