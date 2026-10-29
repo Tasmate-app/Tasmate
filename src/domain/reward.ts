@@ -59,9 +59,9 @@ export function proposeReward(input: WorkOutcomeInput): ProposedReward {
   const merged: Partial<Record<MaterialId, number>> = { ...collection };
   for (const [key, value] of Object.entries(production.materials)) {
     const id = key as MaterialId;
-    merged[id] = (merged[id] ?? 0) + Math.floor((value ?? 0) * factor);
+    merged[id] = (merged[id] ?? 0) + Math.floor(value ?? 0);
   }
-  // 中断時は収集分にも係数を適用する
+  // 中断時は収集分・生産分の両方に一度だけ係数を適用する
   if (!input.completed) {
     for (const key of Object.keys(merged) as MaterialId[]) {
       merged[key] = Math.floor((merged[key] ?? 0) * factor);
