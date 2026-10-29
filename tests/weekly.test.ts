@@ -241,6 +241,17 @@ describe('繰り返し予定', () => {
     expect(occurrenceExists([], rule.id, '2026-10-19')).toBe(false);
     expect(occurrenceDatesForWeek(rule, '2026-10-26')).toEqual(['2026-10-26']);
   });
+
+  it('日付を移動した予定は元の予定日の重複判定にだけ使う', () => {
+    const generated = buildOccurrenceTask(rule, '2026-10-19', 'task-1', '2026-10-19T00:00:00.000Z');
+    const moved = {
+      ...generated,
+      scheduledDate: '2026-10-20',
+      originalScheduledDate: '2026-10-19',
+    };
+    expect(occurrenceExists([moved], rule.id, '2026-10-19')).toBe(true);
+    expect(occurrenceExists([moved], rule.id, '2026-10-20')).toBe(false);
+  });
 });
 
 describe('初期状態', () => {

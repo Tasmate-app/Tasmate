@@ -2,6 +2,7 @@ import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { MATERIAL_NAMES } from '../../domain/constants';
 import { useAppStore } from '../../stores/appStore';
+import { RestPrompt } from '../rest/RestPrompt';
 
 interface SortieResultProps {
   rewardId: string;
@@ -30,6 +31,7 @@ export function SortieResult({ rewardId, onClose }: SortieResultProps) {
         <p className="list-item__meta">{reward.inputSummary}</p>
         <p className="list-item__meta">{reward.reason}</p>
       </div>
+      <RestPrompt rewardId={rewardId} />
       <div className="btn-row">
         <Button variant="secondary" onClick={onClose}>
           クエスト一覧に戻る

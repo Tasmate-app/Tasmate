@@ -39,6 +39,7 @@
 | scheduledDate | 予定日（ローカル日付キー） |
 | startTime / endTime | 同日の開始・終了時刻（任意） |
 | recurrenceId | 生成元の繰り返しルール ID（任意） |
+| originalScheduledDate | 日付移動前のルール上の予定日（任意） |
 | archivedAt | 論理削除日時（任意） |
 | archiveReason | アーカイブ理由。user / rule（任意） |
 | status | planned / active / completed / cancelled など |
@@ -77,6 +78,33 @@
 | result | completed / interrupted など |
 | destinationId | 選択した戦闘先 ID |
 | assignedCharacterIds | 派遣キャラクター ID 一覧 |
+
+### RestSession
+
+作業後の休憩。直近1件を保存し、再読み込み後も残り時間を復元する。
+
+| フィールド案 | 意味 |
+|---|---|
+| id | 休憩 ID |
+| startedAt | 休憩開始日時 |
+| plannedMinutes | プレイヤーが設定した休憩時間（分） |
+| sourceSessionId | 休憩のきっかけになった作業セッション ID（任意） |
+| state | active / completed |
+| endedAt | 休憩完了日時（任意） |
+
+### SupportEvent
+
+連続作業や長時間作業、休憩完了時に表示するキャラクターの応援イベント。
+
+| フィールド案 | 意味 |
+|---|---|
+| id | イベント ID |
+| kind | consecutive-work / long-work / rest-complete |
+| characterId | 声をかけたキャラクター ID |
+| message | 表示するセリフ |
+| workSessionId | 関連する作業セッション ID（任意） |
+| createdAt | 発生時刻 |
+| seen | プレイヤーが確認済みか |
 
 ### RewardRecord
 

@@ -1,14 +1,18 @@
 import type {
   Inventory,
+  MaterialId,
   OwnedCharacter,
   OwnedFacility,
   RecurrenceRule,
+  RestSession,
   RewardRecord,
+  SupportEvent,
   Task,
   WeeklyEvaluation,
   WeeklyProgress,
   WorkSession,
 } from '../types/index';
+import { BALANCE } from '../domain/constants';
 import { emptyWeeklyProgress, taskScheduledDateKey } from '../domain/weekly';
 
 /**
@@ -36,6 +40,10 @@ export interface AppState {
   weeklyProgress: WeeklyProgress;
   /** 休息週として設定した週の開始日 */
   restWeeks: string[];
+  /** 進行中・完了した休憩（直近1件） */
+  restSession: RestSession | null;
+  /** キャラクターの応援・声かけイベント（新しい順） */
+  supportEvents: SupportEvent[];
 }
 
 /** 初期状態（仮データ） */
@@ -64,6 +72,34 @@ export function initialAppState(): AppState {
     weeklyEvaluations: [],
     weeklyProgress: emptyWeeklyProgress(now),
     restWeeks: [],
+    restSession: null,
+    supportEvents: [],
+  };
+}
+
+const MATERIAL_IDS: readonly MaterialId[] = ['shard_sun', 'shard_moon', 'shard_star'];
+
+function toFiniteNonNegative(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? Math.max(0, Math.floor(value))
+    : 0;
+}
+
+/** 旧データで欠けている通貨・素材を 0 として補完する */
+function normalizeInventory(value: unknown): Inventory {
+  const source =
+    typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
+  const rawMaterials =
+    typeof source['materials'] === 'object' && source['materials'] !== null
+      ? (source['materials'] as Record<string, unknown>)
+      : {};
+  const materials = {} as Record<MaterialId, number>;
+  for (const id of MATERIAL_IDS) {
+    materials[id] = toFiniteNonNegative(rawMaterials[id]);
+  }
+  return {
+    currency: toFiniteNonNegative(source['currency']),
+    materials,
   };
 }
 
@@ -97,8 +133,53 @@ function normalizeReward(reward: RewardRecord): RewardRecord {
   };
 }
 
+function normalizeRestSession(value: unknown): RestSession | null {
+  if (typeof value !== 'object' || value === null) return null;
+  const v = value as Record<string, unknown>;
+  if (
+    typeof v['id'] !== 'string' ||
+    typeof v['startedAt'] !== 'string' ||
+    typeof v['plannedMinutes'] !== 'number' ||
+    (v['state'] !== 'active' && v['state'] !== 'completed')
+  ) {
+    return null;
+  }
+  return {
+    id: v['id'],
+    startedAt: v['startedAt'],
+    plannedMinutes: v['plannedMinutes'],
+    sourceSessionId: typeof v['sourceSessionId'] === 'string' ? v['sourceSessionId'] : undefined,
+    state: v['state'],
+    endedAt: typeof v['endedAt'] === 'string' ? v['endedAt'] : undefined,
+  };
+}
+
+function normalizeSupportEvent(value: unknown): SupportEvent | null {
+  if (typeof value !== 'object' || value === null) return null;
+  const v = value as Record<string, unknown>;
+  const kind = v['kind'];
+  if (
+    typeof v['id'] !== 'string' ||
+    typeof v['characterId'] !== 'string' ||
+    typeof v['message'] !== 'string' ||
+    typeof v['createdAt'] !== 'string' ||
+    (kind !== 'consecutive-work' && kind !== 'long-work' && kind !== 'rest-complete')
+  ) {
+    return null;
+  }
+  return {
+    id: v['id'],
+    kind,
+    characterId: v['characterId'],
+    message: v['message'],
+    createdAt: v['createdAt'],
+    workSessionId: typeof v['workSessionId'] === 'string' ? v['workSessionId'] : undefined,
+    seen: v['seen'] === true,
+  };
+}
+
 /**
- * 旧バージョンの保存データに週間機能の初期値を補完する。
+ * 旧バージョンの保存データに週間機能・休息イベントの初期値を補完する。
  * 既存のタスク・報酬・セッションは変更しない。
  */
 export function normalizeAppState(state: AppState, now: Date = new Date()): AppState {
@@ -107,6 +188,8 @@ export function normalizeAppState(state: AppState, now: Date = new Date()): AppS
     weeklyEvaluations?: WeeklyEvaluation[];
     weeklyProgress?: WeeklyProgress;
     restWeeks?: string[];
+    restSession?: unknown;
+    supportEvents?: unknown[];
   };
   const tasks = state.tasks.map(normalizeTask);
   const rewards = state.rewards.map(normalizeReward);
@@ -118,6 +201,13 @@ export function normalizeAppState(state: AppState, now: Date = new Date()): AppS
     : [];
   const restWeeks = Array.isArray(candidate.restWeeks)
     ? candidate.restWeeks.filter((week): week is string => typeof week === 'string')
+    : [];
+  const restSession = normalizeRestSession(candidate.restSession);
+  const supportEvents = Array.isArray(candidate.supportEvents)
+    ? candidate.supportEvents
+        .map(normalizeSupportEvent)
+        .filter((event): event is SupportEvent => event !== null)
+        .slice(0, BALANCE.maxSupportEvents)
     : [];
 
   const savedProgress = candidate.weeklyProgress;
@@ -149,10 +239,13 @@ export function normalizeAppState(state: AppState, now: Date = new Date()): AppS
   return {
     ...state,
     tasks,
+    inventory: normalizeInventory(state.inventory),
     rewards,
     recurrenceRules,
     weeklyEvaluations,
     weeklyProgress,
     restWeeks,
+    restSession,
+    supportEvents,
   };
 }

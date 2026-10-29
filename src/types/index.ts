@@ -43,6 +43,11 @@ export interface Task {
   endTime?: string;
   /** 繰り返しルールから生成された予定のルール ID */
   recurrenceId?: string;
+  /**
+   * 繰り返し予定を別の日へ移動した場合の、ルール上の元の予定日。
+   * 元の日の予定が再生成されるのを防ぐために保持する。
+   */
+  originalScheduledDate?: string;
   status: TaskStatus;
   createdAt: string;
   updatedAt: string;
@@ -127,6 +132,39 @@ export interface WorkSession {
   assignedCharacterIds: string[];
 }
 
+/** 休憩セッションの状態 */
+export type RestSessionState = 'active' | 'completed';
+
+/** 作業後の休憩（キャラクターが促し、プレイヤーが時間を設定する） */
+export interface RestSession {
+  id: string;
+  /** 休憩開始時刻（ISO 8601） */
+  startedAt: string;
+  /** プレイヤーが設定した休憩時間（分） */
+  plannedMinutes: number;
+  /** 休憩を促すきっかけになった作業セッション */
+  sourceSessionId?: string;
+  state: RestSessionState;
+  /** 休憩完了時刻（ISO 8601） */
+  endedAt?: string;
+}
+
+/** キャラクターの応援イベント種別 */
+export type SupportEventKind = 'consecutive-work' | 'long-work' | 'rest-complete';
+
+/** キャラクターからの応援・声かけイベント */
+export interface SupportEvent {
+  id: string;
+  kind: SupportEventKind;
+  characterId: string;
+  message: string;
+  createdAt: string;
+  /** 関連する作業セッション（重複防止・文脈表示に使う） */
+  workSessionId?: string;
+  /** プレイヤーが確認済みか */
+  seen: boolean;
+}
+
 /** 報酬の内訳 */
 export interface RewardBundle {
   currency: number;
@@ -208,6 +246,8 @@ export interface Inventory {
 export interface WorkOutcomeInput {
   workMinutes: number;
   characters: OwnedCharacter[];
+  /** 派遣したキャラクター。未指定の場合は所持キャラクター全員を対象にする */
+  assignedCharacterIds?: string[];
   characterDefinitions: CharacterDefinition[];
   destination: Destination;
   facilities: OwnedFacility[];

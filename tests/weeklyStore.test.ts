@@ -265,5 +265,30 @@ describe('繰り返し予定のストア統合', () => {
             task.archivedAt === undefined,
         ),
     ).toHaveLength(0);
+  it('繰り返し予定の日付を移動すると元の日の予定を再生成しない', () => {
+    const ruleId = useAppStore.getState().createRecurrenceRule({
+      title: '朝の読書',
+      description: '',
+      category: '勉強',
+      estimatedMinutes: 30,
+      daysOfWeek: [1],
+      startTime: '07:00',
+      endTime: '07:30',
+      effectiveFrom: WEEK_ONE,
+    });
+    const occurrence = useAppStore
+      .getState()
+      .tasks.find((task) => task.recurrenceId === ruleId && task.scheduledDate === WEEK_ONE);
+    expect(occurrence).toBeDefined();
+
+    useAppStore.getState().updateTask(occurrence?.id ?? '', { scheduledDate: '2025-01-07' });
+    useAppStore.getState().ensureRecurringOccurrencesForWeek(WEEK_ONE);
+
+    const occurrences = useAppStore
+      .getState()
+      .tasks.filter((task) => task.recurrenceId === ruleId);
+    expect(occurrences).toHaveLength(1);
+    expect(occurrences[0].scheduledDate).toBe('2025-01-07');
+    expect(occurrences[0].originalScheduledDate).toBe(WEEK_ONE);
   });
 });

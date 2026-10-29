@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { finalizeReward, levelUpCost, proposeReward } from '../src/domain/reward';
+import { computeSessionReward } from '../src/services/rewardService';
 import { BALANCE } from '../src/domain/constants';
-import type { WorkOutcomeInput } from '../src/types/index';
+import type { WorkOutcomeInput, WorkSession } from '../src/types/index';
 
 function makeInput(overrides: Partial<WorkOutcomeInput> = {}): WorkOutcomeInput {
   return {
@@ -60,6 +61,62 @@ describe('proposeReward', () => {
     const { bundle } = proposeReward(makeInput({ workMinutes: 0 }));
     expect(bundle.currency).toBe(0);
     expect(bundle.experience).toBe(0);
+  });
+
+  it('派遣したキャラクターだけが素材収集に影響する', () => {
+    const characterDefinitions = [
+      { id: 'c-sun', name: 'ヒナタ', attribute: 'sun' as const, baseEfficiency: 1.0, description: '' },
+      { id: 'c-moon', name: 'ルナ', attribute: 'moon' as const, baseEfficiency: 5.0, description: '' },
+    ];
+    const characters = [
+      { definitionId: 'c-sun', level: 1, experience: 0 },
+      { definitionId: 'c-moon', level: 1, experience: 0 },
+    ];
+
+    const onlySun = proposeReward(
+      makeInput({
+        characters: [characters[0]],
+        characterDefinitions,
+        assignedCharacterIds: ['c-sun'],
+      }),
+    );
+    const sunAssignedAmongAll = proposeReward(
+      makeInput({ characters, characterDefinitions, assignedCharacterIds: ['c-sun'] }),
+    );
+
+    expect(sunAssignedAmongAll.bundle.materials).toEqual(onlySun.bundle.materials);
+  });
+});
+
+describe('computeSessionReward', () => {
+  it('セッションに派遣したキャラクターだけを収集計算へ渡す', () => {
+    const baseSession: WorkSession = {
+      id: 'session-1',
+      taskId: 'task-1',
+      startedAt: '2026-10-19T00:00:00.000Z',
+      accumulatedSeconds: 25 * 60,
+      state: 'idle',
+      result: 'completed',
+      destinationId: 'd-hills',
+      assignedCharacterIds: ['c-hinata'],
+    };
+    const characters = [
+      { definitionId: 'c-hinata', level: 1, experience: 0 },
+      { definitionId: 'c-aster', level: 1, experience: 0 },
+    ];
+    const args = {
+      session: baseSession,
+      task: undefined,
+      facilities: [],
+      elapsedSec: 25 * 60,
+      nowIso: '2026-10-19T00:25:00.000Z',
+      rewardMultiplier: 1,
+    };
+
+    const allOwned = computeSessionReward({ ...args, characters });
+    const onlyAssigned = computeSessionReward({ ...args, characters: [characters[0]] });
+
+    expect(allOwned.finalReward.materials).toEqual(onlyAssigned.finalReward.materials);
   });
 });
 
