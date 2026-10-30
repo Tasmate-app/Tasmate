@@ -23,6 +23,7 @@ export const CHARACTER_DEFINITIONS: CharacterDefinition[] = [
     attribute: 'moon',
     baseEfficiency: 1.2,
     description: '夜更かしが得意な静かなキャラ。月夜の遺跡との相性がよい。',
+    modelUrl: '/assets/characters/luna/luna.glb',
   },
   {
     id: 'c-aster',

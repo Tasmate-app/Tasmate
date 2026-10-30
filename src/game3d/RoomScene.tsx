@@ -1,7 +1,8 @@
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { CHARACTER_DEFINITIONS, FACILITY_DEFINITIONS } from '../data/seed';
 import { useAppStore } from '../stores/appStore';
 
@@ -12,6 +13,79 @@ const ATTRIBUTE_COLORS: Record<string, string> = {
   none: '#94a3b8',
 };
 
+/** 仮モデル（カプセル）と GLB で共通の身長 */
+const CHARACTER_HEIGHT = 1.55;
+
+function resolveAssetUrl(path: string): string {
+  if (/^https?:\/\//.test(path)) return path;
+  return `${import.meta.env.BASE_URL}${path.replace(/^\//, '')}`;
+}
+
+function disposeObject(root: THREE.Object3D): void {
+  const materials = new Set<THREE.Material>();
+  const textures = new Set<THREE.Texture>();
+  root.traverse((child) => {
+    if (!(child instanceof THREE.Mesh)) return;
+    child.geometry.dispose();
+    const childMaterials = Array.isArray(child.material) ? child.material : [child.material];
+    for (const material of childMaterials) {
+      materials.add(material);
+      for (const value of Object.values(material)) {
+        if (value instanceof THREE.Texture) textures.add(value);
+      }
+    }
+  });
+  textures.forEach((texture) => texture.dispose());
+  materials.forEach((material) => material.dispose());
+}
+
+/** キャラクターの GLB を読み込み、身長を揃えて足元を床に合わせる */
+function useCharacterModel(url: string | undefined): THREE.Group | null {
+  const [scene, setScene] = useState<THREE.Group | null>(null);
+
+  useEffect(() => {
+    setScene(null);
+    if (url === undefined) return;
+
+    let cancelled = false;
+    let loaded: THREE.Group | null = null;
+
+    new GLTFLoader().load(
+      resolveAssetUrl(url),
+      (gltf) => {
+        if (cancelled) {
+          disposeObject(gltf.scene);
+          return;
+        }
+        const root = gltf.scene;
+        const box = new THREE.Box3().setFromObject(root);
+        const height = box.getSize(new THREE.Vector3()).y;
+        if (height > 0) {
+          root.scale.setScalar(CHARACTER_HEIGHT / height);
+          root.updateMatrixWorld(true);
+          const scaled = new THREE.Box3().setFromObject(root);
+          const center = scaled.getCenter(new THREE.Vector3());
+          root.position.set(-center.x, -scaled.min.y, -center.z);
+        }
+        loaded = root;
+        setScene(root);
+      },
+      undefined,
+      () => {
+        // 読み込みに失敗した場合は仮モデルを表示し続ける
+        if (!cancelled) setScene(null);
+      },
+    );
+
+    return () => {
+      cancelled = true;
+      if (loaded !== null) disposeObject(loaded);
+    };
+  }, [url]);
+
+  return scene;
+}
+
 interface RoomSceneProps {
   selectedCharacterId?: string | null;
   selectedFacilityId?: string | null;
@@ -21,13 +95,14 @@ interface RoomSceneProps {
   onBackgroundClick?: () => void;
 }
 
-/** キャラの仮モデル（カプセル＋顔の代わりの球）。作業中は動きが速くなる */
+/** キャラ表示。GLB があればそれを使い、なければ仮モデルを出す。作業中は動きが速くなる */
 function CharacterFigure({
   position,
   color,
   name,
   selected,
   working,
+  modelUrl,
   onSelect,
 }: {
   position: [number, number, number];
@@ -35,9 +110,11 @@ function CharacterFigure({
   name: string;
   selected: boolean;
   working: boolean;
+  modelUrl?: string;
   onSelect: () => void;
 }) {
   const ref = useRef<THREE.Group>(null);
+  const model = useCharacterModel(modelUrl);
   useFrame((state) => {
     if (ref.current === null) return;
     const speed = working ? 4 : 2;
@@ -52,9 +129,7 @@ function CharacterFigure({
 
   return (
     <group ref={ref} position={position}>
-      {/* 体 */}
-      <mesh
-        position={[0, 0.55, 0]}
+      <group
         onClick={handleSelect}
         onPointerOver={(e) => {
           e.stopPropagation();
@@ -64,19 +139,28 @@ function CharacterFigure({
           document.body.style.cursor = 'auto';
         }}
       >
-        <capsuleGeometry args={[0.28, 0.5, 8, 16]} />
-        <meshStandardMaterial
-          color={color}
-          roughness={0.6}
-          emissive={selected ? color : '#000000'}
-          emissiveIntensity={selected ? 0.45 : 0}
-        />
-      </mesh>
-      {/* 頭 */}
-      <mesh position={[0, 1.25, 0]} onClick={handleSelect}>
-        <sphereGeometry args={[0.26, 24, 24]} />
-        <meshStandardMaterial color="#ffe4c4" roughness={0.7} />
-      </mesh>
+        {model !== null ? (
+          <primitive object={model} />
+        ) : (
+          <>
+            {/* 体 */}
+            <mesh position={[0, 0.55, 0]}>
+              <capsuleGeometry args={[0.28, 0.5, 8, 16]} />
+              <meshStandardMaterial
+                color={color}
+                roughness={0.6}
+                emissive={selected ? color : '#000000'}
+                emissiveIntensity={selected ? 0.45 : 0}
+              />
+            </mesh>
+            {/* 頭 */}
+            <mesh position={[0, 1.25, 0]}>
+              <sphereGeometry args={[0.26, 24, 24]} />
+              <meshStandardMaterial color="#ffe4c4" roughness={0.7} />
+            </mesh>
+          </>
+        )}
+      </group>
       {selected && (
         <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[0.4, 0.52, 32]} />
@@ -255,6 +339,7 @@ function RoomContents({ selectedCharacterId, selectedFacilityId, onSelectCharact
             position={[-1.2 + i * 1.2, 0, 0.8]}
             color={ATTRIBUTE_COLORS[def?.attribute ?? 'none']}
             name={def?.name ?? c.definitionId}
+            modelUrl={def?.modelUrl}
             selected={selectedCharacterId === c.definitionId}
             working={working}
             onSelect={() => onSelectCharacter?.(c.definitionId)}
