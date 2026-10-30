@@ -85,32 +85,6 @@ export function initialAppState(): AppState {
   };
 }
 
-const MATERIAL_IDS: readonly MaterialId[] = ['shard_sun', 'shard_moon', 'shard_star'];
-
-function toFiniteNonNegative(value: unknown): number {
-  return typeof value === 'number' && Number.isFinite(value)
-    ? Math.max(0, Math.floor(value))
-    : 0;
-}
-
-/** 旧データで欠けている通貨・素材を 0 として補完する */
-function normalizeInventory(value: unknown): Inventory {
-  const source =
-    typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
-  const rawMaterials =
-    typeof source['materials'] === 'object' && source['materials'] !== null
-      ? (source['materials'] as Record<string, unknown>)
-      : {};
-  const materials = {} as Record<MaterialId, number>;
-  for (const id of MATERIAL_IDS) {
-    materials[id] = toFiniteNonNegative(rawMaterials[id]);
-  }
-  return {
-    currency: toFiniteNonNegative(source['currency']),
-    materials,
-  };
-}
-
 type UnknownRecord = Record<string, unknown>;
 
 const MATERIAL_IDS: readonly MaterialId[] = ['shard_sun', 'shard_moon', 'shard_star'];
@@ -454,17 +428,6 @@ export function normalizeAppState(state: AppState, now: Date = new Date()): AppS
     restSession?: unknown;
     supportEvents?: unknown[];
   };
-  const tasks = state.tasks.map(normalizeTask);
-  const rewards = state.rewards.map(normalizeReward);
-  const recurrenceRules = Array.isArray(candidate.recurrenceRules)
-    ? candidate.recurrenceRules
-    : [];
-  const weeklyEvaluations = Array.isArray(candidate.weeklyEvaluations)
-    ? candidate.weeklyEvaluations
-    : [];
-  const restWeeks = Array.isArray(candidate.restWeeks)
-    ? candidate.restWeeks.filter((week): week is string => typeof week === 'string')
-    : [];
   const restSession = normalizeRestSession(candidate.restSession);
   const supportEvents = Array.isArray(candidate.supportEvents)
     ? candidate.supportEvents
