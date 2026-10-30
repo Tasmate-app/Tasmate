@@ -84,6 +84,20 @@ describe('週次判定のストア統合', () => {
     expect(useAppStore.getState().weeklyEvaluations).toHaveLength(2);
   });
 
+  it('lastEvaluatedWeekStart が欠けていても例外にならない', () => {
+    useAppStore.setState({
+      tasks: [],
+      weeklyProgress: {
+        ...makeProgress(),
+        lastEvaluatedWeekStart: undefined,
+      } as unknown as WeeklyProgress,
+      weeklyEvaluations: [],
+      restWeeks: [],
+    });
+
+    expect(() => useAppStore.getState().evaluateDueWeeks(NOW_MS)).not.toThrow();
+  });
+
   it('休息週は継続を維持し、判定履歴には rest として残る', () => {
     useAppStore.setState({
       tasks: [],

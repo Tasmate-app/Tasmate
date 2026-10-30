@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { toDateKey } from '../src/domain/weekly';
-import { normalizeAppState, type AppState } from '../src/services/appState';
+import {
+  isValidAppState,
+  normalizeAppState,
+  type AppState,
+} from '../src/services/appState';
 import type { RewardRecord, Task } from '../src/types/index';
 
 describe('旧保存データの正規化', () => {
@@ -115,5 +119,77 @@ describe('旧保存データの正規化', () => {
       currency: 0,
       materials: { shard_sun: 3, shard_moon: 0, shard_star: 0 },
     });
+  });
+});
+
+describe('保存データの検証', () => {
+  const base = {
+    version: 1,
+    tasks: [],
+    sessionHistory: [],
+    inventory: { currency: 0, materials: {} },
+    characters: [],
+    facilities: [],
+    rewards: [],
+    appliedRewardSessionIds: [],
+  };
+
+  it('inventory が null のデータを不正として扱う', () => {
+    expect(isValidAppState({ ...base, inventory: null })).toBe(false);
+  });
+
+  it('activeSession が不正なオブジェクトなら不正として扱う', () => {
+    expect(isValidAppState({ ...base, activeSession: {} })).toBe(false);
+  });
+
+  it('任意フィールドが欠けた旧データは受け入れる', () => {
+    expect(isValidAppState(base)).toBe(true);
+  });
+});
+
+describe('不足フィールドの補完', () => {
+  function makeLegacy(overrides: Record<string, unknown> = {}): AppState {
+    return {
+      version: 1,
+      tasks: [],
+      sessionHistory: [],
+      inventory: { currency: 0, materials: {} },
+      characters: [],
+      facilities: [],
+      rewards: [],
+      appliedRewardSessionIds: [],
+      ...overrides,
+    } as unknown as AppState;
+  }
+
+  it('inventory が null でも通貨・素材を 0 に補完する', () => {
+    const normalized = normalizeAppState(makeLegacy({ inventory: null }));
+    expect(normalized.inventory).toEqual({
+      currency: 0,
+      materials: { shard_sun: 0, shard_moon: 0, shard_star: 0 },
+    });
+  });
+
+  it('activeSession の欠落を null に補完する', () => {
+    const normalized = normalizeAppState(makeLegacy());
+    expect(normalized.activeSession).toBeNull();
+  });
+
+  it('weeklyProgress.lastEvaluatedWeekStart の欠落を null に補完する', () => {
+    const normalized = normalizeAppState(
+      makeLegacy({
+        weeklyProgress: {
+          userId: 'local-user',
+          trackingStartedWeek: '2026-10-19',
+          currentStreak: 0,
+          totalSuccessfulWeeks: 0,
+          highestStreak: 0,
+          updatedAt: '2026-10-19T00:00:00.000Z',
+        },
+      }),
+      new Date(2026, 9, 23, 12),
+    );
+    expect(normalized.weeklyProgress.lastEvaluatedWeekStart).toBeNull();
+    expect(normalized.weeklyProgress.trackingStartedWeek).toBe('2026-10-19');
   });
 });

@@ -134,6 +134,10 @@ UI や計算へ数値を直書きしない。
 保存データのバージョンは 1 のまま、読み込み時に新規フィールドを補完する。
 旧 `RewardRecord` は `rewardMultiplier = 1`、`baseReward = finalReward` として補完する。
 
+`inventory`、`activeSession`、`weeklyProgress` などが欠損・不正な場合は初期値へ補完する。
+`lastEvaluatedWeekStart` が不正な場合は未判定として扱い、週次判定を例外で止めない。
+描画時の例外は `ErrorBoundary` で捕捉し、画面全体が白画面になるのを防ぐ。
+
 ## 10. サーバー化に向けた注意
 
 現在の週次判定と報酬付与はクライアントで完結している。複数ユーザー・オンライン化では次が必要。
@@ -148,8 +152,8 @@ UI や計算へ数値を直書きしない。
 ## 11. テスト
 
 - `tests/weekly.test.ts`：週境界、80%判定、ランク・倍率、休息週、削除の扱い、繰り返し生成。
-- `tests/weeklyStore.test.ts`：未判定週の順次処理、再判定防止、休息週、報酬倍率、繰り返しの重複防止。
-- `tests/appState.test.ts`：旧タスク・旧報酬の正規化。
+- `tests/weeklyStore.test.ts`：未判定週の順次処理、再判定防止、休息週、報酬倍率、繰り返しの重複防止、週次データ欠損時の継続。
+- `tests/appState.test.ts`：旧タスク・旧報酬の正規化、保存データの検証と不足フィールドの補完。
 - `tests/e2e/smoke.spec.ts`：カレンダー表示、予定・繰り返し作成、モバイル横スクロール。
 
 ## 12. 未決定・制約
