@@ -195,6 +195,8 @@ export interface CharacterDefinition {
   attribute: CharacterAttribute;
   baseEfficiency: number;
   description: string;
+  /** 3D表示に使う GLB のパス。未設定なら仮モデルを表示する */
+  modelUrl?: string;
 }
 
 /** 所持キャラクター（所有状態） */
