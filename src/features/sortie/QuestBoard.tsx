@@ -3,8 +3,9 @@ import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Field, SelectInput } from '../../components/ui/Field';
-import { CHARACTER_DEFINITIONS, DESTINATIONS } from '../../data/seed';
+import { DESTINATIONS } from '../../data/seed';
 import { useAppStore } from '../../stores/appStore';
+import { PartyFormation } from './PartyFormation';
 import { QuestCreateModal } from './QuestCreateModal';
 
 /** クエスト選択＋出撃準備（タスクをクエストとして扱う） */
@@ -103,29 +104,22 @@ export function QuestBoard() {
                 ))}
               </SelectInput>
             </Field>
-            <Field label="派遣キャラクター" htmlFor="sortie-characters">
-              <div className="checkbox-list" id="sortie-characters">
-                {characters.map((c) => {
-                  const def = CHARACTER_DEFINITIONS.find((d) => d.id === c.definitionId);
-                  return (
-                    <label key={c.definitionId}>
-                      <input
-                        type="checkbox"
-                        checked={characterIds.includes(c.definitionId)}
-                        onChange={() => toggleCharacter(c.definitionId)}
-                      />
-                      {def?.name ?? c.definitionId}（Lv.{c.level}）
-                    </label>
-                  );
-                })}
-              </div>
-            </Field>
-            <Button
-              disabled={characterIds.length === 0}
-              onClick={() => startSession(selectedTask.id, destinationId, characterIds)}
-            >
-              出撃（作業開始）
-            </Button>
+            {destination !== undefined && (
+              <PartyFormation
+                characters={characters}
+                selectedIds={characterIds}
+                destination={destination}
+                onToggle={toggleCharacter}
+              />
+            )}
+            <div className="btn-row">
+              <Button
+                disabled={characterIds.length === 0}
+                onClick={() => startSession(selectedTask.id, destinationId, characterIds)}
+              >
+                出撃（作業開始）
+              </Button>
+            </div>
           </>
         )}
       </Card>
