@@ -112,12 +112,14 @@ export function QuestBoard() {
                 onToggle={toggleCharacter}
               />
             )}
-            <Button
-              disabled={characterIds.length === 0}
-              onClick={() => startSession(selectedTask.id, destinationId, characterIds)}
-            >
-              出撃（作業開始）
-            </Button>
+            <div className="btn-row">
+              <Button
+                disabled={characterIds.length === 0}
+                onClick={() => startSession(selectedTask.id, destinationId, characterIds)}
+              >
+                出撃（作業開始）
+              </Button>
+            </div>
           </>
         )}
       </Card>
