@@ -84,6 +84,8 @@ describe('proposeReward', () => {
     );
 
     expect(bundle.materials['shard_star']).toBe(5);
+  });
+
   it('派遣したキャラクターだけが素材収集に影響する', () => {
     const characterDefinitions = [
       { id: 'c-sun', name: 'ヒナタ', attribute: 'sun' as const, baseEfficiency: 1.0, description: '' },

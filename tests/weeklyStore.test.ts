@@ -279,6 +279,8 @@ describe('繰り返し予定のストア統合', () => {
             task.archivedAt === undefined,
         ),
     ).toHaveLength(0);
+  });
+
   it('繰り返し予定の日付を移動すると元の日の予定を再生成しない', () => {
     const ruleId = useAppStore.getState().createRecurrenceRule({
       title: '朝の読書',
