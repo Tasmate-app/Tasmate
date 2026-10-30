@@ -2522,3 +2522,189 @@ button {
     transition: none;
   }
 }
+
+/* ダークテーマ（計画・仲間・施設・ショップ・倉庫で使う要素の微調整） */
+@media (prefers-color-scheme: dark) {
+  /* 共通バッジ・通知 */
+  .badge--running {
+    background: #052e1a;
+    color: #86efac;
+  }
+
+  .badge--paused {
+    background: #3b2a06;
+    color: #fcd34d;
+  }
+
+  .game-res--session {
+    background: #052e1a;
+    border-color: #166534;
+    color: #86efac;
+  }
+
+  .game-res--session strong {
+    color: #86efac;
+  }
+
+  .game-res--session.is-paused {
+    background: #3b2a06;
+    border-color: #92400e;
+    color: #fcd34d;
+  }
+
+  .game-res--session.is-paused strong {
+    color: #fcd34d;
+  }
+
+  .shop-feedback {
+    background: #052e1a;
+    border-color: #166534;
+    color: #86efac;
+  }
+
+  .form-error {
+    background: #35080f;
+    border-color: #7f1d1d;
+    color: #fda4af;
+  }
+
+  .reward-multiplier {
+    background: #082f49;
+    border-color: #155e75;
+    color: #67e8f9;
+  }
+
+  /* 計画（週間カレンダー） */
+  .calendar-page__hero {
+    border-color: #1e3a5f;
+    background:
+      radial-gradient(circle at 88% 0%, rgb(6 182 212 / 18%), transparent 45%),
+      linear-gradient(120deg, #0f1e33, #0b2230);
+  }
+
+  .weekly-message {
+    border-color: #1e3a5f;
+  }
+
+  .latest-evaluation {
+    background: linear-gradient(180deg, #111d31, #0f172a);
+  }
+
+  .status-chip--rest,
+  .status-chip--pending,
+  .status-chip--planned {
+    background: #1e293b;
+    border-color: #334155;
+    color: #cbd5e1;
+  }
+
+  .status-chip--achieved,
+  .status-chip--completed {
+    background: #052e1a;
+    border-color: #166534;
+    color: #86efac;
+  }
+
+  .status-chip--missed {
+    background: #35080f;
+    border-color: #7f1d1d;
+    color: #fda4af;
+  }
+
+  .status-chip--active {
+    background: #082f49;
+    border-color: #0369a1;
+    color: #7dd3fc;
+  }
+
+  .status-chip--cancelled {
+    background: #1e293b;
+    border-color: #334155;
+    color: #94a3b8;
+  }
+
+  .week-calendar__head {
+    background: #0f1e30;
+  }
+
+  .week-calendar__day-head.is-today {
+    background: #0c2b3f;
+  }
+
+  .week-calendar__day-head.is-today strong {
+    color: #7dd3fc;
+  }
+
+  .week-calendar__day {
+    border-left-color: #1e293b;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      rgb(148 163 184 / 14%) 0,
+      rgb(148 163 184 / 14%) 1px,
+      transparent 1px,
+      transparent 48px
+    );
+  }
+
+  .week-calendar__day.is-today {
+    background-color: #0b1f2e;
+  }
+
+  .week-task {
+    border-color: color-mix(in srgb, var(--cat) 55%, #0f172a);
+    background: color-mix(in srgb, var(--cat) 26%, #0f172a);
+    color: var(--color-on-surface);
+    box-shadow: 0 1px 3px rgb(0 0 0 / 35%);
+  }
+
+  .week-task:hover {
+    box-shadow: 0 4px 10px rgb(0 0 0 / 45%);
+  }
+
+  .week-task--completed {
+    background: color-mix(in srgb, var(--cat) 16%, #0f172a);
+  }
+
+  .week-task__time {
+    color: color-mix(in srgb, var(--cat) 55%, white);
+  }
+
+  .week-unscheduled {
+    background: #0c1626;
+  }
+
+  .week-unscheduled__day {
+    border-left-color: #1e293b;
+  }
+
+  .week-unscheduled__empty {
+    color: #475569;
+  }
+
+  .week-mobile-task {
+    border-color: color-mix(in srgb, var(--cat) 45%, #0f172a);
+    background: color-mix(in srgb, var(--cat) 20%, #0f172a);
+    color: var(--color-on-surface);
+  }
+
+  /* 仲間（キャラクターステータス） */
+  .companion-thumb.is-selected {
+    background: var(--color-sky-pale);
+  }
+
+  .companion-showcase {
+    background:
+      radial-gradient(420px 220px at 50% 0%, rgb(148 163 184 / 14%), transparent 70%),
+      repeating-linear-gradient(115deg, transparent 0 22px, rgb(6 182 212 / 10%) 22px 24px),
+      linear-gradient(180deg, var(--color-sky-soft), var(--color-sky-pale));
+  }
+
+  .companion-showcase__figure {
+    background: radial-gradient(circle at 35% 30%, rgb(255 255 255 / 22%), transparent 55%), var(--attr);
+    box-shadow: 0 12px 32px rgb(0 0 0 / 35%), 0 0 0 6px rgb(148 163 184 / 22%);
+  }
+
+  .companion-showcase__attr {
+    background: rgb(15 23 42 / 75%);
+  }
+}

@@ -63,9 +63,17 @@
     --color-primary-container: #312e81;
     --color-on-primary: #1e1b4b;
     --color-surface: #0f172a;
-    --color-surface-variant: #1e293b;
+    --color-surface-variant: #162033;
     --color-on-surface: #f1f5f9;
     --color-on-surface-variant: #94a3b8;
     --color-outline: #334155;
+
+    /* ゲームUIのトークンをダークテーマに合わせる */
+    --color-ink: #e2ecff;
+    --color-sky-soft: #10243a;
+    --color-sky-pale: #0c1c2e;
+    --color-panel: rgb(15 23 42 / 88%);
+    --game-hero-gradient: linear-gradient(180deg, #0b1a2e, #0f172a);
+    --shadow-card: 0 1px 3px rgb(0 0 0 / 40%), 0 1px 2px rgb(0 0 0 / 30%);
   }
 }
