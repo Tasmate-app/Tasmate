@@ -19,6 +19,22 @@ npm run dev      # 開発サーバー起動（http://localhost:5173）
 npm run preview  # 本番ビルドの確認用サーバー（事前に npm run build）
 ```
 
+## モノレポ構成
+
+Web版とExpo React Native版で型・ゲームロジックを共有する。
+
+- `src/` … 既存Web版（ルートの `package.json` から起動）
+- `apps/mobile/` … Expo React Native版
+- `packages/types/` … 共通型 `@tasmate/types`
+- `packages/core/` … 共通ゲームロジック `@tasmate/core`
+
+```powershell
+npm run typecheck -w tasmate-mobile
+npm run doctor -w tasmate-mobile
+npm run export:android -w tasmate-mobile
+npm run export:ios -w tasmate-mobile
+```
+
 ## テスト・検証
 
 ```powershell
