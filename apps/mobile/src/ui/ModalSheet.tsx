@@ -41,9 +41,14 @@ export function ModalSheet({ visible, title, subtitle, onClose, children }: Moda
           onPress={onClose}
         />
         <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, spacing.lg) }]}>
+          <View pointerEvents="none" style={styles.sheen} />
           <View style={styles.handle} />
           <View style={styles.header}>
             <View style={styles.headerText}>
+              <View style={styles.eyebrowRow}>
+                <View style={styles.eyebrowDot} />
+                <Text style={styles.eyebrow}>COMMAND</Text>
+              </View>
               <Text style={styles.title}>{title}</Text>
               {subtitle !== undefined && <Text style={styles.subtitle}>{subtitle}</Text>}
             </View>
@@ -80,9 +85,22 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    borderColor: colors.border,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
+    overflow: 'hidden',
     ...shadows.floating,
+  },
+  sheen: {
+    position: 'absolute',
+    width: 210,
+    height: 210,
+    borderRadius: 105,
+    right: -90,
+    top: -130,
+    backgroundColor: colors.primaryPale,
   },
   handle: {
     alignSelf: 'center',
@@ -101,6 +119,24 @@ const styles = StyleSheet.create({
   headerText: {
     flex: 1,
   },
+  eyebrowRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 2,
+  },
+  eyebrowDot: {
+    width: 14,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.primary,
+  },
+  eyebrow: {
+    color: colors.primaryDark,
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1.5,
+  },
   title: {
     color: colors.text,
     fontSize: fontSize.xl,
@@ -113,12 +149,14 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   close: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.surfaceAlt,
+    backgroundColor: colors.primaryPale,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   pressed: {
     opacity: 0.7,

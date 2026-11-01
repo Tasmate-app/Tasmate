@@ -8,12 +8,19 @@ import {
 } from '@tasmate/core';
 import { useNow } from '../hooks/useNow';
 import { useMobileAppStore } from '../stores/appStore';
-import { colors, fontSize, radius, shadows, spacing } from '../theme/tokens';
+import {
+  attributePalette,
+  colors,
+  fontSize,
+  radius,
+  shadows,
+  spacing,
+} from '../theme/tokens';
 
-const MATERIAL_COLORS: Record<string, string> = {
-  shard_sun: '#f59e0b',
-  shard_moon: '#818cf8',
-  shard_star: '#f472b6',
+const MATERIAL_META: Record<string, { glyph: string; color: string }> = {
+  shard_sun: { glyph: attributePalette.sun.glyph, color: attributePalette.sun.color },
+  shard_moon: { glyph: attributePalette.moon.glyph, color: attributePalette.moon.color },
+  shard_star: { glyph: attributePalette.star.glyph, color: attributePalette.star.color },
 };
 
 export function GameHUD() {
@@ -32,9 +39,10 @@ export function GameHUD() {
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
       <View style={styles.bar}>
-        <View style={styles.brandRow}>
+        <View style={styles.mainRow}>
           <View style={styles.brand}>
             <View style={styles.brandMark}>
+              <View pointerEvents="none" style={styles.brandGloss} />
               <Text style={styles.brandMarkText}>T</Text>
             </View>
             <View>
@@ -42,69 +50,85 @@ export function GameHUD() {
               <Text style={styles.brandSub}>STUDY QUEST</Text>
             </View>
           </View>
-          {isWorking && (
-            <View style={[styles.sessionPill, activeSession.state === 'paused' && styles.pausedPill]}>
-              <Text style={styles.sessionLabel}>
-                {activeSession.state === 'paused' ? '停止中' : '作業中'}
+
+          <View style={styles.resources}>
+            <ResourceChip
+              glyph="◈"
+              value={inventory.currency}
+              color={colors.gold}
+              label="通貨"
+            />
+            <ResourceChip
+              glyph={MATERIAL_META.shard_sun.glyph}
+              value={inventory.materials.shard_sun}
+              color={MATERIAL_META.shard_sun.color}
+              label={MATERIAL_NAMES.shard_sun ?? '太陽のかけら'}
+            />
+            <ResourceChip
+              glyph={MATERIAL_META.shard_moon.glyph}
+              value={inventory.materials.shard_moon}
+              color={MATERIAL_META.shard_moon.color}
+              label={MATERIAL_NAMES.shard_moon ?? '月のかけら'}
+            />
+            <ResourceChip
+              glyph={MATERIAL_META.shard_star.glyph}
+              value={inventory.materials.shard_star}
+              color={MATERIAL_META.shard_star.color}
+              label={MATERIAL_NAMES.shard_star ?? '星のかけら'}
+            />
+          </View>
+        </View>
+
+        {(isWorking || isResting) && (
+          <View style={styles.sessionRow}>
+            <View
+              style={[
+                styles.statusDot,
+                {
+                  backgroundColor: isWorking
+                    ? activeSession.state === 'paused'
+                      ? colors.warning
+                      : colors.success
+                    : colors.accent,
+                },
+              ]}
+            />
+            <Text style={styles.sessionLabel}>
+              {isWorking
+                ? activeSession.state === 'paused'
+                  ? '一時停止中'
+                  : '作業中'
+                : '休憩中'}
+            </Text>
+            <Text style={styles.sessionValue}>
+              {formatElapsed(isWorking ? elapsed : restRemaining)}
+            </Text>
+            {activeTaskTitle !== undefined && isWorking && (
+              <Text style={styles.activeTask} numberOfLines={1}>
+                {activeTaskTitle}
               </Text>
-              <Text style={styles.sessionValue}>{formatElapsed(elapsed)}</Text>
-            </View>
-          )}
-          {isResting && (
-            <View style={styles.restPill}>
-              <Text style={styles.sessionLabel}>休憩中</Text>
-              <Text style={styles.sessionValue}>{formatElapsed(restRemaining)}</Text>
-            </View>
-          )}
-        </View>
-
-        {activeTaskTitle !== undefined && isWorking && (
-          <Text style={styles.activeTask} numberOfLines={1}>
-            {activeTaskTitle}
-          </Text>
+            )}
+          </View>
         )}
-
-        <View style={styles.resources}>
-          <ResourcePill label="通貨" value={inventory.currency} color="#fbbf24" />
-          <ResourcePill
-            label="太陽"
-            value={inventory.materials.shard_sun}
-            color={MATERIAL_COLORS.shard_sun}
-            title={MATERIAL_NAMES.shard_sun}
-          />
-          <ResourcePill
-            label="月"
-            value={inventory.materials.shard_moon}
-            color={MATERIAL_COLORS.shard_moon}
-            title={MATERIAL_NAMES.shard_moon}
-          />
-          <ResourcePill
-            label="星"
-            value={inventory.materials.shard_star}
-            color={MATERIAL_COLORS.shard_star}
-            title={MATERIAL_NAMES.shard_star}
-          />
-        </View>
       </View>
     </SafeAreaView>
   );
 }
 
-function ResourcePill({
-  label,
+function ResourceChip({
+  glyph,
   value,
   color,
-  title,
+  label,
 }: {
-  label: string;
+  glyph: string;
   value: number;
   color: string;
-  title?: string;
+  label: string;
 }) {
   return (
-    <View style={styles.resource} accessibilityLabel={title ?? label}>
-      <View style={[styles.resourceDot, { backgroundColor: color }]} />
-      <Text style={styles.resourceLabel}>{label}</Text>
+    <View style={styles.resource} accessibilityLabel={`${label} ${value}`}>
+      <Text style={[styles.resourceGlyph, { color }]}>{glyph}</Text>
       <Text style={styles.resourceValue}>{value}</Text>
     </View>
   );
@@ -121,71 +145,104 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
-    gap: spacing.sm,
+    paddingTop: 6,
+    paddingBottom: spacing.sm,
+    gap: 5,
     ...shadows.card,
   },
-  brandRow: {
+  mainRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.sm,
+    minHeight: 36,
   },
   brand: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: 7,
   },
   brandMark: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
+    width: 30,
+    height: 30,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.primary,
+    overflow: 'hidden',
+  },
+  brandGloss: {
+    position: 'absolute',
+    left: 4,
+    right: 4,
+    top: 2,
+    height: 1,
+    borderRadius: 1,
+    backgroundColor: colors.highlight,
   },
   brandMarkText: {
     color: colors.white,
-    fontSize: fontSize.xl,
+    fontSize: fontSize.lg,
     fontWeight: '900',
   },
   brandWord: {
     color: colors.text,
-    fontSize: fontSize.lg,
+    fontSize: fontSize.md,
     fontWeight: '900',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
+    lineHeight: 16,
   },
   brandSub: {
     color: colors.primary,
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 1.6,
+    fontSize: 7,
+    fontWeight: '900',
+    letterSpacing: 1.4,
   },
-  sessionPill: {
+  resources: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.successSoft,
-    borderRadius: radius.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    gap: 4,
   },
-  pausedPill: {
-    backgroundColor: colors.warningSoft,
-  },
-  restPill: {
+  resource: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.accentSoft,
+    gap: 3,
+    backgroundColor: colors.surfaceMuted,
     borderRadius: radius.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+  },
+  resourceGlyph: {
+    fontSize: 10,
+    fontWeight: '900',
+  },
+  resourceValue: {
+    color: colors.text,
+    fontSize: 11,
+    fontWeight: '900',
+    fontVariant: ['tabular-nums'],
+  },
+  sessionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: colors.primaryPale,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   sessionLabel: {
     color: colors.textMuted,
-    fontSize: fontSize.xs,
+    fontSize: 10,
     fontWeight: '800',
   },
   sessionValue: {
@@ -195,39 +252,9 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   activeTask: {
-    color: colors.textMuted,
-    fontSize: fontSize.xs,
-    fontWeight: '700',
-  },
-  resources: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  resource: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-  },
-  resourceDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-  },
-  resourceLabel: {
-    color: colors.textMuted,
+    flex: 1,
+    color: colors.textSubtle,
     fontSize: 10,
     fontWeight: '700',
-  },
-  resourceValue: {
-    color: colors.text,
-    fontSize: fontSize.sm,
-    fontWeight: '900',
   },
 });

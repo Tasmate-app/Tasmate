@@ -11,7 +11,9 @@ export function ProgressBar({ value, color = colors.primary, height = 10 }: Prog
   const clamped = Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : 0;
   return (
     <View style={[styles.track, { height }]}>
-      <View style={[styles.fill, { width: `${clamped}%`, backgroundColor: color }]} />
+      <View style={[styles.fill, { width: `${clamped}%`, backgroundColor: color }]}>
+        <View style={styles.gloss} />
+      </View>
     </View>
   );
 }
@@ -21,10 +23,23 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: radius.pill,
     backgroundColor: colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: colors.border,
     overflow: 'hidden',
   },
   fill: {
     height: '100%',
     borderRadius: radius.pill,
+    overflow: 'hidden',
+  },
+  gloss: {
+    position: 'absolute',
+    left: 3,
+    right: 3,
+    top: 1,
+    height: '38%',
+    borderRadius: radius.pill,
+    backgroundColor: colors.highlight,
+    opacity: 0.55,
   },
 });

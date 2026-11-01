@@ -43,7 +43,8 @@ const styles = StyleSheet.create({
   label: {
     color: colors.text,
     fontSize: fontSize.sm,
-    fontWeight: '800',
+    fontWeight: '900',
+    letterSpacing: 0.2,
   },
   hint: {
     color: colors.textMuted,
@@ -54,8 +55,8 @@ const styles = StyleSheet.create({
     minHeight: 46,
     borderWidth: 1,
     borderColor: colors.borderStrong,
-    borderRadius: radius.md,
-    backgroundColor: colors.surfaceMuted,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
     color: colors.text,
     fontSize: fontSize.md,
     paddingHorizontal: spacing.md,

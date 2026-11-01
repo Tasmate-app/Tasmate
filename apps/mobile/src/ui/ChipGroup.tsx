@@ -80,6 +80,7 @@ const styles = StyleSheet.create({
   chipSelected: {
     backgroundColor: colors.primarySoft,
     borderColor: colors.primary,
+    borderBottomWidth: 2,
   },
   chipPressed: {
     opacity: 0.75,

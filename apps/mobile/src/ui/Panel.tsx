@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
-import { colors, fontSize, radius, shadows, spacing } from '../theme/tokens';
+import { colors, radius, shadows, spacing } from '../theme/tokens';
 
 interface PanelProps {
   title?: string;
@@ -21,6 +21,7 @@ export function Panel({
 }: PanelProps) {
   return (
     <View style={[styles.panel, style]}>
+      <View pointerEvents="none" style={styles.sheen} />
       {accentColor !== undefined && (
         <View style={[styles.accent, { backgroundColor: accentColor }]} />
       )}
@@ -41,19 +42,30 @@ export function Panel({
 const styles = StyleSheet.create({
   panel: {
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.lg,
     overflow: 'hidden',
     ...shadows.card,
   },
+  sheen: {
+    position: 'absolute',
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    right: -70,
+    top: -90,
+    backgroundColor: colors.primaryPale,
+  },
   accent: {
     position: 'absolute',
     left: 0,
-    top: 0,
-    bottom: 0,
+    top: spacing.lg,
+    bottom: spacing.lg,
     width: 4,
+    borderTopRightRadius: 4,
+    borderBottomRightRadius: 4,
   },
   header: {
     flexDirection: 'row',
@@ -67,15 +79,15 @@ const styles = StyleSheet.create({
   },
   eyebrow: {
     color: colors.primary,
-    fontSize: fontSize.xs,
-    fontWeight: '800',
-    letterSpacing: 1.4,
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1.5,
     marginBottom: 2,
   },
   title: {
     color: colors.text,
-    fontSize: fontSize.lg,
-    fontWeight: '800',
+    fontSize: 17,
+    fontWeight: '900',
   },
   body: {
     gap: spacing.sm,
