@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
   type LayoutChangeEvent,
 } from 'react-native';
@@ -21,6 +23,11 @@ export function LunaPocScreen() {
   const [glReady, setGlReady] = useState(false);
   const [fps, setFps] = useState<number | null>(null);
   const [viewport, setViewport] = useState({ width: 0, height: 0 });
+
+  // The Canvas needs an explicit height inside a ScrollView; otherwise it
+  // either collapses or tries to fill the whole scrollable content.
+  const { height: windowHeight } = useWindowDimensions();
+  const canvasHeight = Math.min(420, Math.max(260, Math.round(windowHeight * 0.45)));
 
   const hasHydrated = useMobileAppStore((s) => s.hasHydrated);
   const storageError = useMobileAppStore((s) => s.storageError);
@@ -79,106 +86,112 @@ export function LunaPocScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <View style={styles.header}>
-        <Text style={styles.eyebrow}>TASMATE / PHASE B</Text>
-        <Text style={styles.title}>Native 3D PoC</Text>
-        <Text style={styles.subtitle}>Expo GL + React Three Fiber + Luna GLB</Text>
-      </View>
-
-      <View style={styles.canvasFrame} onLayout={handleLayout}>
-        <LunaScene
-          selected={selected}
-          onToggleSelected={toggleSelected}
-          onModelReady={handleModelReady}
-          onModelError={handleModelError}
-          onContextReady={handleContextReady}
-          onFps={handleFps}
-        />
-        <View style={styles.canvasBadge}>
-          <View style={[styles.badgeDot, glReady ? styles.badgeDotReady : null]} />
-          <Text style={styles.canvasBadgeText}>{modelLabel}</Text>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator
+      >
+        <View style={styles.header}>
+          <Text style={styles.eyebrow}>TASMATE / PHASE B</Text>
+          <Text style={styles.title}>Native 3D PoC</Text>
+          <Text style={styles.subtitle}>Expo GL + React Three Fiber + Luna GLB</Text>
         </View>
-      </View>
 
-      <View style={styles.panel}>
-        <View style={styles.statusRow}>
-          <View style={[styles.statusDot, selected ? styles.statusDotSelected : null]} />
-          <View style={styles.statusTextGroup}>
-            <Text style={styles.statusLabel}>選択状態</Text>
-            <Text style={styles.statusValue}>{selected ? 'ルナを選択中' : '未選択'}</Text>
+        <View style={[styles.canvasFrame, { height: canvasHeight }]} onLayout={handleLayout}>
+          <LunaScene
+            selected={selected}
+            onToggleSelected={toggleSelected}
+            onModelReady={handleModelReady}
+            onModelError={handleModelError}
+            onContextReady={handleContextReady}
+            onFps={handleFps}
+          />
+          <View style={styles.canvasBadge}>
+            <View style={[styles.badgeDot, glReady ? styles.badgeDotReady : null]} />
+            <Text style={styles.canvasBadgeText}>{modelLabel}</Text>
           </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="ルナの選択を切り替える"
-            onPress={toggleSelected}
-            style={({ pressed }) => [
-              styles.toggleButton,
-              selected ? styles.toggleButtonActive : null,
-              pressed ? styles.toggleButtonPressed : null,
-            ]}
-          >
-            <Text style={[styles.toggleButtonText, selected ? styles.toggleButtonTextActive : null]}>
-              {selected ? '解除' : '選択'}
-            </Text>
-          </Pressable>
         </View>
 
-        <Text style={styles.hint}>
-          3Dのルナをタップすると選択できます。固定カメラのため、ドラッグでは回転しません。
-        </Text>
+        <View style={styles.panel}>
+          <View style={styles.statusRow}>
+            <View style={[styles.statusDot, selected ? styles.statusDotSelected : null]} />
+            <View style={styles.statusTextGroup}>
+              <Text style={styles.statusLabel}>選択状態</Text>
+              <Text style={styles.statusValue}>{selected ? 'ルナを選択中' : '未選択'}</Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="ルナの選択を切り替える"
+              onPress={toggleSelected}
+              style={({ pressed }) => [
+                styles.toggleButton,
+                selected ? styles.toggleButtonActive : null,
+                pressed ? styles.toggleButtonPressed : null,
+              ]}
+            >
+              <Text style={[styles.toggleButtonText, selected ? styles.toggleButtonTextActive : null]}>
+                {selected ? '解除' : '選択'}
+              </Text>
+            </Pressable>
+          </View>
 
-        <Text style={styles.sharedLogic}>
-          Shared core: 25分で {rewardPreview.currency}C / {rewardPreview.materials}素材 /{' '}
-          {rewardPreview.experience}EXP（{SHARED_RULE_LABEL}）
-        </Text>
+          <Text style={styles.hint}>
+            3Dのルナをタップすると選択できます。固定カメラのため、ドラッグでは回転しません。
+          </Text>
 
-        <View style={styles.metricsRow}>
-          <Metric label="GL" value={glReady ? 'ready' : '--'} />
-          <Metric label="モデル" value={loadState === 'ready' ? '読込済み' : loadState === 'error' ? '失敗' : '読込中'} />
-          <Metric label="FPS" value={fps === null ? '--' : String(fps)} />
-          <Metric label="Canvas" value={viewport.width > 0 ? `${viewport.width}×${viewport.height}` : '--'} />
+          <Text style={styles.sharedLogic}>
+            Shared core: 25分で {rewardPreview.currency}C / {rewardPreview.materials}素材 /{' '}
+            {rewardPreview.experience}EXP（{SHARED_RULE_LABEL}）
+          </Text>
+
+          <View style={styles.metricsRow}>
+            <Metric label="GL" value={glReady ? 'ready' : '--'} />
+            <Metric label="モデル" value={loadState === 'ready' ? '読込済み' : loadState === 'error' ? '失敗' : '読込中'} />
+            <Metric label="FPS" value={fps === null ? '--' : String(fps)} />
+            <Metric label="Canvas" value={viewport.width > 0 ? `${viewport.width}×${viewport.height}` : '--'} />
+          </View>
+
+          <View style={styles.metricsRow}>
+            <Metric label="Hydration" value={hasHydrated ? 'ready' : 'loading'} />
+            <Metric label="保存" value={storageError === null ? 'ok' : 'error'} />
+            <Metric label="タスク" value={String(taskCount)} />
+          </View>
+
+          <View style={styles.storeButtons}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="クエストを追加して保存する"
+              disabled={!hasHydrated}
+              onPress={addTask}
+              style={({ pressed }) => [
+                styles.storeButton,
+                !hasHydrated ? styles.storeButtonDisabled : null,
+                pressed ? styles.toggleButtonPressed : null,
+              ]}
+            >
+              <Text style={styles.storeButtonText}>クエスト追加</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="保存済みの状態をリセットする"
+              disabled={!hasHydrated}
+              onPress={resetStore}
+              style={({ pressed }) => [
+                styles.storeButton,
+                styles.storeButtonSecondary,
+                !hasHydrated ? styles.storeButtonDisabled : null,
+                pressed ? styles.toggleButtonPressed : null,
+              ]}
+            >
+              <Text style={[styles.storeButtonText, styles.storeButtonTextSecondary]}>リセット</Text>
+            </Pressable>
+          </View>
+
+          {storageError === null ? null : (
+            <Text style={styles.storageError}>{storageError}</Text>
+          )}
         </View>
-
-        <View style={styles.metricsRow}>
-          <Metric label="Hydration" value={hasHydrated ? 'ready' : 'loading'} />
-          <Metric label="保存" value={storageError === null ? 'ok' : 'error'} />
-          <Metric label="タスク" value={String(taskCount)} />
-        </View>
-
-        <View style={styles.storeButtons}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="クエストを追加して保存する"
-            disabled={!hasHydrated}
-            onPress={addTask}
-            style={({ pressed }) => [
-              styles.storeButton,
-              !hasHydrated ? styles.storeButtonDisabled : null,
-              pressed ? styles.toggleButtonPressed : null,
-            ]}
-          >
-            <Text style={styles.storeButtonText}>クエスト追加</Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="保存済みの状態をリセットする"
-            disabled={!hasHydrated}
-            onPress={resetStore}
-            style={({ pressed }) => [
-              styles.storeButton,
-              styles.storeButtonSecondary,
-              !hasHydrated ? styles.storeButtonDisabled : null,
-              pressed ? styles.toggleButtonPressed : null,
-            ]}
-          >
-            <Text style={[styles.storeButtonText, styles.storeButtonTextSecondary]}>リセット</Text>
-          </Pressable>
-        </View>
-
-        {storageError === null ? null : (
-          <Text style={styles.storageError}>{storageError}</Text>
-        )}
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -196,6 +209,13 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#eef8ff',
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 24,
   },
   header: {
     paddingHorizontal: 20,
@@ -221,8 +241,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   canvasFrame: {
-    flex: 1,
-    minHeight: 260,
     marginHorizontal: 16,
     borderRadius: 24,
     overflow: 'hidden',
