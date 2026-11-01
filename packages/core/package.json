@@ -17,12 +17,16 @@
     "./weekly": "./src/weekly.ts",
     "./recurrence": "./src/recurrence.ts",
     "./seed": "./src/seed.ts",
-    "./rewardService": "./src/rewardService.ts"
+    "./rewardService": "./src/rewardService.ts",
+    "./appState": "./src/appState.ts",
+    "./storage": "./src/storage.ts",
+    "./store": "./src/store.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@tasmate/types": "*"
+    "@tasmate/types": "*",
+    "zustand": "^5.0.2"
   }
 }
