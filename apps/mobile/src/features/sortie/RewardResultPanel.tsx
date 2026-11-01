@@ -149,7 +149,7 @@ function RewardChip({ label, value, color }: { label: string; value: string; col
 const styles = StyleSheet.create({
   banner: {
     backgroundColor: colors.successSoft,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: '#a9ecd1',
     padding: spacing.md,
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
   restBox: {
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     backgroundColor: colors.surfaceMuted,
     padding: spacing.md,
     gap: spacing.sm,

@@ -8,8 +8,20 @@ import {
   levelUpCost,
 } from '@tasmate/core';
 import { useMobileAppStore } from '../stores/appStore';
-import { Badge, GameButton, Panel, ProgressBar, StatTile } from '../ui';
-import { attributePalette, colors, fontSize, radius, spacing } from '../theme/tokens';
+import {
+  Badge,
+  CharacterEmblem,
+  GameButton,
+  Panel,
+  ProgressBar,
+  ScreenBackground,
+  ScreenHeader,
+  SegmentedControl,
+  StatTile,
+} from '../ui';
+import { attributePalette, colors, fontSize, radius, shadows, spacing } from '../theme/tokens';
+
+type CharacterTab = 'status' | 'growth' | 'history';
 
 export function CharacterScreen() {
   const characters = useMobileAppStore((s) => s.characters);
@@ -18,6 +30,7 @@ export function CharacterScreen() {
   const levelUpCharacter = useMobileAppStore((s) => s.levelUpCharacter);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [tab, setTab] = useState<CharacterTab>('status');
   const [feedback, setFeedback] = useState<string | null>(null);
 
   useEffect(() => {
@@ -47,178 +60,249 @@ export function CharacterScreen() {
   };
 
   return (
-    <ScrollView
-      style={styles.scroll}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={styles.header}>
-        <Text style={styles.eyebrow}>CHARACTER</Text>
-        <Text style={styles.title}>キャラクター</Text>
-        <Text style={styles.lead}>
-          仲間を選んで能力を確認。作業で得た経験値と通貨を使って育成できます。
-        </Text>
-      </View>
-
+    <ScreenBackground>
       <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.selector}
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
       >
-        {characters.map((character) => {
-          const characterDefinition = CHARACTER_DEFINITIONS.find(
-            (item) => item.id === character.definitionId,
-          );
-          const characterPalette = attributePalette[characterDefinition?.attribute ?? 'none'];
-          const active = selected?.definitionId === character.definitionId;
-          return (
-            <Pressable
-              key={character.definitionId}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: active }}
-              onPress={() => selectCharacter(character.definitionId)}
-              style={({ pressed }) => [
-                styles.selectorCard,
-                active
-                  ? {
-                      borderColor: characterPalette.color,
-                      backgroundColor: characterPalette.soft,
-                    }
-                  : null,
-                pressed ? styles.pressed : null,
+        <ScreenHeader
+          eyebrow="CHARACTER / ROSTER"
+          title="キャラクター"
+          subtitle="仲間を選んで能力を確認。作業で得た経験値と通貨で育成できます。"
+          right={<Badge label={`${characters.length}人`} tone="primary" />}
+        />
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.selector}
+        >
+          {characters.map((character) => {
+            const characterDefinition = CHARACTER_DEFINITIONS.find(
+              (item) => item.id === character.definitionId,
+            );
+            const characterPalette = attributePalette[characterDefinition?.attribute ?? 'none'];
+            const active = selected?.definitionId === character.definitionId;
+            return (
+              <Pressable
+                key={character.definitionId}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: active }}
+                onPress={() => selectCharacter(character.definitionId)}
+                style={({ pressed }) => [
+                  styles.selectorCard,
+                  active
+                    ? {
+                        borderColor: characterPalette.color,
+                        backgroundColor: characterPalette.soft,
+                      }
+                    : null,
+                  pressed ? styles.pressed : null,
+                ]}
+              >
+                <CharacterEmblem
+                  attribute={characterDefinition?.attribute ?? 'none'}
+                  size={52}
+                  selected={active}
+                />
+                <Text style={styles.selectorName} numberOfLines={1}>
+                  {characterDefinition?.name ?? character.definitionId}
+                </Text>
+                <Text style={[styles.selectorMeta, active ? { color: characterPalette.deep } : null]}>
+                  Lv.{character.level}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+
+        {selected !== null && definition !== undefined ? (
+          <>
+            <View
+              style={[
+                styles.stage,
+                { backgroundColor: palette.soft, borderColor: palette.color },
               ]}
             >
               <View
-                style={[
-                  styles.selectorAvatar,
-                  {
-                    backgroundColor: characterPalette.soft,
-                    borderColor: characterPalette.color,
-                  },
-                ]}
-              >
-                <Text style={[styles.selectorGlyph, { color: characterPalette.color }]}>
-                  {characterPalette.glyph}
-                </Text>
-              </View>
-              <Text style={styles.selectorName}>
-                {characterDefinition?.name ?? character.definitionId}
-              </Text>
-              <Text style={styles.selectorMeta}>Lv.{character.level}</Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
-
-      {selected !== null && definition !== undefined ? (
-        <>
-          <View style={[styles.showcase, { backgroundColor: palette.soft, borderColor: palette.color }]}>
-            <View style={styles.showcaseGlow} />
-            <Text style={[styles.showcaseGlyph, { color: palette.color }]}>{palette.glyph}</Text>
-            <View style={styles.showcaseBody}>
-              <Text style={[styles.attribute, { color: palette.color }]}>{palette.label}属性</Text>
-              <Text style={styles.showcaseName}>{definition.name}</Text>
-              <Text style={styles.showcaseDescription}>{definition.description}</Text>
-              <View style={styles.showcaseTags}>
-                <Badge label={`Lv.${selected.level}`} tone="primary" />
-                <Badge label={`基礎効率 ${definition.baseEfficiency.toFixed(1)}`} tone="neutral" />
-              </View>
-            </View>
-          </View>
-
-          <Panel title="能力と育成" eyebrow="STATUS" accentColor={palette.color}>
-            <View style={styles.stats}>
-              <StatTile label="レベル" value={`Lv.${selected.level}`} />
-              <StatTile label="所持経験値" value={`${selected.experience}`} />
-              <StatTile
-                label="次のLvまで"
-                value={`${Math.max(0, nextExp - selected.experience)}`}
-                tone={colors.primaryDark}
+                pointerEvents="none"
+                style={[styles.stageOrb, { backgroundColor: `${palette.color}14` }]}
               />
-            </View>
-            <View style={styles.expBlock}>
-              <View style={styles.expHead}>
-                <Text style={styles.expLabel}>経験値</Text>
-                <Text style={styles.expValue}>
-                  {Math.min(selected.experience, nextExp)} / {nextExp}
-                </Text>
-              </View>
-              <ProgressBar
-                value={Math.min(100, (selected.experience / Math.max(1, nextExp)) * 100)}
-                color={palette.color}
-                height={10}
+              <View
+                pointerEvents="none"
+                style={[styles.stageOrbSmall, { borderColor: `${palette.color}33` }]}
               />
-            </View>
-
-            <View style={styles.detailRows}>
-              <DetailRow label="基本効率" value={definition.baseEfficiency.toFixed(1)} />
-              <DetailRow
-                label="レベル補正"
-                value={`×${(1 + Math.max(0, selected.level - 1) * BALANCE.efficiencyPerLevel).toFixed(1)}`}
-              />
-              <DetailRow
-                label="探索先と属性一致"
-                value={`×${BALANCE.affinityBonus.toFixed(1)}`}
-              />
-              <DetailRow label="レベルアップ費用" value={`通貨 ${upgradeCost}`} />
-              <DetailRow label="所持通貨" value={`${inventory.currency}`} />
-            </View>
-
-            <GameButton
-              label={
-                selected.experience < nextExp
-                  ? '経験値が足りません'
-                  : inventory.currency < upgradeCost
-                    ? '通貨が足りません'
-                    : `レベルアップ（通貨 ${upgradeCost}）`
-              }
-              onPress={() => {
-                const ok = levelUpCharacter(selected.definitionId);
-                setFeedback(ok ? 'レベルアップしました。' : 'レベルアップできませんでした。');
-              }}
-              disabled={!canLevelUp}
-              size="lg"
-            />
-            {feedback !== null && <Text style={styles.feedback}>{feedback}</Text>}
-            <Text style={styles.note}>
-              作業に派遣すると経験値を獲得します。探索先と属性が一致すると収集効率がアップします。
-            </Text>
-          </Panel>
-        </>
-      ) : (
-        <Panel title="キャラクターがいません" eyebrow="CHARACTER">
-          <Text style={styles.note}>所持キャラクターがいません。</Text>
-        </Panel>
-      )}
-
-      <Panel title="最近の報酬" eyebrow="REWARD HISTORY" accentColor={colors.success}>
-        {rewards.length === 0 ? (
-          <Text style={styles.note}>クエストを完了すると、ここに報酬が記録されます。</Text>
-        ) : (
-          <View style={styles.rewardList}>
-            {rewards.slice(0, 5).map((reward) => (
-              <View key={reward.id} style={styles.rewardRow}>
-                <View style={styles.rewardTop}>
-                  <Text style={styles.rewardTitle}>
-                    通貨 +{reward.finalReward.currency} / 経験値 +{reward.finalReward.experience}
-                  </Text>
-                  <Text style={styles.rewardDate}>
-                    {new Date(reward.createdAt).toLocaleDateString('ja-JP')}
+              <View style={styles.stageTop}>
+                <View
+                  style={[
+                    styles.attributeChip,
+                    {
+                      backgroundColor: `${palette.color}18`,
+                      borderColor: `${palette.color}44`,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.attributeText, { color: palette.deep }]}>
+                    {palette.label}属性
                   </Text>
                 </View>
-                {Object.entries(reward.finalReward.materials).length > 0 && (
-                  <Text style={styles.rewardMaterials}>
-                    {Object.entries(reward.finalReward.materials)
-                      .map(([id, amount]) => `${MATERIAL_NAMES[id] ?? id} +${amount ?? 0}`)
-                      .join(' / ')}
-                  </Text>
-                )}
+                <Badge label={`Lv.${selected.level}`} tone="primary" />
               </View>
-            ))}
-          </View>
+
+              <View style={styles.stageEmblemWrap}>
+                <CharacterEmblem attribute={definition.attribute} size={132} selected />
+              </View>
+
+              <View style={styles.stageBottom}>
+                <Text style={styles.stageName}>{definition.name}</Text>
+                <Text style={styles.stageDescription}>{definition.description}</Text>
+                <View style={styles.stageTags}>
+                  <Badge
+                    label={`基礎効率 ${definition.baseEfficiency.toFixed(1)}`}
+                    tone="neutral"
+                  />
+                </View>
+              </View>
+            </View>
+
+            <SegmentedControl
+              options={[
+                { value: 'status', label: 'ステータス' },
+                { value: 'growth', label: '育成' },
+                { value: 'history', label: '履歴' },
+              ]}
+              value={tab}
+              onChange={(value) => setTab(value as CharacterTab)}
+            />
+
+            {tab === 'status' && (
+              <Panel title="能力値" eyebrow="STATUS" accentColor={palette.color}>
+                <View style={styles.stats}>
+                  <StatTile label="レベル" value={`Lv.${selected.level}`} />
+                  <StatTile label="所持経験値" value={`${selected.experience}`} />
+                  <StatTile
+                    label="次のLvまで"
+                    value={`${Math.max(0, nextExp - selected.experience)}`}
+                    tone={colors.primaryDark}
+                  />
+                </View>
+                <View style={styles.expBlock}>
+                  <View style={styles.expHead}>
+                    <Text style={styles.expLabel}>経験値</Text>
+                    <Text style={styles.expValue}>
+                      {Math.min(selected.experience, nextExp)} / {nextExp}
+                    </Text>
+                  </View>
+                  <ProgressBar
+                    value={Math.min(100, (selected.experience / Math.max(1, nextExp)) * 100)}
+                    color={palette.color}
+                    height={10}
+                  />
+                </View>
+
+                <View style={styles.detailRows}>
+                  <DetailRow label="基本効率" value={definition.baseEfficiency.toFixed(1)} />
+                  <DetailRow
+                    label="レベル補正"
+                    value={`×${(1 + Math.max(0, selected.level - 1) * BALANCE.efficiencyPerLevel).toFixed(1)}`}
+                  />
+                  <DetailRow
+                    label="探索先と属性一致"
+                    value={`×${BALANCE.affinityBonus.toFixed(1)}`}
+                  />
+                </View>
+                <Text style={styles.note}>
+                  作業に派遣すると経験値を獲得します。探索先と属性が一致すると収集効率がアップします。
+                </Text>
+              </Panel>
+            )}
+
+            {tab === 'growth' && (
+              <Panel title="育成" eyebrow="GROWTH" accentColor={colors.primary}>
+                <View style={styles.growthHead}>
+                  <CharacterEmblem attribute={definition.attribute} size={64} level={selected.level} />
+                  <View style={styles.growthHeadBody}>
+                    <Text style={styles.growthName}>{definition.name}</Text>
+                    <Text style={styles.growthMeta}>
+                      経験値 {Math.min(selected.experience, nextExp)} / {nextExp}
+                    </Text>
+                    <ProgressBar
+                      value={Math.min(100, (selected.experience / Math.max(1, nextExp)) * 100)}
+                      color={palette.color}
+                      height={8}
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.detailRows}>
+                  <DetailRow label="レベルアップ費用" value={`通貨 ${upgradeCost}`} />
+                  <DetailRow label="所持通貨" value={`${inventory.currency}`} />
+                  <DetailRow
+                    label="レベルアップ後の効率"
+                    value={`${(definition.baseEfficiency * (1 + Math.max(0, selected.level) * BALANCE.efficiencyPerLevel)).toFixed(1)}`}
+                  />
+                </View>
+
+                <GameButton
+                  label={
+                    selected.experience < nextExp
+                      ? '経験値が足りません'
+                      : inventory.currency < upgradeCost
+                        ? '通貨が足りません'
+                        : `レベルアップ（通貨 ${upgradeCost}）`
+                  }
+                  onPress={() => {
+                    const ok = levelUpCharacter(selected.definitionId);
+                    setFeedback(ok ? 'レベルアップしました。' : 'レベルアップできませんでした。');
+                  }}
+                  disabled={!canLevelUp}
+                  size="lg"
+                />
+                {feedback !== null && <Text style={styles.feedback}>{feedback}</Text>}
+              </Panel>
+            )}
+
+            {tab === 'history' && (
+              <Panel title="最近の報酬" eyebrow="REWARD HISTORY" accentColor={colors.success}>
+                {rewards.length === 0 ? (
+                  <Text style={styles.note}>
+                    クエストを完了すると、ここに報酬が記録されます。
+                  </Text>
+                ) : (
+                  <View style={styles.rewardList}>
+                    {rewards.slice(0, 5).map((reward) => (
+                      <View key={reward.id} style={styles.rewardRow}>
+                        <View style={styles.rewardTop}>
+                          <Text style={styles.rewardTitle}>
+                            通貨 +{reward.finalReward.currency} / 経験値 +
+                            {reward.finalReward.experience}
+                          </Text>
+                          <Text style={styles.rewardDate}>
+                            {new Date(reward.createdAt).toLocaleDateString('ja-JP')}
+                          </Text>
+                        </View>
+                        {Object.entries(reward.finalReward.materials).length > 0 && (
+                          <Text style={styles.rewardMaterials}>
+                            {Object.entries(reward.finalReward.materials)
+                              .map(([id, amount]) => `${MATERIAL_NAMES[id] ?? id} +${amount ?? 0}`)
+                              .join(' / ')}
+                          </Text>
+                        )}
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </Panel>
+            )}
+          </>
+        ) : (
+          <Panel title="キャラクターがいません" eyebrow="CHARACTER">
+            <Text style={styles.note}>所持キャラクターがいません。</Text>
+          </Panel>
         )}
-      </Panel>
-    </ScrollView>
+      </ScrollView>
+    </ScreenBackground>
   );
 }
 
@@ -234,60 +318,32 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 const styles = StyleSheet.create({
   scroll: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: 'transparent',
   },
   content: {
     padding: spacing.lg,
     gap: spacing.md,
     paddingBottom: spacing.xxl,
   },
-  header: {
-    gap: 2,
-  },
-  eyebrow: {
-    color: colors.primary,
-    fontSize: fontSize.xs,
-    fontWeight: '900',
-    letterSpacing: 1.8,
-  },
-  title: {
-    color: colors.text,
-    fontSize: 30,
-    fontWeight: '900',
-  },
-  lead: {
-    color: colors.textMuted,
-    fontSize: fontSize.sm,
-    lineHeight: 20,
-  },
   selector: {
     gap: spacing.sm,
-    paddingVertical: 2,
+    paddingVertical: 4,
+    paddingRight: spacing.xs,
   },
   selectorCard: {
-    width: 112,
+    width: 92,
     alignItems: 'center',
     gap: 4,
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    ...shadows.soft,
   },
   pressed: {
-    opacity: 0.78,
-  },
-  selectorAvatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 18,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  selectorGlyph: {
-    fontSize: fontSize.xxl,
-    fontWeight: '900',
+    opacity: 0.8,
   },
   selectorName: {
     color: colors.text,
@@ -296,53 +352,71 @@ const styles = StyleSheet.create({
   },
   selectorMeta: {
     color: colors.textMuted,
-    fontSize: fontSize.xs,
-    fontWeight: '700',
+    fontSize: 9,
+    fontWeight: '800',
   },
-  showcase: {
+  stage: {
     borderRadius: radius.xl,
-    borderWidth: 1,
+    borderWidth: 2,
     overflow: 'hidden',
     padding: spacing.lg,
+    gap: spacing.sm,
+    minHeight: 330,
+    ...shadows.card,
+  },
+  stageOrb: {
+    position: 'absolute',
+    width: 230,
+    height: 230,
+    borderRadius: 115,
+    right: -70,
+    top: -50,
+  },
+  stageOrbSmall: {
+    position: 'absolute',
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    left: -50,
+    bottom: -40,
+    borderWidth: 18,
+  },
+  stageTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.lg,
-    minHeight: 190,
+    justifyContent: 'space-between',
   },
-  showcaseGlow: {
-    position: 'absolute',
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    backgroundColor: 'rgba(255,255,255,0.45)',
-    right: -70,
-    top: -80,
+  attributeChip: {
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
   },
-  showcaseGlyph: {
-    fontSize: 86,
+  attributeText: {
+    fontSize: 10,
     fontWeight: '900',
-    opacity: 0.9,
+    letterSpacing: 0.8,
   },
-  showcaseBody: {
-    flex: 1,
-    gap: spacing.xs,
+  stageEmblemWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.sm,
   },
-  attribute: {
-    fontSize: fontSize.xs,
-    fontWeight: '900',
-    letterSpacing: 1.2,
+  stageBottom: {
+    gap: 3,
   },
-  showcaseName: {
+  stageName: {
     color: colors.text,
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: '900',
+    letterSpacing: 0.3,
   },
-  showcaseDescription: {
+  stageDescription: {
     color: colors.textMuted,
     fontSize: fontSize.sm,
-    lineHeight: 20,
+    lineHeight: 19,
   },
-  showcaseTags: {
+  stageTags: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.xs,
@@ -389,6 +463,30 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: fontSize.sm,
     fontWeight: '800',
+  },
+  growthHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.sm,
+  },
+  growthHeadBody: {
+    flex: 1,
+    gap: 4,
+  },
+  growthName: {
+    color: colors.text,
+    fontSize: fontSize.lg,
+    fontWeight: '900',
+  },
+  growthMeta: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontWeight: '700',
   },
   feedback: {
     color: colors.success,

@@ -10,7 +10,7 @@ import {
 import { useNow } from '../../hooks/useNow';
 import { useMobileAppStore } from '../../stores/appStore';
 import { Badge, GameButton, Panel, ProgressBar } from '../../ui';
-import { colors, fontSize, spacing } from '../../theme/tokens';
+import { colors, fontSize, radius, spacing } from '../../theme/tokens';
 
 export function ActiveSortiePanel({
   onFinished,
@@ -141,7 +141,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
     backgroundColor: colors.primaryPale,
-    borderRadius: 18,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
     padding: spacing.lg,
     marginVertical: spacing.sm,
   },
