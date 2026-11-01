@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Pressable,
   StyleSheet,
@@ -9,6 +9,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LunaScene } from '../game3d/LunaScene';
 import { previewReward, SHARED_RULE_LABEL } from '../logic/sharedGameLogic';
+import { useMobileAppStore } from '../stores/appStore';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -20,6 +21,33 @@ export function LunaPocScreen() {
   const [glReady, setGlReady] = useState(false);
   const [fps, setFps] = useState<number | null>(null);
   const [viewport, setViewport] = useState({ width: 0, height: 0 });
+
+  const hasHydrated = useMobileAppStore((s) => s.hasHydrated);
+  const storageError = useMobileAppStore((s) => s.storageError);
+  const taskCount = useMobileAppStore((s) => s.tasks.length);
+  const hydrate = useMobileAppStore((s) => s.hydrate);
+  const flush = useMobileAppStore((s) => s.flush);
+  const createTask = useMobileAppStore((s) => s.createTask);
+  const resetAll = useMobileAppStore((s) => s.resetAll);
+
+  useEffect(() => {
+    void hydrate();
+  }, [hydrate]);
+
+  const addTask = useCallback(() => {
+    createTask({
+      title: `Nativeクエスト ${taskCount + 1}`,
+      description: '',
+      category: '勉強',
+      estimatedMinutes: 25,
+    });
+    void flush();
+  }, [createTask, flush, taskCount]);
+
+  const resetStore = useCallback(() => {
+    resetAll();
+    void flush();
+  }, [flush, resetAll]);
 
   const toggleSelected = useCallback(() => {
     setSelected((current) => !current);
@@ -110,6 +138,46 @@ export function LunaPocScreen() {
           <Metric label="FPS" value={fps === null ? '--' : String(fps)} />
           <Metric label="Canvas" value={viewport.width > 0 ? `${viewport.width}×${viewport.height}` : '--'} />
         </View>
+
+        <View style={styles.metricsRow}>
+          <Metric label="Hydration" value={hasHydrated ? 'ready' : 'loading'} />
+          <Metric label="保存" value={storageError === null ? 'ok' : 'error'} />
+          <Metric label="タスク" value={String(taskCount)} />
+        </View>
+
+        <View style={styles.storeButtons}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="クエストを追加して保存する"
+            disabled={!hasHydrated}
+            onPress={addTask}
+            style={({ pressed }) => [
+              styles.storeButton,
+              !hasHydrated ? styles.storeButtonDisabled : null,
+              pressed ? styles.toggleButtonPressed : null,
+            ]}
+          >
+            <Text style={styles.storeButtonText}>クエスト追加</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="保存済みの状態をリセットする"
+            disabled={!hasHydrated}
+            onPress={resetStore}
+            style={({ pressed }) => [
+              styles.storeButton,
+              styles.storeButtonSecondary,
+              !hasHydrated ? styles.storeButtonDisabled : null,
+              pressed ? styles.toggleButtonPressed : null,
+            ]}
+          >
+            <Text style={[styles.storeButtonText, styles.storeButtonTextSecondary]}>リセット</Text>
+          </Pressable>
+        </View>
+
+        {storageError === null ? null : (
+          <Text style={styles.storageError}>{storageError}</Text>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -280,5 +348,36 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
     marginTop: 2,
+  },
+  storeButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  storeButton: {
+    flex: 1,
+    alignItems: 'center',
+    borderRadius: 14,
+    backgroundColor: '#0891b2',
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+  },
+  storeButtonSecondary: {
+    backgroundColor: '#e0f2fe',
+  },
+  storeButtonDisabled: {
+    opacity: 0.5,
+  },
+  storeButtonText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  storeButtonTextSecondary: {
+    color: '#0369a1',
+  },
+  storageError: {
+    color: '#b91c1c',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });
