@@ -28,6 +28,19 @@ test('クエストを作成できる', async ({ page }) => {
   await expect(page.getByText('E2Eテストクエスト', { exact: true }).first()).toBeVisible();
 });
 
+test('作成したクエストが再読み込み後も復元される', async ({ page }) => {
+  await page.goto('/sortie');
+  await page.getByRole('button', { name: '新しいクエストを作成' }).click();
+  await page.getByLabel('クエスト名（必須）').fill('永続化テストクエスト');
+  await page.getByRole('button', { name: 'クエストを追加' }).click();
+  await expect
+    .poll(() => page.evaluate(() => window.localStorage.getItem('tasmate:state:v1')))
+    .toContain('永続化テストクエスト');
+
+  await page.reload();
+  await expect(page.getByText('永続化テストクエスト', { exact: true }).first()).toBeVisible();
+});
+
 test('作業完了後に休憩を提案し、設定した時間で休憩を開始できる', async ({ page }) => {
   await page.goto('/sortie');
   await page.getByRole('button', { name: '新しいクエストを作成' }).click();
