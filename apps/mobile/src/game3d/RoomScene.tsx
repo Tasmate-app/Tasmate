@@ -13,6 +13,29 @@ if (typeof navigator !== 'undefined' && typeof navigator.userAgent !== 'string')
 
 const LUNA_HEIGHT = 1.55;
 
+type InfoLogContext = {
+  getProgramInfoLog: (program: WebGLProgram) => string | null | undefined;
+  getShaderInfoLog: (shader: WebGLShader) => string | null | undefined;
+};
+
+const patchedInfoLogContexts = new WeakSet<InfoLogContext>();
+
+function patchShaderInfoLogs(renderer: THREE.WebGLRenderer) {
+  const context = renderer.getContext() as unknown as InfoLogContext;
+  if (patchedInfoLogContexts.has(context)) return;
+  patchedInfoLogContexts.add(context);
+
+  const programInfoLog = context.getProgramInfoLog?.bind(context);
+  if (programInfoLog !== undefined) {
+    context.getProgramInfoLog = (program) => programInfoLog(program) ?? '';
+  }
+
+  const shaderInfoLog = context.getShaderInfoLog?.bind(context);
+  if (shaderInfoLog !== undefined) {
+    context.getShaderInfoLog = (shader) => shaderInfoLog(shader) ?? '';
+  }
+}
+
 export interface RoomCharacterVisual {
   definitionId: string;
   color: string;
@@ -59,6 +82,7 @@ export function RoomScene({
       camera={{ position: [0, 2.3, 5.2], fov: 42, near: 0.1, far: 30 }}
       gl={{ antialias: true }}
       onPointerMissed={onClearSelection}
+      onCreated={({ gl }) => patchShaderInfoLogs(gl)}
     >
       <color attach="background" args={['#ecf9ff']} />
       <ambientLight intensity={1.1} />
