@@ -15,6 +15,7 @@ import {
   radius,
   shadows,
   spacing,
+  withAlpha,
 } from '../theme/tokens';
 
 const MATERIAL_META: Record<string, { glyph: string; color: string }> = {
@@ -57,6 +58,7 @@ export function GameHUD() {
               value={inventory.currency}
               color={colors.gold}
               label="通貨"
+              highlight
             />
             <ResourceChip
               glyph={MATERIAL_META.shard_sun.glyph}
@@ -110,6 +112,7 @@ export function GameHUD() {
             )}
           </View>
         )}
+        <View pointerEvents="none" style={styles.edgeShine} />
       </View>
     </SafeAreaView>
   );
@@ -120,15 +123,26 @@ function ResourceChip({
   value,
   color,
   label,
+  highlight = false,
 }: {
   glyph: string;
   value: number;
   color: string;
   label: string;
+  highlight?: boolean;
 }) {
   return (
-    <View style={styles.resource} accessibilityLabel={`${label} ${value}`}>
-      <Text style={[styles.resourceGlyph, { color }]}>{glyph}</Text>
+    <View
+      style={[
+        styles.resource,
+        highlight ? styles.resourceHighlight : null,
+        highlight ? { borderColor: withAlpha(colors.gold, 0.55) } : null,
+      ]}
+      accessibilityLabel={`${label} ${value}`}
+    >
+      <View style={[styles.resourceGlyphBox, { backgroundColor: withAlpha(color, 0.14) }]}>
+        <Text style={[styles.resourceGlyph, { color }]}>{glyph}</Text>
+      </View>
       <Text style={styles.resourceValue}>{value}</Text>
     </View>
   );
@@ -139,14 +153,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   bar: {
-    backgroundColor: colors.surface,
-    borderBottomLeftRadius: radius.lg,
-    borderBottomRightRadius: radius.lg,
+    backgroundColor: colors.surfaceGlassStrong,
+    borderBottomLeftRadius: radius.xl,
+    borderBottomRightRadius: radius.xl,
     borderBottomWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: spacing.lg,
-    paddingTop: 6,
-    paddingBottom: spacing.sm,
+    paddingTop: 5,
+    paddingBottom: 7,
     gap: 5,
     ...shadows.card,
   },
@@ -155,17 +169,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.sm,
-    minHeight: 36,
+    minHeight: 38,
   },
   brand: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 7,
+    flexShrink: 0,
   },
   brandMark: {
     width: 30,
     height: 30,
-    borderRadius: 10,
+    borderRadius: radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.primary,
@@ -176,8 +191,8 @@ const styles = StyleSheet.create({
     left: 4,
     right: 4,
     top: 2,
-    height: 1,
-    borderRadius: 1,
+    height: 2,
+    borderRadius: 2,
     backgroundColor: colors.highlight,
   },
   brandMarkText: {
@@ -201,7 +216,9 @@ const styles = StyleSheet.create({
   resources: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-end',
     gap: 4,
+    flexShrink: 1,
   },
   resource: {
     flexDirection: 'row',
@@ -211,11 +228,22 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.border,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
+    paddingLeft: 3,
+    paddingRight: 7,
+    paddingVertical: 2,
+  },
+  resourceHighlight: {
+    backgroundColor: colors.goldSoft,
+  },
+  resourceGlyphBox: {
+    width: 16,
+    height: 16,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   resourceGlyph: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '900',
   },
   resourceValue: {
@@ -234,6 +262,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     paddingHorizontal: 9,
     paddingVertical: 3,
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
   },
   statusDot: {
     width: 6,
@@ -252,9 +282,17 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   activeTask: {
-    flex: 1,
+    flexShrink: 1,
     color: colors.textSubtle,
     fontSize: 10,
     fontWeight: '700',
+  },
+  edgeShine: {
+    position: 'absolute',
+    left: spacing.lg,
+    right: spacing.lg,
+    bottom: 0,
+    height: 1,
+    backgroundColor: colors.highlight,
   },
 });
