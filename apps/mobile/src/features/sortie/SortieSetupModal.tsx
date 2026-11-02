@@ -8,7 +8,7 @@ import {
   characterEfficiency,
 } from '@tasmate/core';
 import { useMobileAppStore } from '../../stores/appStore';
-import { Badge, GameButton, ModalSheet, ProgressBar } from '../../ui';
+import { Badge, CharacterEmblem, GameButton, ModalSheet, ProgressBar } from '../../ui';
 import { attributePalette, colors, fontSize, radius, spacing } from '../../theme/tokens';
 
 interface SortieSetupModalProps {
@@ -139,16 +139,11 @@ export function SortieSetupModal({ open, task, onClose }: SortieSetupModalProps)
                 pressed ? styles.pressed : null,
               ]}
             >
-              <View
-                style={[
-                  styles.avatar,
-                  { backgroundColor: palette.soft, borderColor: palette.color },
-                ]}
-              >
-                <Text style={[styles.avatarText, { color: palette.color }]}>
-                  {palette.glyph}
-                </Text>
-              </View>
+              <CharacterEmblem
+                attribute={attribute}
+                size={44}
+                selected={selected}
+              />
               <View style={styles.characterBody}>
                 <View style={styles.characterNameRow}>
                   <Text style={styles.characterName}>
@@ -274,18 +269,6 @@ const styles = StyleSheet.create({
   characterSelected: {
     borderColor: colors.primary,
     backgroundColor: colors.primaryPale,
-  },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 16,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    fontSize: fontSize.xl,
-    fontWeight: '900',
   },
   characterBody: {
     flex: 1,

@@ -10,7 +10,7 @@ import {
 import { useNow } from '../../hooks/useNow';
 import { useMobileAppStore } from '../../stores/appStore';
 import { Badge, GameButton, Panel, ProgressBar } from '../../ui';
-import { colors, fontSize, radius, spacing } from '../../theme/tokens';
+import { colors, fontSize, radius, shadows, spacing, withAlpha } from '../../theme/tokens';
 
 export function ActiveSortiePanel({
   onFinished,
@@ -56,25 +56,44 @@ export function ActiveSortiePanel({
   return (
     <Panel title="探索中" eyebrow="ACTIVE SORTIE" accentColor={colors.primary}>
       <View style={styles.titleRow}>
-        <Text style={styles.taskTitle}>{task?.title ?? '削除されたクエスト'}</Text>
+        <View style={styles.titleBlock}>
+          <Text style={styles.taskTitle}>{task?.title ?? '削除されたクエスト'}</Text>
+          <Text style={styles.meta}>
+            {destination?.name ?? '探索先不明'} / {dispatched}
+          </Text>
+        </View>
         <Badge
           label={activeSession.state === 'running' ? '作業中' : '一時停止中'}
           tone={activeSession.state === 'running' ? 'running' : 'paused'}
         />
       </View>
-      <Text style={styles.meta}>
-        {destination?.name ?? '探索先不明'} / {dispatched} / 稼働施設 {runningFacilities}件
-      </Text>
 
       <View style={styles.timerBox}>
-        <Text style={styles.timerLabel}>経過時間</Text>
+        <View pointerEvents="none" style={styles.timerGlow} />
+        <View pointerEvents="none" style={styles.timerRing} />
+        <Text style={styles.timerLabel}>MISSION TIMER</Text>
         <Text style={styles.timer} accessibilityLiveRegion="polite">
           {formatElapsed(elapsed)}
         </Text>
         <Text style={styles.timerSub}>
           予定 {task?.estimatedMinutes ?? 25}分 ・ {Math.round(progress)}%
         </Text>
-        <ProgressBar value={progress} height={12} />
+        <View style={styles.timerProgress}>
+          <ProgressBar value={progress} height={12} />
+        </View>
+        <View style={styles.timerStats}>
+          <View style={styles.timerStat}>
+            <Text style={styles.timerStatLabel}>稼働施設</Text>
+            <Text style={styles.timerStatValue}>{runningFacilities}件</Text>
+          </View>
+          <View style={styles.timerDivider} />
+          <View style={styles.timerStat}>
+            <Text style={styles.timerStatLabel}>探索先</Text>
+            <Text style={styles.timerStatValue} numberOfLines={1}>
+              {destination?.name ?? '不明'}
+            </Text>
+          </View>
+        </View>
       </View>
 
       <View style={styles.actions}>
@@ -122,12 +141,15 @@ export function ActiveSortiePanel({
 const styles = StyleSheet.create({
   titleRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: spacing.sm,
   },
-  taskTitle: {
+  titleBlock: {
     flex: 1,
+    gap: 2,
+  },
+  taskTitle: {
     color: colors.text,
     fontSize: fontSize.xl,
     fontWeight: '900',
@@ -141,30 +163,84 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
     backgroundColor: colors.primaryPale,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.lg,
-    marginVertical: spacing.sm,
+    marginVertical: spacing.xs,
+    overflow: 'hidden',
+    ...shadows.soft,
+  },
+  timerGlow: {
+    position: 'absolute',
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    top: -110,
+    right: -46,
+    backgroundColor: withAlpha(colors.primary, 0.12),
+  },
+  timerRing: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    bottom: -66,
+    left: -34,
+    borderWidth: 14,
+    borderColor: withAlpha(colors.primary, 0.1),
   },
   timerLabel: {
     color: colors.primaryDark,
-    fontSize: fontSize.xs,
-    fontWeight: '800',
-    letterSpacing: 1.2,
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 1.4,
   },
   timer: {
     color: colors.text,
-    fontSize: 48,
+    fontSize: 50,
     fontWeight: '900',
     fontVariant: ['tabular-nums'],
     letterSpacing: 1,
+    lineHeight: 56,
   },
   timerSub: {
     color: colors.textMuted,
     fontSize: fontSize.sm,
     fontWeight: '700',
     marginBottom: spacing.xs,
+  },
+  timerProgress: {
+    width: '100%',
+  },
+  timerStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    width: '100%',
+    marginTop: spacing.xs,
+  },
+  timerStat: {
+    alignItems: 'center',
+    gap: 1,
+    flexShrink: 1,
+  },
+  timerDivider: {
+    width: 1,
+    height: 22,
+    backgroundColor: colors.border,
+  },
+  timerStatLabel: {
+    color: colors.textSubtle,
+    fontSize: 8,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+  },
+  timerStatValue: {
+    color: colors.text,
+    fontSize: fontSize.sm,
+    fontWeight: '900',
   },
   actions: {
     flexDirection: 'row',

@@ -10,7 +10,7 @@ import {
 import { useMobileAppStore } from '../../stores/appStore';
 import { useNow } from '../../hooks/useNow';
 import { Badge, GameButton, Panel, ProgressBar } from '../../ui';
-import { colors, fontSize, radius, spacing } from '../../theme/tokens';
+import { colors, fontSize, radius, shadows, spacing } from '../../theme/tokens';
 
 interface RewardResultPanelProps {
   rewardId: string;
@@ -32,11 +32,20 @@ export function RewardResultPanel({ rewardId, onClose }: RewardResultPanelProps)
   const recommendedMinutes = recommendedRestMinutes(workMinutes);
 
   return (
-    <Panel title="クエスト完了" eyebrow="QUEST RESULT" accentColor={colors.success}>
+    <Panel title="クエスト完了" eyebrow="QUEST RESULT" tone="success">
       <View style={styles.banner}>
-        <Text style={styles.bannerTitle}>報酬を獲得しました</Text>
+        <View pointerEvents="none" style={styles.bannerGlow} />
+        <View style={styles.bannerHead}>
+          <View style={styles.bannerIcon}>
+            <Text style={styles.bannerIconText}>✓</Text>
+          </View>
+          <View style={styles.bannerTitleBlock}>
+            <Text style={styles.bannerEyebrow}>MISSION COMPLETE</Text>
+            <Text style={styles.bannerTitle}>報酬を獲得しました</Text>
+          </View>
+        </View>
         <View style={styles.rewardRow}>
-          <RewardChip label="通貨" value={`+${reward.finalReward.currency}`} color="#f59e0b" />
+          <RewardChip label="通貨" value={`+${reward.finalReward.currency}`} color={colors.gold} />
           <RewardChip
             label="経験値"
             value={`+${reward.finalReward.experience}`}
@@ -154,6 +163,44 @@ const styles = StyleSheet.create({
     borderColor: '#a9ecd1',
     padding: spacing.md,
     gap: spacing.sm,
+    overflow: 'hidden',
+    ...shadows.soft,
+  },
+  bannerGlow: {
+    position: 'absolute',
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    right: -70,
+    top: -80,
+    backgroundColor: 'rgba(255,255,255,0.45)',
+  },
+  bannerHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  bannerIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.success,
+  },
+  bannerIconText: {
+    color: colors.white,
+    fontSize: fontSize.lg,
+    fontWeight: '900',
+  },
+  bannerTitleBlock: {
+    gap: 0,
+  },
+  bannerEyebrow: {
+    color: colors.success,
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 1.2,
   },
   bannerTitle: {
     color: colors.success,
@@ -171,6 +218,8 @@ const styles = StyleSheet.create({
     gap: 4,
     backgroundColor: colors.surface,
     borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: 'rgba(18, 168, 120, 0.15)',
     paddingHorizontal: 9,
     paddingVertical: 4,
   },
