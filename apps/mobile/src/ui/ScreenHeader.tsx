@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
-import { colors, fontSize, spacing } from '../theme/tokens';
+import { colors, fontSize, radius, spacing } from '../theme/tokens';
 
 interface ScreenHeaderProps {
   eyebrow: string;
@@ -15,7 +15,9 @@ export function ScreenHeader({ eyebrow, title, subtitle, right, style }: ScreenH
     <View style={[styles.wrap, style]}>
       <View style={styles.text}>
         <View style={styles.eyebrowRow}>
-          <View style={styles.eyebrowDot} />
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>✦</Text>
+          </View>
           <Text style={styles.eyebrow}>{eyebrow}</Text>
         </View>
         <Text style={styles.title}>{title}</Text>
@@ -38,18 +40,27 @@ const styles = StyleSheet.create({
   },
   text: {
     flex: 1,
-    gap: 1,
+    gap: 2,
   },
   eyebrowRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
-  eyebrowDot: {
-    width: 14,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.primary,
+  badge: {
+    width: 18,
+    height: 18,
+    borderRadius: radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primarySoft,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+  },
+  badgeText: {
+    color: colors.primaryDark,
+    fontSize: 9,
+    fontWeight: '900',
   },
   eyebrow: {
     color: colors.primaryDark,
@@ -59,9 +70,10 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.text,
-    fontSize: 27,
+    fontSize: fontSize.xxl,
     fontWeight: '900',
     letterSpacing: 0.2,
+    lineHeight: 32,
   },
   subtitle: {
     color: colors.textMuted,

@@ -1,5 +1,6 @@
 export * from './Badge';
 export * from './CharacterEmblem';
+export * from './CharacterPortrait';
 export * from './ChipGroup';
 export * from './EmptyState';
 export * from './Form';

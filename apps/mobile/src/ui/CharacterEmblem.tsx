@@ -1,6 +1,6 @@
 import type { CharacterAttribute } from '@tasmate/types';
 import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
-import { attributePalette, colors, radius } from '../theme/tokens';
+import { attributePalette, colors, radius, shadows, withAlpha } from '../theme/tokens';
 
 interface CharacterEmblemProps {
   attribute?: CharacterAttribute;
@@ -32,7 +32,7 @@ export function CharacterEmblem({
           borderColor: palette.color,
           padding: ring,
         },
-        selected ? styles.selected : null,
+        selected ? [styles.selected, shadows.card] : null,
         style,
       ]}
     >
@@ -41,7 +41,7 @@ export function CharacterEmblem({
           styles.inner,
           {
             borderRadius: size / 2,
-            borderColor: `${palette.color}44`,
+            borderColor: withAlpha(palette.color, 0.3),
             backgroundColor: colors.surface,
           },
         ]}
@@ -68,11 +68,6 @@ const styles = StyleSheet.create({
   },
   selected: {
     borderWidth: 3,
-    shadowColor: colors.shadow,
-    shadowOpacity: 0.22,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 6,
   },
   inner: {
     flex: 1,

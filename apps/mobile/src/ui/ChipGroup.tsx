@@ -84,6 +84,7 @@ const styles = StyleSheet.create({
   },
   chipPressed: {
     opacity: 0.75,
+    transform: [{ scale: 0.98 }],
   },
   dot: {
     width: 8,

@@ -5,7 +5,9 @@ export function EmptyState({ message }: { message: string }) {
   return (
     <View style={styles.box}>
       <View style={styles.gem}>
-        <Text style={styles.gemText}>◇</Text>
+        <View style={styles.gemInner}>
+          <Text style={styles.gemText}>✦</Text>
+        </View>
       </View>
       <Text style={styles.text}>{message}</Text>
     </View>
@@ -24,18 +26,28 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   gem: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
+    width: 48,
+    height: 48,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primaryPale,
+    backgroundColor: colors.primarySoft,
+    transform: [{ rotate: '8deg' }],
+  },
+  gemInner: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
+    transform: [{ rotate: '-8deg' }],
   },
   gemText: {
     color: colors.primary,
-    fontSize: fontSize.xl,
+    fontSize: fontSize.lg,
     fontWeight: '900',
   },
   text: {

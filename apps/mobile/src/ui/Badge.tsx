@@ -8,7 +8,10 @@ export type BadgeTone =
   | 'paused'
   | 'success'
   | 'warning'
-  | 'danger';
+  | 'danger'
+  | 'gold'
+  | 'accent'
+  | 'pink';
 
 interface BadgeProps {
   label: string;
@@ -24,6 +27,9 @@ const TONES: Record<BadgeTone, { background: string; color: string; border: stri
   success: { background: colors.successSoft, color: colors.success, border: '#a9ecd1' },
   warning: { background: colors.warningSoft, color: colors.warning, border: '#f4d28b' },
   danger: { background: colors.dangerSoft, color: colors.danger, border: '#f5b5c4' },
+  gold: { background: colors.goldSoft, color: '#9b6100', border: '#f0d18c' },
+  accent: { background: colors.accentSoft, color: colors.accent, border: '#cfc7ff' },
+  pink: { background: colors.pinkSoft, color: '#c13d74', border: '#ffc3da' },
 };
 
 export function Badge({ label, tone = 'neutral', dot = true }: BadgeProps) {

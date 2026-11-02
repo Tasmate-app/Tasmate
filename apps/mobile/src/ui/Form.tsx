@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   StyleSheet,
   Text,
@@ -26,11 +26,32 @@ export function FormField({
   );
 }
 
-export function GameTextInput({ style, ...props }: TextInputProps) {
+export function GameTextInput({
+  style,
+  onFocus,
+  onBlur,
+  multiline,
+  ...props
+}: TextInputProps) {
+  const [focused, setFocused] = useState(false);
   return (
     <TextInput
       placeholderTextColor={colors.textSubtle}
-      style={[styles.input, props.multiline === true ? styles.inputMultiline : null, style]}
+      multiline={multiline}
+      onFocus={(event) => {
+        setFocused(true);
+        onFocus?.(event);
+      }}
+      onBlur={(event) => {
+        setFocused(false);
+        onBlur?.(event);
+      }}
+      style={[
+        styles.input,
+        multiline === true ? styles.inputMultiline : null,
+        focused ? styles.inputFocused : null,
+        style,
+      ]}
       {...props}
     />
   );
@@ -52,18 +73,22 @@ const styles = StyleSheet.create({
     lineHeight: 17,
   },
   input: {
-    minHeight: 46,
+    minHeight: 48,
     borderWidth: 1,
     borderColor: colors.borderStrong,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceMuted,
     color: colors.text,
     fontSize: fontSize.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
+  inputFocused: {
+    borderColor: colors.primary,
+    backgroundColor: colors.surface,
+  },
   inputMultiline: {
-    minHeight: 86,
+    minHeight: 88,
     textAlignVertical: 'top',
   },
 });

@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { colors, fontSize, radius, shadows } from '../theme/tokens';
 
-type GameButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'success';
+type GameButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'success' | 'gold';
 type GameButtonSize = 'sm' | 'md' | 'lg';
 
 interface GameButtonProps {
@@ -23,7 +23,7 @@ export function GameButton({
   style,
   accessibilityLabel,
 }: GameButtonProps) {
-  const hasGloss = variant === 'primary' || variant === 'success';
+  const hasGloss = variant === 'primary' || variant === 'success' || variant === 'gold';
   return (
     <Pressable
       accessibilityRole="button"
@@ -53,6 +53,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.md,
+    borderCurve: 'continuous',
     borderWidth: 1,
     borderColor: 'transparent',
     minHeight: 46,
@@ -61,30 +62,31 @@ const styles = StyleSheet.create({
   },
   gloss: {
     position: 'absolute',
-    left: 8,
-    right: 8,
+    left: 10,
+    right: 10,
     top: 2,
-    height: 1,
-    borderRadius: 1,
+    height: 2,
+    borderRadius: 2,
     backgroundColor: colors.highlight,
   },
   pressed: {
-    opacity: 0.84,
-    transform: [{ scale: 0.985 }],
+    opacity: 0.86,
+    transform: [{ scale: 0.97 }],
   },
   disabled: {
-    opacity: 0.45,
+    opacity: 0.44,
   },
   label: {
     fontWeight: '900',
     letterSpacing: 0.2,
+    textAlign: 'center',
   },
 });
 
 const sizeStyles = StyleSheet.create({
-  sm: { minHeight: 38, paddingHorizontal: 12, paddingVertical: 6 },
+  sm: { minHeight: 38, paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.sm },
   md: { minHeight: 46, paddingHorizontal: 16, paddingVertical: 10 },
-  lg: { minHeight: 54, paddingHorizontal: 20, paddingVertical: 14 },
+  lg: { minHeight: 54, paddingHorizontal: 20, paddingVertical: 14, borderRadius: radius.lg },
 });
 
 const sizeLabelStyles = StyleSheet.create({
@@ -106,17 +108,26 @@ const variantStyles = StyleSheet.create({
     borderBottomWidth: 2,
     ...shadows.soft,
   },
-  ghost: { backgroundColor: colors.primaryPale, borderColor: colors.border },
-  danger: { backgroundColor: colors.dangerSoft, borderColor: '#f2a9ba' },
+  ghost: {
+    backgroundColor: colors.primaryPale,
+    borderColor: colors.border,
+  },
+  danger: {
+    backgroundColor: colors.dangerSoft,
+    borderColor: '#f2a9ba',
+    borderBottomWidth: 2,
+  },
   success: {
     backgroundColor: colors.success,
     borderColor: '#0b7f57',
     borderBottomWidth: 3,
-    shadowColor: colors.success,
-    shadowOpacity: 0.24,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 5,
+    ...shadows.card,
+  },
+  gold: {
+    backgroundColor: colors.gold,
+    borderColor: '#d99716',
+    borderBottomWidth: 3,
+    ...shadows.gold,
   },
 });
 
@@ -126,4 +137,5 @@ const variantLabelStyles = StyleSheet.create({
   ghost: { color: colors.primaryDark },
   danger: { color: colors.danger },
   success: { color: colors.white },
+  gold: { color: '#7a4b00' },
 });

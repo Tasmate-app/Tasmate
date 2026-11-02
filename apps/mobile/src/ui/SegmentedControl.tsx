@@ -32,6 +32,7 @@ export function SegmentedControl({ options, value, onChange, style }: SegmentedC
               pressed ? styles.pressed : null,
             ]}
           >
+            {selected && <View style={styles.selectedMark} />}
             <Text style={[styles.label, selected ? styles.labelSelected : null]}>
               {option.label}
             </Text>
@@ -59,7 +60,7 @@ const styles = StyleSheet.create({
   },
   segment: {
     flex: 1,
-    minHeight: 38,
+    minHeight: 40,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
@@ -70,6 +71,12 @@ const styles = StyleSheet.create({
   segmentSelected: {
     backgroundColor: colors.surface,
     ...shadows.soft,
+  },
+  selectedMark: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.primary,
   },
   pressed: {
     opacity: 0.78,
