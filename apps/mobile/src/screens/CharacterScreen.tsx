@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import {
   BALANCE,
   CHARACTER_DEFINITIONS,
@@ -11,6 +18,7 @@ import { useMobileAppStore } from '../stores/appStore';
 import {
   Badge,
   CharacterEmblem,
+  CharacterPortrait,
   GameButton,
   Panel,
   ProgressBar,
@@ -19,7 +27,15 @@ import {
   SegmentedControl,
   StatTile,
 } from '../ui';
-import { attributePalette, colors, fontSize, radius, shadows, spacing } from '../theme/tokens';
+import {
+  attributePalette,
+  colors,
+  fontSize,
+  radius,
+  shadows,
+  spacing,
+  withAlpha,
+} from '../theme/tokens';
 
 type CharacterTab = 'status' | 'growth' | 'history';
 
@@ -32,6 +48,7 @@ export function CharacterScreen() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [tab, setTab] = useState<CharacterTab>('status');
   const [feedback, setFeedback] = useState<string | null>(null);
+  const { width } = useWindowDimensions();
 
   useEffect(() => {
     if (selectedId !== null && characters.some((c) => c.definitionId === selectedId)) return;
@@ -49,6 +66,7 @@ export function CharacterScreen() {
   const palette = attributePalette[definition?.attribute ?? 'none'];
   const nextExp = selected !== null ? experienceToNextLevel(selected.level) : 0;
   const upgradeCost = selected !== null ? levelUpCost(selected.level) : 0;
+  const portraitSize = Math.min(236, Math.max(176, Math.round(width * 0.5)));
   const canLevelUp =
     selected !== null &&
     selected.experience >= nextExp &&
@@ -70,9 +88,18 @@ export function CharacterScreen() {
           eyebrow="CHARACTER / ROSTER"
           title="キャラクター"
           subtitle="仲間を選んで能力を確認。作業で得た経験値と通貨で育成できます。"
-          right={<Badge label={`${characters.length}人`} tone="primary" />}
+          right={
+            <View style={styles.rosterChip}>
+              <Text style={styles.rosterValue}>{characters.length}</Text>
+              <Text style={styles.rosterLabel}>人</Text>
+            </View>
+          }
         />
 
+        <View style={styles.selectorHead}>
+          <Text style={styles.selectorTitle}>仲間を選択</Text>
+          <Text style={styles.selectorHint}>タップでプロフィールを切り替え</Text>
+        </View>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -103,13 +130,15 @@ export function CharacterScreen() {
               >
                 <CharacterEmblem
                   attribute={characterDefinition?.attribute ?? 'none'}
-                  size={52}
+                  size={50}
                   selected={active}
                 />
                 <Text style={styles.selectorName} numberOfLines={1}>
                   {characterDefinition?.name ?? character.definitionId}
                 </Text>
-                <Text style={[styles.selectorMeta, active ? { color: characterPalette.deep } : null]}>
+                <Text
+                  style={[styles.selectorMeta, active ? { color: characterPalette.deep } : null]}
+                >
                   Lv.{character.level}
                 </Text>
               </Pressable>
@@ -122,45 +151,84 @@ export function CharacterScreen() {
             <View
               style={[
                 styles.stage,
-                { backgroundColor: palette.soft, borderColor: palette.color },
+                { backgroundColor: palette.soft, borderColor: withAlpha(palette.color, 0.4) },
               ]}
             >
               <View
                 pointerEvents="none"
-                style={[styles.stageOrb, { backgroundColor: `${palette.color}14` }]}
+                style={[styles.stageOrb, { backgroundColor: withAlpha(palette.color, 0.12) }]}
               />
               <View
                 pointerEvents="none"
-                style={[styles.stageOrbSmall, { borderColor: `${palette.color}33` }]}
+                style={[
+                  styles.stageOrbSmall,
+                  {
+                    borderColor: withAlpha(palette.color, 0.2),
+                    backgroundColor: withAlpha(colors.white, 0.35),
+                  },
+                ]}
+              />
+              <View
+                pointerEvents="none"
+                style={[styles.stageShine, { backgroundColor: withAlpha(colors.white, 0.45) }]}
               />
               <View style={styles.stageTop}>
                 <View
                   style={[
                     styles.attributeChip,
                     {
-                      backgroundColor: `${palette.color}18`,
-                      borderColor: `${palette.color}44`,
+                      backgroundColor: withAlpha(palette.color, 0.13),
+                      borderColor: withAlpha(palette.color, 0.35),
                     },
                   ]}
                 >
+                  <Text style={[styles.attributeGlyph, { color: palette.deep }]}>
+                    {palette.glyph}
+                  </Text>
                   <Text style={[styles.attributeText, { color: palette.deep }]}>
                     {palette.label}属性
                   </Text>
                 </View>
-                <Badge label={`Lv.${selected.level}`} tone="primary" />
+                <View style={styles.stageBadges}>
+                  <Badge label={`Lv.${selected.level}`} tone="gold" />
+                  <Badge label="出撃可能" tone="primary" />
+                </View>
               </View>
 
-              <View style={styles.stageEmblemWrap}>
-                <CharacterEmblem attribute={definition.attribute} size={132} selected />
+              <View style={styles.stagePortrait}>
+                <CharacterPortrait
+                  attribute={definition.attribute}
+                  size={portraitSize}
+                  level={selected.level}
+                  selected
+                />
               </View>
 
               <View style={styles.stageBottom}>
-                <Text style={styles.stageName}>{definition.name}</Text>
+                <View style={styles.stageNameRow}>
+                  <View style={styles.stageNameBlock}>
+                    <Text style={styles.stageName}>{definition.name}</Text>
+                    <Text style={styles.stageRole}>SHARE HOUSE RESIDENT</Text>
+                  </View>
+                  <View style={[styles.efficiencyBadge, { borderColor: palette.color }]}>
+                    <Text style={styles.efficiencyLabel}>基礎効率</Text>
+                    <Text style={[styles.efficiencyValue, { color: palette.deep }]}>
+                      {definition.baseEfficiency.toFixed(1)}
+                    </Text>
+                  </View>
+                </View>
                 <Text style={styles.stageDescription}>{definition.description}</Text>
-                <View style={styles.stageTags}>
-                  <Badge
-                    label={`基礎効率 ${definition.baseEfficiency.toFixed(1)}`}
-                    tone="neutral"
+                <View style={styles.stageExp}>
+                  <View style={styles.stageExpHead}>
+                    <Text style={styles.stageExpLabel}>NEXT LEVEL</Text>
+                    <Text style={styles.stageExpValue}>
+                      {Math.min(selected.experience, nextExp)} / {nextExp}
+                    </Text>
+                  </View>
+                  <ProgressBar
+                    value={Math.min(100, (selected.experience / Math.max(1, nextExp)) * 100)}
+                    color={palette.color}
+                    height={10}
                   />
                 </View>
               </View>
@@ -179,17 +247,27 @@ export function CharacterScreen() {
             {tab === 'status' && (
               <Panel title="能力値" eyebrow="STATUS" accentColor={palette.color}>
                 <View style={styles.stats}>
-                  <StatTile label="レベル" value={`Lv.${selected.level}`} />
-                  <StatTile label="所持経験値" value={`${selected.experience}`} />
+                  <StatTile
+                    label="レベル"
+                    value={`Lv.${selected.level}`}
+                    glyph="✦"
+                    tone={palette.deep}
+                  />
+                  <StatTile
+                    label="所持経験値"
+                    value={`${selected.experience}`}
+                    glyph="◈"
+                  />
                   <StatTile
                     label="次のLvまで"
                     value={`${Math.max(0, nextExp - selected.experience)}`}
+                    glyph="↑"
                     tone={colors.primaryDark}
                   />
                 </View>
                 <View style={styles.expBlock}>
                   <View style={styles.expHead}>
-                    <Text style={styles.expLabel}>経験値</Text>
+                    <Text style={styles.expLabel}>経験値ゲージ</Text>
                     <Text style={styles.expValue}>
                       {Math.min(selected.experience, nextExp)} / {nextExp}
                     </Text>
@@ -219,9 +297,20 @@ export function CharacterScreen() {
             )}
 
             {tab === 'growth' && (
-              <Panel title="育成" eyebrow="GROWTH" accentColor={colors.primary}>
+              <Panel title="育成" eyebrow="GROWTH" tone="primary">
                 <View style={styles.growthHead}>
-                  <CharacterEmblem attribute={definition.attribute} size={64} level={selected.level} />
+                  <View
+                    style={[
+                      styles.growthPortrait,
+                      { backgroundColor: palette.soft, borderColor: withAlpha(palette.color, 0.3) },
+                    ]}
+                  >
+                    <CharacterPortrait
+                      attribute={definition.attribute}
+                      size={88}
+                      level={selected.level}
+                    />
+                  </View>
                   <View style={styles.growthHeadBody}>
                     <Text style={styles.growthName}>{definition.name}</Text>
                     <Text style={styles.growthMeta}>
@@ -264,7 +353,7 @@ export function CharacterScreen() {
             )}
 
             {tab === 'history' && (
-              <Panel title="最近の報酬" eyebrow="REWARD HISTORY" accentColor={colors.success}>
+              <Panel title="最近の報酬" eyebrow="REWARD HISTORY" tone="success">
                 {rewards.length === 0 ? (
                   <Text style={styles.note}>
                     クエストを完了すると、ここに報酬が記録されます。
@@ -325,13 +414,52 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     paddingBottom: spacing.xxl,
   },
+  rosterChip: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 2,
+    backgroundColor: colors.primarySoft,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    ...shadows.soft,
+  },
+  rosterValue: {
+    color: colors.primaryDark,
+    fontSize: fontSize.xl,
+    fontWeight: '900',
+    fontVariant: ['tabular-nums'],
+  },
+  rosterLabel: {
+    color: colors.textMuted,
+    fontSize: 9,
+    fontWeight: '800',
+  },
+  selectorHead: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  selectorTitle: {
+    color: colors.text,
+    fontSize: fontSize.md,
+    fontWeight: '900',
+  },
+  selectorHint: {
+    color: colors.textSubtle,
+    fontSize: 10,
+    fontWeight: '700',
+  },
   selector: {
     gap: spacing.sm,
-    paddingVertical: 4,
+    paddingVertical: 2,
     paddingRight: spacing.xs,
   },
   selectorCard: {
-    width: 92,
+    width: 96,
     alignItems: 'center',
     gap: 4,
     backgroundColor: colors.surface,
@@ -344,6 +472,7 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.8,
+    transform: [{ scale: 0.98 }],
   },
   selectorName: {
     color: colors.text,
@@ -356,71 +485,141 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   stage: {
-    borderRadius: radius.xl,
+    borderRadius: radius.xxl,
     borderWidth: 2,
     overflow: 'hidden',
     padding: spacing.lg,
     gap: spacing.sm,
-    minHeight: 330,
+    minHeight: 360,
     ...shadows.card,
   },
   stageOrb: {
     position: 'absolute',
-    width: 230,
-    height: 230,
-    borderRadius: 115,
-    right: -70,
-    top: -50,
+    width: 250,
+    height: 250,
+    borderRadius: 125,
+    right: -76,
+    top: -54,
   },
   stageOrbSmall: {
     position: 'absolute',
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    left: -50,
-    bottom: -40,
+    width: 170,
+    height: 170,
+    borderRadius: 85,
+    left: -54,
+    bottom: -46,
     borderWidth: 18,
+  },
+  stageShine: {
+    position: 'absolute',
+    left: spacing.lg,
+    right: spacing.lg,
+    top: spacing.sm,
+    height: 2,
+    borderRadius: 2,
   },
   stageTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: spacing.xs,
   },
   attributeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
     borderRadius: radius.pill,
     borderWidth: 1,
     paddingHorizontal: 10,
-    paddingVertical: 3,
+    paddingVertical: 4,
+  },
+  attributeGlyph: {
+    fontSize: 11,
+    fontWeight: '900',
   },
   attributeText: {
     fontSize: 10,
     fontWeight: '900',
-    letterSpacing: 0.8,
+    letterSpacing: 0.6,
   },
-  stageEmblemWrap: {
+  stageBadges: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
+  },
+  stagePortrait: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: spacing.sm,
   },
   stageBottom: {
-    gap: 3,
+    gap: spacing.sm,
+  },
+  stageNameRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  stageNameBlock: {
+    flex: 1,
+    gap: 0,
   },
   stageName: {
     color: colors.text,
     fontSize: 30,
     fontWeight: '900',
     letterSpacing: 0.3,
+    lineHeight: 34,
+  },
+  stageRole: {
+    color: colors.textMuted,
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 1.4,
+  },
+  efficiencyBadge: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceGlass,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+  },
+  efficiencyLabel: {
+    color: colors.textMuted,
+    fontSize: 8,
+    fontWeight: '800',
+  },
+  efficiencyValue: {
+    fontSize: fontSize.lg,
+    fontWeight: '900',
+    fontVariant: ['tabular-nums'],
   },
   stageDescription: {
     color: colors.textMuted,
     fontSize: fontSize.sm,
     lineHeight: 19,
   },
-  stageTags: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  stageExp: {
     gap: spacing.xs,
-    marginTop: 2,
+  },
+  stageExpHead: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  stageExpLabel: {
+    color: colors.textMuted,
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  stageExpValue: {
+    color: colors.text,
+    fontSize: fontSize.xs,
+    fontWeight: '800',
+    fontVariant: ['tabular-nums'],
   },
   stats: {
     flexDirection: 'row',
@@ -442,6 +641,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: fontSize.xs,
     fontWeight: '800',
+    fontVariant: ['tabular-nums'],
   },
   detailRows: {
     borderTopWidth: 1,
@@ -451,7 +651,7 @@ const styles = StyleSheet.create({
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 5,
+    paddingVertical: 6,
     borderBottomWidth: 1,
     borderBottomColor: colors.surfaceAlt,
   },
@@ -463,6 +663,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: fontSize.sm,
     fontWeight: '800',
+    fontVariant: ['tabular-nums'],
   },
   growthHead: {
     flexDirection: 'row',
@@ -473,6 +674,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.sm,
+  },
+  growthPortrait: {
+    width: 104,
+    height: 112,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
   growthHeadBody: {
     flex: 1,

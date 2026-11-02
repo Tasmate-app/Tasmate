@@ -23,6 +23,7 @@ import { useMobileAppStore } from '../stores/appStore';
 import {
   Badge,
   CharacterEmblem,
+  CharacterPortrait,
   GameButton,
   Panel,
   ProgressBar,
@@ -30,7 +31,15 @@ import {
   ScreenHeader,
   StatTile,
 } from '../ui';
-import { attributePalette, colors, fontSize, radius, shadows, spacing } from '../theme/tokens';
+import {
+  attributePalette,
+  colors,
+  fontSize,
+  radius,
+  shadows,
+  spacing,
+  withAlpha,
+} from '../theme/tokens';
 
 type ModelState = 'loading' | 'ready' | 'error';
 
@@ -56,7 +65,7 @@ export function BaseScreen() {
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const { height } = useWindowDimensions();
-  const canvasHeight = Math.min(460, Math.max(300, Math.round(height * 0.48)));
+  const canvasHeight = Math.min(520, Math.max(340, Math.round(height * 0.52)));
   const activeFacilities = facilities.filter((facility) => facility.enabled).length;
 
   const selectedCharacter = characters.find(
@@ -98,12 +107,18 @@ export function BaseScreen() {
         <ScreenHeader
           eyebrow="BASE / SHARE HOUSE"
           title="拠点"
+          subtitle="3Dシェアハウスを拠点に、仲間と施設を育てよう。"
           right={
             <View style={styles.baseChip}>
-              <Text style={styles.baseChipValue}>
-                {activeFacilities}/{facilities.length}
-              </Text>
-              <Text style={styles.baseChipLabel}>施設稼働</Text>
+              <View style={styles.baseChipIcon}>
+                <Text style={styles.baseChipGlyph}>⌂</Text>
+              </View>
+              <View>
+                <Text style={styles.baseChipValue}>
+                  {activeFacilities}/{facilities.length}
+                </Text>
+                <Text style={styles.baseChipLabel}>施設稼働</Text>
+              </View>
             </View>
           }
         />
@@ -127,52 +142,58 @@ export function BaseScreen() {
             onModelReady={() => setModelState('ready')}
             onModelError={() => setModelState('error')}
           />
-          <View pointerEvents="none" style={styles.roomTitleOverlay}>
-            <Text style={styles.roomEyebrow}>SHARE HOUSE</Text>
-            <Text style={styles.roomTitle}>みんなの拠点</Text>
-          </View>
-          <View style={styles.roomBadge}>
-            <View
-              style={[
-                styles.roomDot,
-                modelState === 'ready'
-                  ? styles.roomDotReady
+          <View pointerEvents="none" style={styles.roomTop}>
+            <View style={styles.roomTitleOverlay}>
+              <Text style={styles.roomEyebrow}>SHARE HOUSE / HOME</Text>
+              <Text style={styles.roomTitle}>みんなの拠点</Text>
+            </View>
+            <View style={styles.roomBadge}>
+              <View
+                style={[
+                  styles.roomDot,
+                  modelState === 'ready'
+                    ? styles.roomDotReady
+                    : modelState === 'error'
+                      ? styles.roomDotError
+                      : null,
+                ]}
+              />
+              <Text style={styles.roomBadgeText}>
+                {modelState === 'ready'
+                  ? '3D表示中'
                   : modelState === 'error'
-                    ? styles.roomDotError
-                    : null,
-              ]}
-            />
-            <Text style={styles.roomBadgeText}>
-              {modelState === 'ready'
-                ? '3D表示中'
-                : modelState === 'error'
-                  ? '簡易表示'
-                  : '読み込み中'}
-            </Text>
+                    ? '簡易表示'
+                    : '読み込み中'}
+              </Text>
+            </View>
           </View>
-          <View style={styles.roomHint}>
+          <View pointerEvents="none" style={styles.roomHint}>
             <Text style={styles.roomHintText}>
-              机：コイン工房 / 棚：星屑ハウス / 住人をタップ
+              机：コイン工房 / 棚：星屑ハウス / 住人をタップして詳細を表示
             </Text>
           </View>
+          <View pointerEvents="none" style={styles.roomShine} />
         </View>
 
         <View style={styles.quickRow}>
-          <View style={styles.quickTile}>
-            <Text style={styles.quickLabel}>住人</Text>
-            <Text style={styles.quickValue}>{characters.length}人</Text>
-          </View>
-          <View style={styles.quickTile}>
-            <Text style={styles.quickLabel}>稼働施設</Text>
-            <Text style={styles.quickValue}>
-              {activeFacilities}
-              <Text style={styles.quickUnit}> / {facilities.length}</Text>
-            </Text>
-          </View>
+          <QuickStat
+            glyph="✦"
+            label="住人"
+            value={`${characters.length}`}
+            unit="人"
+            color={colors.accent}
+          />
+          <QuickStat
+            glyph="⌂"
+            label="稼働施設"
+            value={`${activeFacilities}`}
+            unit={` / ${facilities.length}`}
+            color={colors.secondary}
+          />
           <GameButton
-            label="キャラ画面"
+            label="キャラ画面 →"
             size="sm"
-            variant="ghost"
+            variant="secondary"
             onPress={() => router.push('/character')}
             style={styles.quickAction}
           />
@@ -181,52 +202,84 @@ export function BaseScreen() {
         {selectedCharacter !== undefined && selectedCharacterDefinition !== undefined && (
           <Panel
             title={selectedCharacterDefinition.name}
-            eyebrow="RESIDENT"
+            eyebrow="RESIDENT / STATUS"
             accentColor={attributePalette[selectedCharacterDefinition.attribute].color}
             right={
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="選択を解除"
                 onPress={clearSelection}
-                style={styles.closeButton}
+                style={({ pressed }) => [styles.closeButton, pressed ? styles.pressed : null]}
               >
                 <Text style={styles.closeText}>×</Text>
               </Pressable>
             }
           >
             <View style={styles.characterHero}>
-              <CharacterEmblem
-                attribute={selectedCharacterDefinition.attribute}
-                size={82}
-                level={selectedCharacter.level}
-              />
+              <View
+                style={[
+                  styles.portraitFrame,
+                  {
+                    backgroundColor: attributePalette[selectedCharacterDefinition.attribute].soft,
+                    borderColor: withAlpha(
+                      attributePalette[selectedCharacterDefinition.attribute].color,
+                      0.3,
+                    ),
+                  },
+                ]}
+              >
+                <CharacterPortrait
+                  attribute={selectedCharacterDefinition.attribute}
+                  size={104}
+                  level={selectedCharacter.level}
+                />
+              </View>
               <View style={styles.characterHeroBody}>
                 <Badge
-                  label={attributePalette[selectedCharacterDefinition.attribute].label}
+                  label={`${attributePalette[selectedCharacterDefinition.attribute].label}属性`}
                   tone="primary"
                 />
                 <Text style={styles.characterDescription}>
                   {selectedCharacterDefinition.description}
                 </Text>
+                <View style={styles.characterLevelRow}>
+                  <Text style={styles.characterLevel}>Lv.{selectedCharacter.level}</Text>
+                  <Text style={styles.characterLevelMeta}>
+                    経験値 {selectedCharacter.experience} /{' '}
+                    {experienceToNextLevel(selectedCharacter.level)}
+                  </Text>
+                </View>
+                <ProgressBar
+                  value={Math.min(
+                    100,
+                    (selectedCharacter.experience /
+                      Math.max(1, experienceToNextLevel(selectedCharacter.level))) *
+                      100,
+                  )}
+                  color={attributePalette[selectedCharacterDefinition.attribute].color}
+                  height={9}
+                />
               </View>
             </View>
             <View style={styles.stats}>
-              <StatTile label="レベル" value={`Lv.${selectedCharacter.level}`} />
-              <StatTile label="経験値" value={`${selectedCharacter.experience}`} />
+              <StatTile
+                label="レベル"
+                value={`Lv.${selectedCharacter.level}`}
+                glyph="✦"
+                tone={attributePalette[selectedCharacterDefinition.attribute].deep}
+              />
+              <StatTile
+                label="所持経験値"
+                value={`${selectedCharacter.experience}`}
+                glyph="◈"
+              />
               <StatTile
                 label="次まで"
                 value={`${Math.max(0, experienceToNextLevel(selectedCharacter.level) - selectedCharacter.experience)}`}
+                glyph="↑"
+                tone={colors.primaryDark}
               />
             </View>
-            <ProgressBar
-              value={Math.min(
-                100,
-                (selectedCharacter.experience /
-                  Math.max(1, experienceToNextLevel(selectedCharacter.level))) *
-                  100,
-              )}
-              height={9}
-            />
             <Text style={styles.note}>
               基礎効率 {selectedCharacterDefinition.baseEfficiency.toFixed(1)} / レベルアップ費用 通貨
               {levelUpCost(selectedCharacter.level)}
@@ -266,36 +319,56 @@ export function BaseScreen() {
         {selectedFacility !== undefined && selectedFacilityDefinition !== undefined && (
           <Panel
             title={selectedFacilityDefinition.name}
-            eyebrow="FACILITY"
+            eyebrow="FACILITY / PRODUCTION"
             accentColor={colors.secondary}
             right={
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="選択を解除"
                 onPress={clearSelection}
-                style={styles.closeButton}
+                style={({ pressed }) => [styles.closeButton, pressed ? styles.pressed : null]}
               >
                 <Text style={styles.closeText}>×</Text>
               </Pressable>
             }
           >
-            <View style={styles.facilityStatus}>
-              <Badge
-                label={selectedFacility.enabled ? '稼働中' : '停止中'}
-                tone={selectedFacility.enabled ? 'running' : 'neutral'}
-              />
-              <Badge label={`Lv.${selectedFacility.level}`} tone="primary" />
+            <View style={styles.facilityHero}>
+              <View style={styles.facilityIconLarge}>
+                <Text style={styles.facilityIconLargeText}>
+                  {selectedFacilityDefinition.type === 'currency' ? '◈' : '✦'}
+                </Text>
+              </View>
+              <View style={styles.facilityHeroBody}>
+                <View style={styles.facilityStatus}>
+                  <Badge
+                    label={selectedFacility.enabled ? '稼働中' : '停止中'}
+                    tone={selectedFacility.enabled ? 'running' : 'neutral'}
+                  />
+                  <Badge label={`Lv.${selectedFacility.level}`} tone="primary" />
+                </View>
+                <Text style={styles.note}>{selectedFacilityDefinition.description}</Text>
+                <Text style={styles.facilityRate}>
+                  {selectedFacilityDefinition.type === 'currency' ? 'コイン生産' : '素材生産'} /{' '}
+                  {facilityProduction(selectedFacilityDefinition)}
+                </Text>
+              </View>
             </View>
-            <Text style={styles.note}>{selectedFacilityDefinition.description}</Text>
             <View style={styles.stats}>
-              <StatTile label="生産" value={facilityProduction(selectedFacilityDefinition)} />
+              <StatTile
+                label="生産"
+                value={facilityProduction(selectedFacilityDefinition)}
+                glyph="◈"
+                tone={colors.secondary}
+              />
               <StatTile
                 label="レベル補正"
                 value={`×${(1 + Math.max(0, selectedFacility.level - 1) * BALANCE.facilityPerLevel).toFixed(1)}`}
+                glyph="↑"
               />
               <StatTile
                 label="強化費用"
                 value={`${facilityUpgradeCost(selectedFacility.level)}`}
+                glyph="◆"
                 tone={colors.warning}
               />
             </View>
@@ -327,7 +400,12 @@ export function BaseScreen() {
           </Panel>
         )}
 
-        <Panel title="住人" eyebrow="RESIDENTS" accentColor={colors.accent}>
+        <Panel
+          title="住人"
+          eyebrow="RESIDENTS"
+          subtitle="タップしてプロフィールと育成状況を確認"
+          tone="accent"
+        >
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -344,23 +422,31 @@ export function BaseScreen() {
                 <Pressable
                   key={character.definitionId}
                   accessibilityRole="button"
+                  accessibilityState={{ selected }}
                   onPress={() => selectCharacter(character.definitionId)}
                   style={({ pressed }) => [
                     styles.unitCard,
-                    selected ? styles.unitCardSelected : null,
+                    {
+                      borderColor: selected
+                        ? palette.color
+                        : withAlpha(palette.color, 0.22),
+                      backgroundColor: selected ? palette.soft : colors.surfaceMuted,
+                    },
                     pressed ? styles.pressed : null,
                   ]}
                 >
                   <CharacterEmblem
                     attribute={attribute}
-                    size={54}
+                    size={58}
                     level={character.level}
                     selected={selected}
                   />
                   <Text style={styles.unitName} numberOfLines={1}>
                     {definition?.name ?? character.definitionId}
                   </Text>
-                  <Text style={styles.unitMeta}>経験値 {character.experience}</Text>
+                  <Text style={styles.unitMeta}>
+                    {palette.label} / 経験値 {character.experience}
+                  </Text>
                   <ProgressBar
                     value={Math.min(
                       100,
@@ -369,7 +455,7 @@ export function BaseScreen() {
                         100,
                     )}
                     color={palette.color}
-                    height={5}
+                    height={6}
                   />
                 </Pressable>
               );
@@ -377,7 +463,12 @@ export function BaseScreen() {
           </ScrollView>
         </Panel>
 
-        <Panel title="施設" eyebrow="FACILITIES" accentColor={colors.secondary}>
+        <Panel
+          title="施設"
+          eyebrow="FACILITIES"
+          subtitle="タップして生産状況と強化メニューを確認"
+          tone="secondary"
+        >
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -392,6 +483,7 @@ export function BaseScreen() {
                 <Pressable
                   key={facility.definitionId}
                   accessibilityRole="button"
+                  accessibilityState={{ selected }}
                   onPress={() => selectFacility(facility.definitionId)}
                   style={({ pressed }) => [
                     styles.unitCard,
@@ -400,7 +492,12 @@ export function BaseScreen() {
                     pressed ? styles.pressed : null,
                   ]}
                 >
-                  <View style={styles.facilityIcon}>
+                  <View
+                    style={[
+                      styles.facilityIcon,
+                      facility.enabled ? styles.facilityIconActive : null,
+                    ]}
+                  >
                     <Text style={styles.facilityIconText}>
                       {definition?.type === 'currency' ? '◈' : '✦'}
                     </Text>
@@ -424,6 +521,35 @@ export function BaseScreen() {
   );
 }
 
+function QuickStat({
+  glyph,
+  label,
+  value,
+  unit,
+  color,
+}: {
+  glyph: string;
+  label: string;
+  value: string;
+  unit: string;
+  color: string;
+}) {
+  return (
+    <View style={styles.quickTile}>
+      <View style={[styles.quickIcon, { backgroundColor: withAlpha(color, 0.13) }]}>
+        <Text style={[styles.quickGlyph, { color }]}>{glyph}</Text>
+      </View>
+      <View>
+        <Text style={styles.quickLabel}>{label}</Text>
+        <Text style={styles.quickValue}>
+          {value}
+          <Text style={styles.quickUnit}>{unit}</Text>
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   scroll: {
     flex: 1,
@@ -435,19 +561,35 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl,
   },
   baseChip: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
     backgroundColor: colors.secondarySoft,
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: '#a9e6dc',
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: 9,
     paddingVertical: 5,
+    ...shadows.soft,
+  },
+  baseChipIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.secondary,
+  },
+  baseChipGlyph: {
+    color: colors.white,
+    fontSize: fontSize.md,
+    fontWeight: '900',
   },
   baseChipValue: {
     color: '#0b7f70',
-    fontSize: fontSize.lg,
+    fontSize: fontSize.md,
     fontWeight: '900',
-    lineHeight: 18,
+    lineHeight: 16,
   },
   baseChipLabel: {
     color: '#0b7f70',
@@ -455,23 +597,31 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   roomFrame: {
-    borderRadius: radius.xl,
+    borderRadius: radius.xxl,
     overflow: 'hidden',
     backgroundColor: '#e7f6ff',
     borderWidth: 2,
     borderColor: colors.surface,
     ...shadows.card,
   },
-  roomTitleOverlay: {
+  roomTop: {
     position: 'absolute',
     left: spacing.sm,
+    right: spacing.sm,
     top: spacing.sm,
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  roomTitleOverlay: {
+    backgroundColor: colors.surfaceGlassStrong,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: 10,
     paddingVertical: 5,
+    ...shadows.soft,
   },
   roomEyebrow: {
     color: colors.primary,
@@ -485,18 +635,16 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   roomBadge: {
-    position: 'absolute',
-    right: spacing.sm,
-    top: spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    backgroundColor: colors.surfaceGlassStrong,
     borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: 9,
     paddingVertical: 4,
+    ...shadows.soft,
   },
   roomDot: {
     width: 7,
@@ -520,7 +668,7 @@ const styles = StyleSheet.create({
     left: spacing.sm,
     right: spacing.sm,
     bottom: spacing.sm,
-    backgroundColor: 'rgba(255,255,255,0.88)',
+    backgroundColor: colors.surfaceGlassStrong,
     borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.border,
@@ -533,6 +681,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
   },
+  roomShine: {
+    position: 'absolute',
+    left: spacing.lg,
+    right: spacing.lg,
+    top: spacing.sm,
+    height: 1,
+    backgroundColor: colors.highlight,
+  },
   quickRow: {
     flexDirection: 'row',
     alignItems: 'stretch',
@@ -540,12 +696,27 @@ const styles = StyleSheet.create({
   },
   quickTile: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     backgroundColor: colors.surface,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: spacing.sm,
     paddingVertical: 6,
+    ...shadows.soft,
+  },
+  quickIcon: {
+    width: 26,
+    height: 26,
+    borderRadius: radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickGlyph: {
+    fontSize: fontSize.md,
+    fontWeight: '900',
   },
   quickLabel: {
     color: colors.textMuted,
@@ -556,6 +727,8 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: fontSize.lg,
     fontWeight: '900',
+    lineHeight: 18,
+    fontVariant: ['tabular-nums'],
   },
   quickUnit: {
     color: colors.textMuted,
@@ -563,12 +736,12 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   quickAction: {
-    flex: 1.2,
+    flex: 1.1,
   },
   closeButton: {
     width: 34,
     height: 34,
-    borderRadius: 12,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.primaryPale,
@@ -586,6 +759,15 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     alignItems: 'center',
   },
+  portraitFrame: {
+    width: 120,
+    height: 132,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
   characterHeroBody: {
     flex: 1,
     gap: spacing.xs,
@@ -594,6 +776,23 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: fontSize.sm,
     lineHeight: 19,
+  },
+  characterLevelRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: spacing.xs,
+  },
+  characterLevel: {
+    color: colors.text,
+    fontSize: fontSize.lg,
+    fontWeight: '900',
+    fontVariant: ['tabular-nums'],
+  },
+  characterLevelMeta: {
+    color: colors.textMuted,
+    fontSize: 9,
+    fontWeight: '700',
   },
   stats: {
     flexDirection: 'row',
@@ -616,9 +815,38 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     fontWeight: '800',
   },
+  facilityHero: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  facilityIconLarge: {
+    width: 72,
+    height: 72,
+    borderRadius: radius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.secondarySoft,
+    borderWidth: 1,
+    borderColor: '#a9e6dc',
+  },
+  facilityIconLargeText: {
+    color: colors.secondary,
+    fontSize: 32,
+    fontWeight: '900',
+  },
+  facilityHeroBody: {
+    flex: 1,
+    gap: spacing.xs,
+  },
   facilityStatus: {
     flexDirection: 'row',
     gap: spacing.xs,
+  },
+  facilityRate: {
+    color: colors.secondary,
+    fontSize: fontSize.xs,
+    fontWeight: '800',
   },
   rail: {
     gap: spacing.sm,
@@ -626,7 +854,7 @@ const styles = StyleSheet.create({
     paddingRight: spacing.xs,
   },
   unitCard: {
-    width: 124,
+    width: 128,
     alignItems: 'center',
     gap: 5,
     borderRadius: radius.lg,
@@ -637,14 +865,15 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   facilityCard: {
-    width: 136,
+    width: 140,
   },
   unitCardSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primaryPale,
+    borderColor: colors.secondary,
+    backgroundColor: colors.secondarySoft,
   },
   pressed: {
-    opacity: 0.78,
+    opacity: 0.8,
+    transform: [{ scale: 0.98 }],
   },
   unitName: {
     color: colors.text,
@@ -656,15 +885,20 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 9,
     fontWeight: '700',
+    textAlign: 'center',
   },
   facilityIcon: {
-    width: 54,
-    height: 54,
-    borderRadius: 18,
+    width: 58,
+    height: 58,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.secondarySoft,
+    backgroundColor: colors.surfaceAlt,
     borderWidth: 1,
+    borderColor: colors.border,
+  },
+  facilityIconActive: {
+    backgroundColor: colors.secondarySoft,
     borderColor: '#a9e6dc',
   },
   facilityIconText: {
