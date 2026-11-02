@@ -138,6 +138,42 @@ describe('shared app store persistence', () => {
     expect(saved.tasks.map((task) => task.title)).toEqual(['second', 'first']);
   });
 
+  it('does not persist a snapshot that was undone before the debounce fires', async () => {
+    const storage = createMemoryStorage();
+    const store = createAppStore({ storage: storage.adapter, saveDebounceMs: 20 });
+    await store.getState().hydrate();
+
+    store.getState().createTask(taskInput('base'));
+    await store.getState().flush();
+    const saved = storage.writes[storage.writes.length - 1];
+
+    store.getState().toggleFacility('f-coin');
+    store.getState().toggleFacility('f-coin');
+    await store.getState().flush();
+
+    expect(storage.writes[storage.writes.length - 1]).toBe(saved);
+  });
+
+  it('saves the reverted state after an in-flight write finishes', async () => {
+    const storage = createMemoryStorage();
+    const store = createAppStore({ storage: storage.adapter, saveDebounceMs: 20 });
+    await store.getState().hydrate();
+
+    store.getState().createTask(taskInput('base'));
+    await store.getState().flush();
+    const saved = storage.writes[storage.writes.length - 1];
+    storage.setDelay(20);
+
+    store.getState().toggleFacility('f-coin');
+    const firstFlush = store.getState().flush();
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    store.getState().toggleFacility('f-coin');
+    const secondFlush = store.getState().flush();
+
+    await Promise.all([firstFlush, secondFlush]);
+    expect(storage.writes[storage.writes.length - 1]).toBe(saved);
+  });
+
   it('reports storage write failures without throwing', async () => {
     const storage = createMemoryStorage();
     const store = createAppStore({ storage: storage.adapter, saveDebounceMs: 0 });

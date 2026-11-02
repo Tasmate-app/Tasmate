@@ -351,11 +351,11 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
 
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
   let pendingSnapshot: AppState | null = null;
-  let queuedJson: string | null = null;
+  let desiredJson: string | null = null;
+  let inFlightJson: string | null = null;
   let lastSavedJson: string | null = null;
   let lastObservedJson: string | null = null;
   let saving = false;
-  const queue: string[] = [];
   const idleWaiters: Array<() => void> = [];
   let hydrationPromise: Promise<void> | null = null;
 
@@ -365,36 +365,39 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
   };
 
   const resolveIdle = (): void => {
-    if (saving || queue.length > 0) return;
+    if (saving || desiredJson !== null) return;
     while (idleWaiters.length > 0) idleWaiters.pop()?.();
   };
 
   const pump = async (): Promise<void> => {
     if (saving || storage === null) return;
     saving = true;
-    while (queue.length > 0) {
-      const json = queue.shift() as string;
+    while (desiredJson !== null) {
+      const json = desiredJson;
+      desiredJson = null;
+      if (json === lastSavedJson) continue;
+      inFlightJson = json;
       try {
         await storage.setItem(storageKey, json);
         lastSavedJson = json;
         if (store.getState().storageError !== null) store.setState({ storageError: null });
       } catch (error) {
-        queuedJson = null;
         reportError(error);
+      } finally {
+        inFlightJson = null;
       }
     }
     saving = false;
     resolveIdle();
   };
 
-  const requestSave = (snapshot: AppState): void => {
+  const enqueueJson = (json: string): void => {
     if (storage === null) return;
-    const json = JSON.stringify(snapshot);
-    if (json === lastSavedJson || json === queuedJson) return;
-    queuedJson = json;
-    // 保存中に更新された場合は、まだ書き込んでいない最新スナップショットだけを残す
-    if (queue.length > 0) queue[queue.length - 1] = json;
-    else queue.push(json);
+    if (json === inFlightJson) return;
+    // 保存中・保存待ちの間は lastSavedJson と同じ値でも最新スナップショットとして扱う。
+    // 古い内容が後から書き込まれるのを防ぐ。
+    if (!saving && json === lastSavedJson) return;
+    desiredJson = json;
     void pump();
   };
 
@@ -405,19 +408,18 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
     // storageError などのストア内部状態だけが変わった場合は保存しない
     if (json === lastObservedJson) return;
     lastObservedJson = json;
-    if (json === lastSavedJson || json === queuedJson) return;
     pendingSnapshot = snapshot;
     if (saveTimer !== null) clearTimeout(saveTimer);
     saveTimer = setTimeout(() => {
       saveTimer = null;
       const pending = pendingSnapshot;
       pendingSnapshot = null;
-      if (pending !== null) requestSave(pending);
+      if (pending !== null) enqueueJson(JSON.stringify(pending));
     }, debounceMs);
   };
 
   const waitForIdle = (): Promise<void> => {
-    if (!saving && queue.length === 0) return Promise.resolve();
+    if (!saving) return Promise.resolve();
     return new Promise((resolve) => {
       idleWaiters.push(resolve);
     });
@@ -432,7 +434,7 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
     if (pendingSnapshot !== null) {
       const pending = pendingSnapshot;
       pendingSnapshot = null;
-      requestSave(pending);
+      enqueueJson(JSON.stringify(pending));
     }
     await waitForIdle();
   };
@@ -448,7 +450,7 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
       const result = await loadAppStateFromStorage(storage, { storageKey, legacyStorageKey });
       if (result.state !== null) {
         lastSavedJson = result.serialized;
-        queuedJson = null;
+        desiredJson = null;
         store.setState({ ...result.state, hasHydrated: true, storageError: result.error });
         return;
       }
