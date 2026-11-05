@@ -1,5 +1,6 @@
 import { Component, Suspense, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { Canvas, useFrame, useLoader } from '@react-three/fiber/native';
+import { useIsFocused } from 'expo-router';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import lunaAsset from '../../assets/luna.glb';
@@ -72,6 +73,7 @@ export function RoomScene({
   onModelReady,
   onModelError,
 }: RoomSceneProps) {
+  const isFocused = useIsFocused();
   const hasLuna = characters.some((character) => character.definitionId === 'c-luna');
   const otherCharacters = characters.filter(
     (character) => character.definitionId !== 'c-luna',
@@ -81,6 +83,7 @@ export function RoomScene({
       style={{ flex: 1 }}
       camera={{ position: [0, 2.3, 5.2], fov: 42, near: 0.1, far: 30 }}
       gl={{ antialias: true }}
+      frameloop={isFocused ? 'always' : 'never'}
       onPointerMissed={onClearSelection}
       onCreated={({ gl }) => patchShaderInfoLogs(gl)}
     >
