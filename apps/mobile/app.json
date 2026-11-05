@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Tasmate 3D PoC",
+    "name": "Tasmate",
     "slug": "tasmate-mobile",
     "scheme": "tasmate",
     "version": "0.1.0",
@@ -27,6 +27,16 @@
     "plugins": [
       "expo-router",
       "expo-asset"
-    ]
+    ],
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "754ee737-0b15-4e41-ab64-e8372583e8f9"
+      }
+    }
   }
 }

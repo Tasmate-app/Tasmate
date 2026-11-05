@@ -32,6 +32,7 @@
     "start": "expo start",
     "start:ngrok": "expo start --tunnel ngrok",
     "android": "expo start --android",
+    "build:android": "eas build --platform android --profile preview",
     "ios": "expo start --ios",
     "typecheck": "tsc --noEmit",
     "doctor": "npx expo-doctor",
