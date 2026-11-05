@@ -58,6 +58,8 @@ export interface AppStateLoadResult {
   serialized: string | null;
   error: string | null;
   migratedFromLegacy: boolean;
+  /** 保存先の読み込み自体に失敗した場合 true。既存データを上書きしてはいけない */
+  readFailed: boolean;
 }
 
 export interface LoadAppStateOptions {
@@ -86,6 +88,7 @@ export async function loadAppStateFromStorage(
           serialized: null,
           error: '保存データの形式が不正のため初期状態で起動します',
           migratedFromLegacy: false,
+          readFailed: false,
         };
       }
       return {
@@ -93,12 +96,19 @@ export async function loadAppStateFromStorage(
         serialized: JSON.stringify(state),
         error: null,
         migratedFromLegacy: false,
+        readFailed: false,
       };
     }
 
     const legacyRaw = await storage.getItem(legacyStorageKey);
     if (legacyRaw === null) {
-      return { state: null, serialized: null, error: null, migratedFromLegacy: false };
+      return {
+        state: null,
+        serialized: null,
+        error: null,
+        migratedFromLegacy: false,
+        readFailed: false,
+      };
     }
     const legacy = parseStoredAppState(legacyRaw);
     if (legacy === null) {
@@ -107,6 +117,7 @@ export async function loadAppStateFromStorage(
         serialized: null,
         error: '旧保存データの形式が不正のため初期状態で起動します',
         migratedFromLegacy: false,
+        readFailed: false,
       };
     }
 
@@ -123,6 +134,7 @@ export async function loadAppStateFromStorage(
       serialized,
       error: migrationError,
       migratedFromLegacy: true,
+      readFailed: false,
     };
   } catch (error) {
     return {
@@ -130,6 +142,7 @@ export async function loadAppStateFromStorage(
       serialized: null,
       error: toErrorMessage(error),
       migratedFromLegacy: false,
+      readFailed: true,
     };
   }
 }

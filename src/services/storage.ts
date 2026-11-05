@@ -34,11 +34,19 @@ export const webStorageAdapter: StorageAdapter = {
   },
 };
 
+let lastReadFailed = false;
+
+/** 直近の loadAppState が保存先の読み込みに失敗したか */
+export function didLastAppStateReadFail(): boolean {
+  return lastReadFailed;
+}
+
 /**
  * Web版の同期読み込み。
  * 既存の localStorage キー・JSON構造をそのまま利用する。
  */
 export function loadAppState(): AppState {
+  lastReadFailed = false;
   try {
     const storage = getLocalStorage();
     if (storage === null) return initialAppState();
@@ -62,6 +70,7 @@ export function loadAppState(): AppState {
     storage.removeItem(LEGACY_STORAGE_KEY);
     return legacy;
   } catch (error) {
+    lastReadFailed = true;
     console.warn('[storage] 保存データの読み込みに失敗したため初期状態で起動します', error);
     return initialAppState();
   }

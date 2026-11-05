@@ -1,15 +1,22 @@
 import { createAppStore, toAppStateSnapshot } from '@tasmate/core';
-import { loadAppState, saveAppState, webStorageAdapter } from '../services/storage';
+import {
+  didLastAppStateReadFail,
+  loadAppState,
+  saveAppState,
+  webStorageAdapter,
+} from '../services/storage';
 
 /**
  * Web版のストア。
  * localStorage は同期読み込みできるため、初回描画前に復元を完了させる。
  */
 const hasWindow = typeof window !== 'undefined';
+const initialState = loadAppState();
 
 export const useAppStore = createAppStore({
   storage: hasWindow ? webStorageAdapter : null,
-  initialState: loadAppState(),
+  initialState,
+  canPersist: !didLastAppStateReadFail(),
 });
 
 if (hasWindow) {

@@ -339,6 +339,11 @@ export interface CreateAppStoreOptions {
   storageKey?: string;
   legacyStorageKey?: string;
   saveDebounceMs?: number;
+  /**
+   * 読み込み失敗時など、既存データを上書きしてはいけない場合に false を渡す。
+   * 省略時は同期初期状態があるか、保存先が未設定なら true。
+   */
+  canPersist?: boolean;
 }
 
 export function createAppStore(options: CreateAppStoreOptions = {}) {
@@ -357,6 +362,7 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
   let lastSavedJson: string | null = null;
   let lastObservedJson: string | null = null;
   let saving = false;
+  let canPersist = options.canPersist ?? (options.initialState !== undefined || storage === null);
   const idleWaiters: Array<() => void> = [];
   let hydrationPromise: Promise<void> | null = null;
 
@@ -371,9 +377,9 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
   };
 
   const pump = async (): Promise<void> => {
-    if (saving || storage === null) return;
+    if (saving || storage === null || !canPersist) return;
     saving = true;
-    while (desiredJson !== null) {
+    while (desiredJson !== null && canPersist) {
       const json = desiredJson;
       desiredJson = null;
       if (json === lastSavedJson) continue;
@@ -395,7 +401,7 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
   };
 
   const enqueueJson = (json: string): void => {
-    if (storage === null) return;
+    if (storage === null || !canPersist) return;
     if (json === inFlightJson) return;
     // 保存中・保存待ち・失敗分が残っている間は、lastSavedJson と同じ値でも
     // 最新スナップショットとして扱う。古い内容が後から書き込まれるのを防ぐ。
@@ -408,7 +414,7 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
   };
 
   const scheduleSave = (state: AppStore): void => {
-    if (storage === null || !state.hasHydrated) return;
+    if (storage === null || !state.hasHydrated || !canPersist) return;
     const snapshot = toAppStateSnapshot(state);
     const json = JSON.stringify(snapshot);
     // storageError などのストア内部状態だけが変わった場合は保存しない
@@ -432,7 +438,7 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
   };
 
   const flush = async (): Promise<void> => {
-    if (storage === null) return;
+    if (storage === null || !canPersist) return;
     if (saveTimer !== null) {
       clearTimeout(saveTimer);
       saveTimer = null;
@@ -462,17 +468,28 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
     hydrationPromise = (async () => {
       const result = await loadAppStateFromStorage(storage, { storageKey, legacyStorageKey });
       if (result.state !== null) {
+        canPersist = true;
         lastSavedJson = result.serialized;
         failedJson = null;
         desiredJson = null;
         store.setState({ ...result.state, hasHydrated: true, storageError: result.error });
         return;
       }
+      if (result.readFailed) {
+        // 読み込み失敗時は既存データを守るため、保存を停止する。
+        // 破損データ（パース失敗）とは区別し、次回起動時の復元に委ねる。
+        canPersist = false;
+        lastSavedJson = null;
+        store.setState({ hasHydrated: true, storageError: result.error });
+        return;
+      }
       // 破損データを復元直後に上書きしない。次の状態変更まで保存を待つ
+      canPersist = true;
       lastSavedJson = JSON.stringify(toAppStateSnapshot(initialAppState()));
       store.setState({ hasHydrated: true, storageError: result.error });
     })()
       .catch((error: unknown) => {
+        canPersist = false;
         reportError(error);
         store.setState({ hasHydrated: true });
       })

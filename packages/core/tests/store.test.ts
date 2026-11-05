@@ -25,11 +25,15 @@ function createMemoryStorage(initial: Record<string, string> = {}) {
   let activeWrites = 0;
   let maxActiveWrites = 0;
   let attempts = 0;
+  let reads = 0;
   let delayMs = 0;
   let shouldFail = false;
+  let shouldFailRead = false;
 
   const adapter = {
     async getItem(key: string): Promise<string | null> {
+      reads += 1;
+      if (shouldFailRead) throw new Error('read failed');
       return data.get(key) ?? null;
     },
     async setItem(key: string, value: string): Promise<void> {
@@ -62,6 +66,9 @@ function createMemoryStorage(initial: Record<string, string> = {}) {
     get attempts() {
       return attempts;
     },
+    get reads() {
+      return reads;
+    },
     setDelay(value: number) {
       delayMs = value;
     },
@@ -70,6 +77,9 @@ function createMemoryStorage(initial: Record<string, string> = {}) {
     },
     allowWrites() {
       shouldFail = false;
+    },
+    failReads() {
+      shouldFailRead = true;
     },
   };
 }
@@ -195,6 +205,27 @@ describe('shared app store persistence', () => {
 
     expect(storage.writes).toHaveLength(1);
     expect(store.getState().storageError).toBeNull();
+  });
+
+  it('does not overwrite existing data when the storage read fails', async () => {
+    const raw = JSON.stringify({
+      ...initialAppState(),
+      inventory: { ...initialAppState().inventory, currency: 777 },
+    });
+    const storage = createMemoryStorage({ [STORAGE_KEY]: raw });
+    storage.failReads();
+    const store = createAppStore({ storage: storage.adapter, saveDebounceMs: 0 });
+
+    await store.getState().hydrate();
+
+    expect(store.getState().hasHydrated).toBe(true);
+    expect(store.getState().storageError).not.toBeNull();
+
+    store.getState().createTask(taskInput('must not overwrite'));
+    await store.getState().flush();
+
+    expect(storage.writes).toHaveLength(0);
+    expect(storage.data.get(STORAGE_KEY)).toBe(raw);
   });
 
   it('migrates legacy storage key to the current key', async () => {
