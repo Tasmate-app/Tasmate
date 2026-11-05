@@ -353,6 +353,7 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
   let pendingSnapshot: AppState | null = null;
   let desiredJson: string | null = null;
   let inFlightJson: string | null = null;
+  let failedJson: string | null = null;
   let lastSavedJson: string | null = null;
   let lastObservedJson: string | null = null;
   let saving = false;
@@ -380,8 +381,10 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
       try {
         await storage.setItem(storageKey, json);
         lastSavedJson = json;
+        failedJson = null;
         if (store.getState().storageError !== null) store.setState({ storageError: null });
       } catch (error) {
+        failedJson = json;
         reportError(error);
       } finally {
         inFlightJson = null;
@@ -394,9 +397,12 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
   const enqueueJson = (json: string): void => {
     if (storage === null) return;
     if (json === inFlightJson) return;
-    // 保存中・保存待ちの間は lastSavedJson と同じ値でも最新スナップショットとして扱う。
-    // 古い内容が後から書き込まれるのを防ぐ。
-    if (!saving && json === lastSavedJson) return;
+    // 保存中・保存待ち・失敗分が残っている間は、lastSavedJson と同じ値でも
+    // 最新スナップショットとして扱う。古い内容が後から書き込まれるのを防ぐ。
+    if (!saving && json === lastSavedJson) {
+      failedJson = null;
+      return;
+    }
     desiredJson = json;
     void pump();
   };
@@ -437,6 +443,13 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
       enqueueJson(JSON.stringify(pending));
     }
     await waitForIdle();
+    // 一時的な保存失敗を取りこぼさないよう、flush 時に一度だけ再試行する
+    if (failedJson !== null) {
+      const retry = failedJson;
+      failedJson = null;
+      enqueueJson(retry);
+      await waitForIdle();
+    }
   };
 
   const hydrate = async (): Promise<void> => {
@@ -450,6 +463,7 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
       const result = await loadAppStateFromStorage(storage, { storageKey, legacyStorageKey });
       if (result.state !== null) {
         lastSavedJson = result.serialized;
+        failedJson = null;
         desiredJson = null;
         store.setState({ ...result.state, hasHydrated: true, storageError: result.error });
         return;

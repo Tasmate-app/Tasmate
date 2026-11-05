@@ -68,6 +68,9 @@ function createMemoryStorage(initial: Record<string, string> = {}) {
     failWrites() {
       shouldFail = true;
     },
+    allowWrites() {
+      shouldFail = false;
+    },
   };
 }
 
@@ -174,7 +177,7 @@ describe('shared app store persistence', () => {
     expect(storage.writes[storage.writes.length - 1]).toBe(saved);
   });
 
-  it('reports storage write failures without throwing', async () => {
+  it('retries a failed write on flush', async () => {
     const storage = createMemoryStorage();
     const store = createAppStore({ storage: storage.adapter, saveDebounceMs: 0 });
     await store.getState().hydrate();
@@ -182,10 +185,16 @@ describe('shared app store persistence', () => {
 
     store.getState().createTask(taskInput('fails'));
     await store.getState().flush();
-    await new Promise((resolve) => setTimeout(resolve, 30));
 
     expect(store.getState().storageError).toBe('write failed');
-    expect(storage.attempts).toBe(1);
+    expect(storage.attempts).toBe(2);
+    expect(storage.writes).toHaveLength(0);
+
+    storage.allowWrites();
+    await store.getState().flush();
+
+    expect(storage.writes).toHaveLength(1);
+    expect(store.getState().storageError).toBeNull();
   });
 
   it('migrates legacy storage key to the current key', async () => {
