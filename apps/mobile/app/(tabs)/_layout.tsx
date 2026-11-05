@@ -18,7 +18,6 @@ export default function TabsLayout() {
         screenOptions={{
           headerShown: false,
           sceneStyle: styles.scene,
-          tabBarHideOnKeyboard: true,
         }}
       >
         <Tabs.Screen name="index" options={{ title: '出撃' }} />

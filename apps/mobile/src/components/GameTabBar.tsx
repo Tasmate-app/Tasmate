@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Keyboard, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { colors, fontSize, radius, shadows, spacing, withAlpha } from '../theme/tokens';
 
@@ -9,6 +10,19 @@ const TAB_META: Record<string, { label: string; glyph: string; dish: string }> =
 };
 
 export function GameTabBar({ state, descriptors, navigateToTab, insets }: BottomTabBarProps) {
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+
+  if (keyboardVisible) return null;
+
   return (
     <View style={[styles.wrap, { paddingBottom: Math.max(insets.bottom, 8) }]}>
       <View style={styles.bar}>
