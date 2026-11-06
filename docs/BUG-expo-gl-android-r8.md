@@ -6,7 +6,7 @@
 - 調査日: 2026-11-05
 - 事象: EAS Build の Android APK で拠点タブ（3Dルーム）を開くとクラッシュする。Expo Go では動作する。
 - 調査方法: ソースコード・依存パッケージ・npm 配布物・EAS/Expo 設定の静的確認、GLB のバンドル確認、GitHub Issue / PR の確認
-- コード修正: 未実施
+- コード修正: 暫定対応を実施（2026-11-06）
 
 ## 結論
 
@@ -107,6 +107,27 @@ Expo Go は R8 で縮小されていないビルド済みネイティブバイ�
 
 補足: `expo-build-properties` は現在の依存に含まれていないため、採用には依存追加の判断が必要。
 
+## 実施した暫定対応
+
+`expo-gl` の修正版が未公開のため、ProGuard ルールを追加した。
+
+- `apps/mobile/package.json` に `expo-build-properties`（`~58.0.12`、Expo SDK 58 対応版）を追加。
+- `apps/mobile/app.json` の `plugins` に `expo-build-properties` を追加し、`android.extraProguardRules` に修正 PR 相当の keep ルールを設定。
+
+```text
+-keepclassmembers class expo.modules.gl.GLView {
+  public <init>(android.content.Context, expo.modules.kotlin.AppContext);
+}
+
+-keepclassmembers class expo.modules.gl.GLContext {
+  public void flush();
+}
+```
+
+release ビルドで `prebuild` 時に `android/app/proguard-rules.pro` へ追記される。
+
+恒久対応として、`expo-gl` 58.0.5 以降が公開されたら `expo-gl` を更新し、上記の `extraProguardRules` と `expo-build-properties` 依存を削除する。
+
 ## 実機ログによる最終確認
 
 以下が出力されれば、R8 によるコンストラクタ削除が確定する。
@@ -125,4 +146,6 @@ adb logcat | findstr /i "AndroidRuntime expo.modules.gl GLView FATAL JNI"
 
 ## 変更ファイル
 
-なし（調査のみ）
+- `apps/mobile/package.json`（`expo-build-properties` 追加）
+- `apps/mobile/app.json`（`expo-build-properties` プラグインと ProGuard ルール追加）
+- `package-lock.json`（依存更新）

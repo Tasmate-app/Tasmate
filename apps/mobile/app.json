@@ -26,7 +26,15 @@
     },
     "plugins": [
       "expo-router",
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "extraProguardRules": "-keepclassmembers class expo.modules.gl.GLView {\n  public <init>(android.content.Context, expo.modules.kotlin.AppContext);\n}\n\n-keepclassmembers class expo.modules.gl.GLContext {\n  public void flush();\n}"
+          }
+        }
+      ]
     ],
     "extra": {
       "router": {
