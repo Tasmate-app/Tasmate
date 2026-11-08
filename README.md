@@ -35,6 +35,41 @@ npm run export:android -w tasmate-mobile
 npm run export:ios -w tasmate-mobile
 ```
 
+## Android APK のローカルビルド（Windows）
+
+Expo の prebuild とローカルの Android SDK（Gradle）を使い、EAS を介さず APK を作成する。
+
+### 必要環境
+
+- JDK 17（`JAVA_HOME` を設定）
+- Android Studio / Android SDK
+  - SDK Platform 37
+  - Build-Tools 37.0.0
+  - Platform-Tools
+  - NDK 27.1.12297006
+  - CMake 3.31.6（Windows の長いパス対策）
+- 環境変数 `ANDROID_HOME`（例: `%LOCALAPPDATA%\Android\Sdk`）
+
+### ビルド
+
+```powershell
+npm run apk:release -w tasmate-mobile
+```
+
+出力: `apps/mobile/android/app/build/outputs/apk/release/app-release.apk`
+
+端末へ導入:
+
+```powershell
+adb install -r apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+```
+
+- `release` は Expo テンプレートの debug キーで署名されるため、そのまま端末へ導入できる。
+- `debug` APK は Metro の起動が必要なため、単体確認には `release` を使う。
+- ネイティブ設定を変更した場合は `npm run prebuild:android -w tasmate-mobile -- --clean` で再生成する。
+- `apps/mobile/android/` は生成物のためコミットしない。
+- 初回は Gradle・Android SDK・NDK のダウンロードで数 GB と時間がかかる。
+
 ## テスト・検証
 
 ```powershell
