@@ -4,6 +4,10 @@
   "version": "0.1.0",
   "type": "module",
   "description": "現実の勉強・タスクへの取り組みをキャラクター育成・拠点発展につなげる生活支援型育成ゲーム（ローカル動作プロトタイプ）",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
@@ -16,10 +20,10 @@
     "e2e:install": "playwright install --with-deps chromium"
   },
   "dependencies": {
-    "@react-three/drei": "^9.114.0",
-    "@react-three/fiber": "^8.17.10",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
+    "@react-three/drei": "10.7.9",
+    "@react-three/fiber": "9.8.2",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
     "react-router-dom": "^7.18.5",
     "three": "^0.170.0",
     "zustand": "^5.0.2"
@@ -29,8 +33,8 @@
     "@playwright/test": "^1.49.1",
     "@testing-library/react": "^16.1.0",
     "@types/node": "^26.6.5",
-    "@types/react": "^18.3.18",
-    "@types/react-dom": "^18.3.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
     "@types/three": "^0.170.0",
     "@vitejs/plugin-react": "^4.3.4",
     "eslint": "^9.17.0",

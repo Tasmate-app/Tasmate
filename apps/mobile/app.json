@@ -1,0 +1,51 @@
+{
+  "expo": {
+    "name": "Tasmate",
+    "slug": "tasmate-mobile",
+    "scheme": "tasmate",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "dev.tasmate.mobile"
+    },
+    "android": {
+      "package": "dev.tasmate.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-asset",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "cmakeVersion": "3.31.6",
+            "extraProguardRules": "-keepclassmembers class expo.modules.gl.GLView {\n  public <init>(android.content.Context, expo.modules.kotlin.AppContext);\n}\n\n-keepclassmembers class expo.modules.gl.GLContext {\n  public void flush();\n}"
+          }
+        }
+      ]
+    ],
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "754ee737-0b15-4e41-ab64-e8372583e8f9"
+      }
+    }
+  }
+}

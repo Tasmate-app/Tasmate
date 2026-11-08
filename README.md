@@ -19,6 +19,57 @@ npm run dev      # 開発サーバー起動（http://localhost:5173）
 npm run preview  # 本番ビルドの確認用サーバー（事前に npm run build）
 ```
 
+## モノレポ構成
+
+Web版とExpo React Native版で型・ゲームロジックを共有する。
+
+- `src/` … 既存Web版（ルートの `package.json` から起動）
+- `apps/mobile/` … Expo React Native版
+- `packages/types/` … 共通型 `@tasmate/types`
+- `packages/core/` … 共通ゲームロジック・アプリ状態・ストア・保存抽象 `@tasmate/core`
+
+```powershell
+npm run typecheck -w tasmate-mobile
+npm run doctor -w tasmate-mobile
+npm run export:android -w tasmate-mobile
+npm run export:ios -w tasmate-mobile
+```
+
+## Android APK のローカルビルド（Windows）
+
+Expo の prebuild とローカルの Android SDK（Gradle）を使い、EAS を介さず APK を作成する。
+
+### 必要環境
+
+- JDK 17（`JAVA_HOME` を設定）
+- Android Studio / Android SDK
+  - SDK Platform 37
+  - Build-Tools 37.0.0
+  - Platform-Tools
+  - NDK 27.1.12297006
+  - CMake 3.31.6（Windows の長いパス対策）
+- 環境変数 `ANDROID_HOME`（例: `%LOCALAPPDATA%\Android\Sdk`）
+
+### ビルド
+
+```powershell
+npm run apk:release -w tasmate-mobile
+```
+
+出力: `apps/mobile/android/app/build/outputs/apk/release/app-release.apk`
+
+端末へ導入:
+
+```powershell
+adb install -r apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+```
+
+- `release` は Expo テンプレートの debug キーで署名されるため、そのまま端末へ導入できる。
+- `debug` APK は Metro の起動が必要なため、単体確認には `release` を使う。
+- ネイティブ設定を変更した場合は `npm run prebuild:android -w tasmate-mobile -- --clean` で再生成する。
+- `apps/mobile/android/` は生成物のためコミットしない。
+- 初回は Gradle・Android SDK・NDK のダウンロードで数 GB と時間がかかる。
+
 ## テスト・検証
 
 ```powershell
@@ -48,8 +99,12 @@ npm run e2e        # Playwright スモークテスト（dev サーバーを自�
 
 ## データ保存
 
-- MVP は `localStorage`（キー `tasmate:state:v1`）に保存。UI は直接触らず、
-  `src/stores/appStore.ts` のアクション経由で `src/services/storage.ts` が読み書きする。
+- アプリ状態とストアは `packages/core/` で共有する。UI は直接保存先を触らず、
+  ストアのアクション経由で保存する。
+- Web は `localStorage`（キー `tasmate:state:v1`）へ保存し、起動時は同期読み込みで復元する。
+  Native は同じキー・JSON構造を `AsyncStorage` に保存し、起動後に非同期で復元する。
+- 保存は 150ms のデバウンスと直列キューで行い、復元前の状態は保存しない。
+  保存失敗時は `storageError` に記録し、アプリの動作は継続する。
 - タイマーは開始時刻を基準に経過時間を算出するため、再読み込み・バックグラウンド化後も
   作業状態が復元される。
 - 週次判定は未判定の過去週を古い順に処理し、`weekStart` 単位で冪等に記録する。

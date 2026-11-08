@@ -5,11 +5,27 @@
     "bash": {
       "*": "ask",
 
-      // ===== 基本的な探索・確認 =====
+      // ===== package.json の scripts =====
 
+      "npm run dev": "allow",
+      "npm run build": "allow",
+      "npm run preview": "allow",
       "npm run typecheck": "allow",
       "npm run lint": "allow",
-      "npm run test": "allow"
+      "npm run test": "allow",
+      "npm run test:watch": "allow",
+      "npm run e2e": "allow",
+      "npm run e2e:install": "allow",
+
+      // ===== apps/mobile/package.json の scripts =====
+
+      "npm run start -w tasmate-mobile": "allow",
+      "npm run android -w tasmate-mobile": "allow",
+      "npm run ios -w tasmate-mobile": "allow",
+      "npm run typecheck -w tasmate-mobile": "allow",
+      "npm run doctor -w tasmate-mobile": "allow",
+      "npm run export:android -w tasmate-mobile": "allow",
+      "npm run export:ios -w tasmate-mobile": "allow"
     }
   }
 }

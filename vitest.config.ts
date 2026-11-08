@@ -6,11 +6,17 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: 'node',
-    include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx', 'src/**/*.test.ts', 'src/**/*.test.tsx'],
+    include: [
+      'tests/**/*.test.ts',
+      'tests/**/*.test.tsx',
+      'src/**/*.test.ts',
+      'src/**/*.test.tsx',
+      'packages/**/*.test.ts',
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
-      include: ['src/domain/**/*.ts'],
+      include: ['packages/core/src/**/*.ts'],
     },
   },
 });
