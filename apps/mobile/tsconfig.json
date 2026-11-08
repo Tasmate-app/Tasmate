@@ -7,7 +7,8 @@
     "paths": {
       "@tasmate/types": ["../../packages/types/src/index.ts"],
       "@tasmate/core": ["../../packages/core/src/index.ts"],
-      "@tasmate/core/*": ["../../packages/core/src/*"]
+      "@tasmate/core/*": ["../../packages/core/src/*"],
+      "@tasmate/design-tokens": ["../../packages/design-tokens/src/index.ts"]
     }
   },
   "include": [
