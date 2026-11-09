@@ -26,6 +26,7 @@ const MATERIAL_META: Record<string, { glyph: string; color: string }> = {
 
 export function GameHUD() {
   const inventory = useMobileAppStore((s) => s.inventory);
+  const itemInventory = useMobileAppStore((s) => s.itemInventory);
   const activeSession = useMobileAppStore((s) => s.activeSession);
   const restSession = useMobileAppStore((s) => s.restSession);
   const tasks = useMobileAppStore((s) => s.tasks);
@@ -59,6 +60,12 @@ export function GameHUD() {
               color={colors.gold}
               label="通貨"
               highlight
+            />
+            <ResourceChip
+              glyph="✦"
+              value={itemInventory['stardust'] ?? 0}
+              color={colors.accent}
+              label="星屑"
             />
             <ResourceChip
               glyph={MATERIAL_META.shard_sun.glyph}

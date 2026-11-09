@@ -1,7 +1,7 @@
+import { planLevelUp } from '@tasmate/core';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { ATTRIBUTE_NAMES } from '../../domain/constants';
-import { experienceToNextLevel, levelUpCost } from '../../domain/reward';
 import { CHARACTER_DEFINITIONS } from '../../data/seed';
 import { useAppStore } from '../../stores/appStore';
 import { attributeClass, attributeGlyph } from '../companions/characterVisual';
@@ -9,7 +9,7 @@ import { attributeClass, attributeGlyph } from '../companions/characterVisual';
 /** 仲間一覧・レベルアップ（ホームの簡易操作用） */
 export function CharacterPanel() {
   const characters = useAppStore((s) => s.characters);
-  const inventory = useAppStore((s) => s.inventory);
+  const itemInventory = useAppStore((s) => s.itemInventory);
   const levelUpCharacter = useAppStore((s) => s.levelUpCharacter);
 
   return (
@@ -17,9 +17,13 @@ export function CharacterPanel() {
       <ul className="list">
         {characters.map((c) => {
           const def = CHARACTER_DEFINITIONS.find((d) => d.id === c.definitionId);
-          const cost = levelUpCost(c.level);
-          const need = experienceToNextLevel(c.level);
-          const canLevelUp = inventory.currency >= cost && c.experience >= need;
+          const levelPlan = planLevelUp(c, itemInventory);
+          const coinCost = levelPlan.items.find((stack) => stack.itemId === 'coin')?.quantity ?? 0;
+          const stardustCost =
+            levelPlan.items.find((stack) => stack.itemId === 'stardust')?.quantity ?? 0;
+          const need = levelPlan.requiredExperience;
+          const atMaxLevel = c.level >= levelPlan.maxLevel;
+          const canLevelUp = levelPlan.canLevelUp;
           const expPercent = need > 0 ? Math.min(100, Math.round((c.experience / need) * 100)) : 0;
           const initial = def?.name !== undefined && def.name !== '' ? def.name.slice(0, 1) : '？';
           return (
@@ -33,7 +37,9 @@ export function CharacterPanel() {
               <div className="unit-body">
                 <div className="list-item__title">
                   {def?.name ?? c.definitionId}{' '}
-                  <span className="unit-lv">Lv.{c.level}</span>
+                  <span className="unit-lv">
+                    Lv.{c.level} / {levelPlan.maxLevel}
+                  </span>
                 </div>
                 <div className="list-item__meta">
                   {attributeGlyph(def?.attribute ?? 'none')} {ATTRIBUTE_NAMES[def?.attribute ?? 'none']}
@@ -55,14 +61,16 @@ export function CharacterPanel() {
                 )}
                 <div className="btn-row">
                   <Button disabled={!canLevelUp} onClick={() => levelUpCharacter(c.definitionId)}>
-                    レベルアップ（通貨 {cost}）
+                    {atMaxLevel
+                      ? 'レベル上限に到達'
+                      : `レベルアップ（硬貨 ${coinCost} / 星屑 ${stardustCost}）`}
                   </Button>
                 </div>
-                {!canLevelUp && (
+                {!canLevelUp && !atMaxLevel && (
                   <div className="list-item__meta">
-                    {inventory.currency < cost
-                      ? '通貨が足りません。作業して報酬を集めましょう。'
-                      : '経験値が足りません。キャラを派遣して作業しましょう。'}
+                    {c.experience < need
+                      ? '経験値が足りません。キャラを派遣して作業しましょう。'
+                      : '必要な素材が足りません。タスクを完了して集めましょう。'}
                   </div>
                 )}
               </div>

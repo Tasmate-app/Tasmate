@@ -25,7 +25,9 @@ function getInitialSelectedId(state: unknown, definitionIds: string[]): string |
 export function CompanionsPage() {
   const characters = useAppStore((s) => s.characters);
   const inventory = useAppStore((s) => s.inventory);
+  const itemInventory = useAppStore((s) => s.itemInventory);
   const levelUpCharacter = useAppStore((s) => s.levelUpCharacter);
+  const ascendCharacter = useAppStore((s) => s.ascendCharacter);
   const location = useLocation();
 
   // 選択状態は画面内のみで管理し、永続化しない
@@ -81,7 +83,9 @@ export function CompanionsPage() {
                 definition={definition}
                 owned={owned}
                 currency={inventory.currency}
+                itemInventory={itemInventory}
                 onLevelUp={levelUpCharacter}
+                onAscend={ascendCharacter}
               />
             </div>
           </>

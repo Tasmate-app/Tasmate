@@ -7,6 +7,7 @@ const TAB_META: Record<string, { label: string; glyph: string; dish: string }> =
   index: { label: '出撃', glyph: '◈', dish: 'クエスト' },
   base: { label: '拠点', glyph: '⌂', dish: 'シェアハウス' },
   character: { label: 'キャラ', glyph: '✦', dish: '仲間' },
+  inventory: { label: 'かばん', glyph: '✧', dish: '所持品' },
 };
 
 export function GameTabBar({ state, descriptors, navigateToTab, insets }: BottomTabBarProps) {
