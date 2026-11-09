@@ -1,5 +1,7 @@
 import type {
   Inventory,
+  ItemInventory,
+  ItemTransaction,
   MaterialId,
   OwnedCharacter,
   OwnedFacility,
@@ -8,6 +10,7 @@ import type {
   RewardRecord,
   SupportEvent,
   Task,
+  TaskCompletionReward,
   WeeklyEvaluation,
   WeeklyEvaluationStatus,
   WeeklyProgress,
@@ -22,6 +25,8 @@ import {
 } from './weekly';
 
 import { BALANCE } from './constants';
+import { normalizeItemInventoryWithLegacy } from './inventory/materialStorage';
+import { normalizeAscensionStage } from './progression/progressionConfig';
 
 /**
  * 永続化されるアプリ全体の状態。
@@ -35,6 +40,14 @@ export interface AppState {
   activeSession: WorkSession | null;
   sessionHistory: WorkSession[];
   inventory: Inventory;
+  /** 新しい共通インベントリ。既存 Inventory と通貨・旧素材を同期する */
+  itemInventory: ItemInventory;
+  /** アイテムの獲得・消費履歴（新しい順） */
+  itemHistory: ItemTransaction[];
+  /** タスク完了報酬の抽選結果（セッション・タスク単位で一意） */
+  taskRewards: TaskCompletionReward[];
+  /** 星屑の端数（分）。次回タスクへ持ち越す */
+  stardustCarry: number;
   characters: OwnedCharacter[];
   facilities: OwnedFacility[];
   rewards: RewardRecord[];
@@ -66,6 +79,10 @@ export function initialAppState(): AppState {
       currency: 100,
       materials: { shard_sun: 0, shard_moon: 0, shard_star: 0 },
     },
+    itemInventory: { coin: 100 },
+    itemHistory: [],
+    taskRewards: [],
+    stardustCarry: 0,
     characters: [
       { definitionId: 'c-hinata', level: 1, experience: 0 },
       { definitionId: 'c-luna', level: 1, experience: 0 },
@@ -166,12 +183,59 @@ function isWorkSession(value: unknown): value is WorkSession {
   return true;
 }
 
+function normalizeOwnedCharacter(value: OwnedCharacter): OwnedCharacter {
+  return {
+    ...value,
+    ascensionStage: normalizeAscensionStage(value.ascensionStage),
+  };
+}
+
 function isOwnedCharacter(value: unknown): value is OwnedCharacter {
   return (
     isRecord(value) &&
     typeof value['definitionId'] === 'string' &&
     isFiniteNumber(value['level']) &&
     isFiniteNumber(value['experience'])
+  );
+}
+
+function isItemTransaction(value: unknown): value is ItemTransaction {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value['id'] === 'string' &&
+    typeof value['itemId'] === 'string' &&
+    isFiniteNumber(value['delta']) &&
+    typeof value['reason'] === 'string' &&
+    typeof value['createdAt'] === 'string'
+  );
+}
+
+function isItemStackArray(value: unknown): boolean {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (entry) =>
+        isRecord(entry) &&
+        typeof entry['itemId'] === 'string' &&
+        isFiniteNumber(entry['quantity']),
+    )
+  );
+}
+
+function isTaskCompletionReward(value: unknown): value is TaskCompletionReward {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value['id'] === 'string' &&
+    typeof value['taskId'] === 'string' &&
+    typeof value['workSessionId'] === 'string' &&
+    typeof value['rewardRecordId'] === 'string' &&
+    isFiniteNumber(value['coins']) &&
+    isFiniteNumber(value['stardust']) &&
+    isItemStackArray(value['crystals']) &&
+    isItemStackArray(value['materials']) &&
+    isRecord(value['aiEvaluation']) &&
+    isRecord(value['roll']) &&
+    typeof value['createdAt'] === 'string'
   );
 }
 
@@ -385,12 +449,25 @@ export function normalizeAppState(state: AppState, now: Date = new Date()): AppS
     rawActiveSession !== undefined && rawActiveSession !== null && isWorkSession(rawActiveSession)
       ? rawActiveSession
       : null;
-  const characters = (Array.isArray(source['characters']) ? source['characters'] : []).filter(
-    isOwnedCharacter,
-  );
+  const characters = (Array.isArray(source['characters']) ? source['characters'] : [])
+    .filter(isOwnedCharacter)
+    .map(normalizeOwnedCharacter);
   const facilities = (Array.isArray(source['facilities']) ? source['facilities'] : []).filter(
     isOwnedFacility,
   );
+  const inventory = normalizeInventory(source['inventory']);
+  const itemInventory = normalizeItemInventoryWithLegacy(source['itemInventory'], inventory);
+  const itemHistory = (Array.isArray(source['itemHistory']) ? source['itemHistory'] : [])
+    .filter(isItemTransaction)
+    .slice(0, BALANCE.maxItemHistory);
+  const taskRewards = (Array.isArray(source['taskRewards']) ? source['taskRewards'] : [])
+    .filter(isTaskCompletionReward)
+    .slice(0, BALANCE.maxTaskRewards);
+  const rawStardustCarry = source['stardustCarry'];
+  const stardustCarry =
+    isFiniteNumber(rawStardustCarry) && rawStardustCarry >= 0
+      ? rawStardustCarry % 10
+      : 0;
   const rewards = (Array.isArray(source['rewards']) ? source['rewards'] : [])
     .filter(isRewardRecord)
     .map(normalizeReward);
@@ -480,7 +557,11 @@ export function normalizeAppState(state: AppState, now: Date = new Date()): AppS
     tasks,
     activeSession,
     sessionHistory,
-    inventory: normalizeInventory(source['inventory']),
+    inventory,
+    itemInventory,
+    itemHistory,
+    taskRewards,
+    stardustCarry,
     characters,
     facilities,
     rewards,
@@ -505,6 +586,10 @@ export function toAppStateSnapshot(state: AppState): AppState {
     activeSession: state.activeSession,
     sessionHistory: state.sessionHistory,
     inventory: state.inventory,
+    itemInventory: state.itemInventory,
+    itemHistory: state.itemHistory,
+    taskRewards: state.taskRewards,
+    stardustCarry: state.stardustCarry,
     characters: state.characters,
     facilities: state.facilities,
     rewards: state.rewards,

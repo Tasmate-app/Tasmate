@@ -1,6 +1,5 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand';
 import { elapsedSeconds } from './session';
-import { experienceToNextLevel, levelUpCost } from './reward';
 import { facilityUpgradeCost } from './facility';
 import {
   applyWeeklyStatus,
@@ -42,6 +41,13 @@ import {
 } from './storage';
 import { computeSessionReward } from './rewardService';
 import { CHARACTER_DEFINITIONS } from './seed';
+import { billableMinutes } from './session';
+import { createItemTransaction, consumeItems, COIN_ITEM_ID } from './inventory/inventoryManager';
+import { legacyInventoryFromItems } from './inventory/materialStorage';
+import { planLevelUp } from './progression/levelSystem';
+import { planAscension } from './progression/ascensionSystem';
+import { evaluateTaskWithFallback, rollTaskReward } from './rewards/rewardCalculator';
+import { applyTaskRewardToState } from './rewards/rewardProcessor';
 import type {
   OwnedCharacter,
   RecurrenceRule,
@@ -121,6 +127,8 @@ export interface AppActions {
   acknowledgeSupportEvent: (id: string) => void;
 
   levelUpCharacter: (definitionId: string) => boolean;
+  /** レベル上限を解放する。レベルが現在の上限に達し、素材が揃っている場合のみ成功する */
+  ascendCharacter: (definitionId: string) => boolean;
   upgradeFacility: (definitionId: string) => boolean;
   toggleFacility: (definitionId: string) => void;
 
@@ -810,41 +818,58 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
       rewardMultiplier: currentWeeklyMultiplier(s),
     });
 
-    // 報酬付与：通貨・素材・経験値
+    const actualMinutes = billableMinutes(elapsed, BALANCE.minimumBillableSeconds);
+    const alreadyRewarded = s.taskRewards.some(
+      (reward) => reward.taskId === activeSession.taskId,
+    );
+    const taskRewardResult = rollTaskReward({
+      taskId: activeSession.taskId,
+      workSessionId: activeSession.id,
+      rewardRecordId: record.id,
+      task,
+      actualMinutes,
+      coins: record.finalReward.currency,
+      completed: result === 'completed',
+      evaluation: evaluateTaskWithFallback({ task, actualMinutes }),
+      targetCharacterId: activeSession.assignedCharacterIds[0] ?? null,
+      previousStardustCarry: s.stardustCarry,
+      nowIso: endedAt,
+      suppressDrops: alreadyRewarded,
+    });
+
+    // 報酬付与：通貨・素材・経験値。旧 Inventory と新インベントリを同時に更新する
     const gainedExp = record.finalReward.experience;
     const dispatched = new Set(activeSession.assignedCharacterIds);
-    set((prev) => ({
-      activeSession: null,
-      sessionHistory: [finished, ...prev.sessionHistory],
-      tasks: prev.tasks.map((t) =>
-        t.id === activeSession.taskId
-          ? {
-              ...t,
-              status: result === 'completed' ? ('completed' as const) : ('planned' as const),
-              updatedAt: endedAt,
-            }
-          : t,
-      ),
-      inventory: {
-        currency: (prev.inventory?.currency ?? 0) + record.finalReward.currency,
-        materials: {
-          shard_sun:
-            (prev.inventory?.materials?.shard_sun ?? 0) +
-            (record.finalReward.materials.shard_sun ?? 0),
-          shard_moon:
-            (prev.inventory?.materials?.shard_moon ?? 0) +
-            (record.finalReward.materials.shard_moon ?? 0),
-          shard_star:
-            (prev.inventory?.materials?.shard_star ?? 0) +
-            (record.finalReward.materials.shard_star ?? 0),
-        },
-      },
-      characters: prev.characters.map((c) =>
-        dispatched.has(c.definitionId) ? { ...c, experience: c.experience + gainedExp } : c,
-      ),
-      rewards: [record, ...prev.rewards],
-      appliedRewardSessionIds: [...prev.appliedRewardSessionIds, activeSession.id],
-    }));
+    set((prev) => {
+      const applied = applyTaskRewardToState(
+        prev,
+        taskRewardResult.reward,
+        record.finalReward.materials,
+      );
+      return {
+        activeSession: null,
+        sessionHistory: [finished, ...prev.sessionHistory],
+        tasks: prev.tasks.map((t) =>
+          t.id === activeSession.taskId
+            ? {
+                ...t,
+                status: result === 'completed' ? ('completed' as const) : ('planned' as const),
+                updatedAt: endedAt,
+              }
+            : t,
+        ),
+        inventory: applied.inventory,
+        itemInventory: applied.itemInventory,
+        itemHistory: applied.itemHistory.slice(0, BALANCE.maxItemHistory),
+        taskRewards: [applied.reward, ...prev.taskRewards].slice(0, BALANCE.maxTaskRewards),
+        stardustCarry: taskRewardResult.stardustCarry,
+        characters: prev.characters.map((c) =>
+          dispatched.has(c.definitionId) ? { ...c, experience: c.experience + gainedExp } : c,
+        ),
+        rewards: [record, ...prev.rewards],
+        appliedRewardSessionIds: [...prev.appliedRewardSessionIds, activeSession.id],
+      };
+    });
     return record.id;
   },
 
@@ -925,19 +950,65 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
     const s = get();
     const owned = s.characters.find((c) => c.definitionId === definitionId);
     if (owned === undefined) return false;
-    const cost = levelUpCost(owned.level);
-    if (s.inventory.currency < cost) return false;
-    if (owned.experience < experienceToNextLevel(owned.level)) return false;
+    const plan = planLevelUp(owned, s.itemInventory);
+    if (!plan.canLevelUp) return false;
+    const consumed = consumeItems(s.itemInventory, plan.items);
+    if (!consumed.ok) return false;
     set((prev) => ({
-      inventory: { ...prev.inventory, currency: prev.inventory.currency - cost },
+      inventory: legacyInventoryFromItems(consumed.inventory, prev.inventory),
+      itemInventory: consumed.inventory,
+      itemHistory: [
+        ...consumed.consumed.map((stack) =>
+          createItemTransaction({
+            id: newId('item'),
+            itemId: stack.itemId,
+            delta: -stack.quantity,
+            reason: 'level_up',
+            createdAt: nowIso(),
+            characterId: definitionId,
+          }),
+        ),
+        ...prev.itemHistory,
+      ].slice(0, BALANCE.maxItemHistory),
       characters: prev.characters.map((c) =>
         c.definitionId === definitionId
           ? {
               ...c,
               level: c.level + 1,
-              experience: c.experience - experienceToNextLevel(c.level),
+              experience: c.experience - plan.requiredExperience,
             }
           : c,
+      ),
+    }));
+    return true;
+  },
+
+  ascendCharacter: (definitionId) => {
+    const s = get();
+    const owned = s.characters.find((c) => c.definitionId === definitionId);
+    if (owned === undefined) return false;
+    const plan = planAscension(owned, s.itemInventory);
+    if (!plan.canAscend || plan.nextStage === null) return false;
+    const consumed = consumeItems(s.itemInventory, plan.items);
+    if (!consumed.ok) return false;
+    set((prev) => ({
+      inventory: legacyInventoryFromItems(consumed.inventory, prev.inventory),
+      itemInventory: consumed.inventory,
+      itemHistory: [
+        ...consumed.consumed.map((stack) =>
+          createItemTransaction({
+            id: newId('item'),
+            itemId: stack.itemId,
+            delta: -stack.quantity,
+            reason: 'ascension',
+            createdAt: nowIso(),
+            characterId: definitionId,
+          }),
+        ),
+        ...prev.itemHistory,
+      ].slice(0, BALANCE.maxItemHistory),
+      characters: prev.characters.map((c) =>
+        c.definitionId === definitionId ? { ...c, ascensionStage: plan.nextStage ?? c.ascensionStage } : c,
       ),
     }));
     return true;
@@ -948,9 +1019,23 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
     const owned = s.facilities.find((f) => f.definitionId === definitionId);
     if (owned === undefined) return false;
     const cost = facilityUpgradeCost(owned.level);
-    if (s.inventory.currency < cost) return false;
+    const consumed = consumeItems(s.itemInventory, [
+      { itemId: COIN_ITEM_ID, quantity: cost },
+    ]);
+    if (!consumed.ok) return false;
     set((prev) => ({
-      inventory: { ...prev.inventory, currency: prev.inventory.currency - cost },
+      inventory: legacyInventoryFromItems(consumed.inventory, prev.inventory),
+      itemInventory: consumed.inventory,
+      itemHistory: [
+        createItemTransaction({
+          id: newId('item'),
+          itemId: COIN_ITEM_ID,
+          delta: -cost,
+          reason: 'other',
+          createdAt: nowIso(),
+        }),
+        ...prev.itemHistory,
+      ].slice(0, BALANCE.maxItemHistory),
       facilities: prev.facilities.map((f) =>
         f.definitionId === definitionId ? { ...f, level: f.level + 1 } : f,
       ),
