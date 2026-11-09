@@ -3,6 +3,7 @@ import { Alert, StyleSheet, Text, View } from 'react-native';
 import type { RecurrenceRule } from '@tasmate/types';
 import {
   WEEKDAY_LABELS,
+  activeCategories,
   isValidDateKey,
   isValidTime,
   isValidTimeRange,
@@ -10,7 +11,7 @@ import {
 } from '@tasmate/core';
 import { useMobileAppStore } from '../../stores/appStore';
 import { ChipGroup, FormField, GameButton, GameTextInput, ModalSheet } from '../../ui';
-import { CATEGORY_OPTIONS } from '../../lib/taskMeta';
+import { CategoryPicker, type CategorySelection } from '../taxonomy/CategoryPicker';
 import { colors, fontSize, spacing } from '../../theme/tokens';
 
 interface RecurrenceEditorModalProps {
@@ -31,8 +32,10 @@ export function RecurrenceEditorModal({ open, rule, onClose }: RecurrenceEditorM
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('勉強');
-  const [subject, setSubject] = useState('');
+  const [selection, setSelection] = useState<CategorySelection>({
+    categoryId: '',
+    subCategoryId: '',
+  });
   const [estimatedMinutes, setEstimatedMinutes] = useState('25');
   const [days, setDays] = useState<string[]>([]);
   const [startTime, setStartTime] = useState('');
@@ -45,8 +48,13 @@ export function RecurrenceEditorModal({ open, rule, onClose }: RecurrenceEditorM
     if (!open) return;
     setTitle(rule?.title ?? '');
     setDescription(rule?.description ?? '');
-    setCategory(rule?.category ?? '勉強');
-    setSubject(rule?.subject ?? '');
+    setSelection({
+      categoryId:
+        rule?.categoryId ??
+        activeCategories(useMobileAppStore.getState().categories)[0]?.id ??
+        '',
+      subCategoryId: rule?.subCategoryId ?? '',
+    });
     setEstimatedMinutes(String(rule?.estimatedMinutes ?? 25));
     setDays((rule?.daysOfWeek ?? [1]).map(String));
     setStartTime(rule?.startTime ?? '');
@@ -113,8 +121,9 @@ export function RecurrenceEditorModal({ open, rule, onClose }: RecurrenceEditorM
     const input = {
       title: title.trim(),
       description: description.trim(),
-      category,
-      subject: subject.trim() === '' ? undefined : subject.trim(),
+      category: '',
+      categoryId: selection.categoryId === '' ? undefined : selection.categoryId,
+      subCategoryId: selection.subCategoryId === '' ? undefined : selection.subCategoryId,
       estimatedMinutes: Math.floor(minutes),
       daysOfWeek: days.map(Number),
       startTime: start === '' ? undefined : start,
@@ -180,22 +189,7 @@ export function RecurrenceEditorModal({ open, rule, onClose }: RecurrenceEditorM
         />
       </FormField>
 
-      <FormField label="カテゴリ">
-        <ChipGroup
-          options={CATEGORY_OPTIONS.map((option) => ({ value: option, label: option }))}
-          selected={[category]}
-          onToggle={setCategory}
-        />
-      </FormField>
-
-      <FormField label="科目（任意）">
-        <GameTextInput
-          value={subject}
-          onChangeText={setSubject}
-          placeholder="例：英語"
-          maxLength={30}
-        />
-      </FormField>
+      <CategoryPicker value={selection} onChange={setSelection} />
 
       <FormField label="予定時間（分）">
         <GameTextInput
