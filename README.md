@@ -27,6 +27,7 @@ Web版とExpo React Native版で型・ゲームロジックを共有する。
 - `apps/mobile/` … Expo React Native版
 - `packages/types/` … 共通型 `@tasmate/types`
 - `packages/core/` … 共通ゲームロジック・アプリ状態・ストア・保存抽象 `@tasmate/core`
+- `packages/design-tokens/` … Web/Native 共通デザイントークン `@tasmate/design-tokens`
 
 ```powershell
 npm run typecheck -w tasmate-mobile
@@ -82,7 +83,9 @@ npm run e2e        # Playwright スモークテスト（dev サーバーを自�
 
 ## 画面
 
-ゲーム一体型UI。上部HUD（ロゴ・通貨・素材・作業状態）と下部ナビで全画面を操作する。
+ゲーム一体型UI。上部HUD（ロゴ・通貨・素材・作業状態）とナビで全画面を操作する。
+ナビはモバイルでは下部バー、1024px以上では左サイドバーに切り替わる。デザインは
+`packages/design-tokens/` を正とし、Webでは起動時にCSS変数へ適用する。
 
 - `/` ホーム：3Dシェアハウスが画面を占める。キャラ・施設を選択すると
   コンテキストパネルが開き、詳細・育成・強化へ進める

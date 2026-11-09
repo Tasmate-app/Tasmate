@@ -4,10 +4,16 @@ import { formatElapsed } from '../../domain/session';
 import { useNow } from '../../hooks/useNow';
 import { sessionElapsedSeconds, useAppStore } from '../../stores/appStore';
 
-const MATERIAL_DOT_COLORS: Record<string, string> = {
-  shard_sun: 'var(--attr-sun)',
-  shard_moon: 'var(--attr-moon)',
-  shard_star: 'var(--attr-star)',
+interface MaterialGlyph {
+  glyph: string;
+  color: string;
+  background: string;
+}
+
+const MATERIAL_GLYPHS: Record<string, MaterialGlyph> = {
+  shard_sun: { glyph: '☀', color: 'var(--attr-sun)', background: 'var(--color-gold-soft)' },
+  shard_moon: { glyph: '☾', color: 'var(--attr-moon)', background: 'var(--color-accent-soft)' },
+  shard_star: { glyph: '★', color: 'var(--attr-star)', background: 'var(--color-pink-soft)' },
 };
 
 /** ゲーム内HUD（ロゴ・通貨・素材・作業状態を画面上部に統合表示） */
@@ -31,11 +37,16 @@ export function GameHUD() {
         <span className="game-brand__mark" aria-hidden="true">
           T
         </span>
-        <span className="game-brand__word">Tasmate</span>
+        <span className="game-brand__text">
+          <span className="game-brand__word">Tasmate</span>
+          <span className="game-brand__sub">STUDY &amp; TASK</span>
+        </span>
       </div>
       <div className="game-hud__resources" aria-label="所持資源">
-        <span className="game-res" title="ゲーム内通貨">
-          <span className="game-res__dot game-res__dot--coin" aria-hidden="true" />
+        <span className="game-res game-res--coin" title="ゲーム内通貨">
+          <span className="game-res__glyph" aria-hidden="true">
+            G
+          </span>
           <span className="game-res__label">通貨</span> <strong>{inventory.currency}</strong>
         </span>
         <span className="game-res" title="星屑">
@@ -45,27 +56,42 @@ export function GameHUD() {
         </span>
         <span className="game-res" title={MATERIAL_NAMES['shard_sun']}>
           <span
-            className="game-res__dot"
-            style={{ background: MATERIAL_DOT_COLORS['shard_sun'] }}
+            className="game-res__glyph"
+            style={{
+              background: MATERIAL_GLYPHS['shard_sun'].background,
+              color: MATERIAL_GLYPHS['shard_sun'].color,
+            }}
             aria-hidden="true"
-          />
+          >
+            {MATERIAL_GLYPHS['shard_sun'].glyph}
+          </span>
           <span className="game-res__label">太陽</span>{' '}
           <strong>{inventory.materials.shard_sun}</strong>
         </span>
         <span className="game-res" title={MATERIAL_NAMES['shard_moon']}>
           <span
-            className="game-res__dot"
-            style={{ background: MATERIAL_DOT_COLORS['shard_moon'] }}
+            className="game-res__glyph"
+            style={{
+              background: MATERIAL_GLYPHS['shard_moon'].background,
+              color: MATERIAL_GLYPHS['shard_moon'].color,
+            }}
             aria-hidden="true"
-          />
+          >
+            {MATERIAL_GLYPHS['shard_moon'].glyph}
+          </span>
           <span className="game-res__label">月</span> <strong>{inventory.materials.shard_moon}</strong>
         </span>
         <span className="game-res" title={MATERIAL_NAMES['shard_star']}>
           <span
-            className="game-res__dot"
-            style={{ background: MATERIAL_DOT_COLORS['shard_star'] }}
+            className="game-res__glyph"
+            style={{
+              background: MATERIAL_GLYPHS['shard_star'].background,
+              color: MATERIAL_GLYPHS['shard_star'].color,
+            }}
             aria-hidden="true"
-          />
+          >
+            {MATERIAL_GLYPHS['shard_star'].glyph}
+          </span>
           <span className="game-res__label">星</span>{' '}
           <strong>{inventory.materials.shard_star}</strong>
         </span>

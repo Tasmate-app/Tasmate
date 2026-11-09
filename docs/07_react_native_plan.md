@@ -87,7 +87,7 @@ public/assets/    Luna GLB、ベースキャラクター素材
 | UIコンポーネント | `components/`, `features/` | CSS・DOM前提。React Nativeでは再実装 |
 | 画面遷移の状態 | `location.state` | Expo Routerのクエリパラメータ/ストアに置換 |
 | 3D | `src/game3d/RoomScene.tsx` | シーン内容は参考にできるが、Canvas・GLB読込・操作系はプラットフォーム分割 |
-| デザイントークン | `src/styles/tokens.css` | RNではCSS変数を使えない。必要ならTSトークン化 |
+| デザイントークン | `packages/design-tokens/`（`@tasmate/design-tokens`） | 色・余白・角丸・影・モーションをTSで共有。Webは起動時にCSS変数へ適用し、RNはそのまま参照する |
 | API | 未実装 | Supabase/AI接続時に `packages/api` を新設 |
 
 ## 5. Zustandストアの依存関係
