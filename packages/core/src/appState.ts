@@ -1,4 +1,5 @@
 import type {
+  Category,
   Inventory,
   ItemInventory,
   ItemTransaction,
@@ -8,6 +9,7 @@ import type {
   RecurrenceRule,
   RestSession,
   RewardRecord,
+  SubCategory,
   SupportEvent,
   Task,
   TaskCompletionReward,
@@ -25,6 +27,12 @@ import {
 } from './weekly';
 
 import { BALANCE } from './constants';
+import {
+  createDefaultCategories,
+  migrateCategorySystem,
+  normalizeCategoryList,
+  normalizeSubCategoryList,
+} from './categories';
 import { normalizeItemInventoryWithLegacy } from './inventory/materialStorage';
 import { normalizeAscensionStage } from './progression/progressionConfig';
 
@@ -55,6 +63,12 @@ export interface AppState {
   appliedRewardSessionIds: string[];
   /** 繰り返しタスクのルール */
   recurrenceRules: RecurrenceRule[];
+  /** ユーザーが管理するカテゴリー（削除済みも履歴表示のため保持） */
+  categories: Category[];
+  /** カテゴリーに属するサブカテゴリー */
+  subCategories: SubCategory[];
+  /** 既定カテゴリーへの移行が完了したか。未移行データだけ一度だけ実行する */
+  categorySystemInitialized: boolean;
   /** 週次判定の履歴（weekStart ごとに一意） */
   weeklyEvaluations: WeeklyEvaluation[];
   /** 週間継続状態 */
@@ -70,6 +84,7 @@ export interface AppState {
 /** 初期状態（仮データ） */
 export function initialAppState(): AppState {
   const now = new Date();
+  const { categories, subCategories } = createDefaultCategories(now.toISOString());
   return {
     version: 1,
     tasks: [],
@@ -94,6 +109,9 @@ export function initialAppState(): AppState {
     rewards: [],
     appliedRewardSessionIds: [],
     recurrenceRules: [],
+    categories,
+    subCategories,
+    categorySystemInitialized: true,
     weeklyEvaluations: [],
     weeklyProgress: emptyWeeklyProgress(now),
     restWeeks: [],
@@ -359,6 +377,18 @@ export function isValidAppState(value: unknown): value is AppState {
   ) {
     return false;
   }
+  if (value['categories'] !== undefined && !Array.isArray(value['categories'])) {
+    return false;
+  }
+  if (value['subCategories'] !== undefined && !Array.isArray(value['subCategories'])) {
+    return false;
+  }
+  if (
+    value['categorySystemInitialized'] !== undefined &&
+    typeof value['categorySystemInitialized'] !== 'boolean'
+  ) {
+    return false;
+  }
   if (
     value['weeklyEvaluations'] !== undefined &&
     !Array.isArray(value['weeklyEvaluations'])
@@ -437,7 +467,7 @@ function normalizeSupportEvent(value: unknown): SupportEvent | null {
  */
 export function normalizeAppState(state: AppState, now: Date = new Date()): AppState {
   const source = state as unknown as UnknownRecord;
-  const tasks = (Array.isArray(source['tasks']) ? source['tasks'] : [])
+  let tasks = (Array.isArray(source['tasks']) ? source['tasks'] : [])
     .filter(isTask)
     .map(normalizeTask);
   const sessionHistory = (Array.isArray(source['sessionHistory'])
@@ -474,9 +504,26 @@ export function normalizeAppState(state: AppState, now: Date = new Date()): AppS
   const appliedRewardSessionIds = isStringArray(source['appliedRewardSessionIds'])
     ? Array.from(new Set(source['appliedRewardSessionIds']))
     : [];
-  const recurrenceRules = (
+  let recurrenceRules = (
     Array.isArray(source['recurrenceRules']) ? source['recurrenceRules'] : []
   ).filter(isRecurrenceRule);
+  let categories = normalizeCategoryList(source['categories']);
+  let subCategories = normalizeSubCategoryList(source['subCategories'], categories);
+  let categorySystemInitialized = source['categorySystemInitialized'] === true;
+  if (!categorySystemInitialized) {
+    const migrated = migrateCategorySystem({
+      tasks,
+      recurrenceRules,
+      categories,
+      subCategories,
+      nowIso: now.toISOString(),
+    });
+    tasks = migrated.tasks;
+    recurrenceRules = migrated.recurrenceRules;
+    categories = migrated.categories;
+    subCategories = migrated.subCategories;
+    categorySystemInitialized = true;
+  }
   const weeklyEvaluations = (
     Array.isArray(source['weeklyEvaluations']) ? source['weeklyEvaluations'] : []
   ).filter(isWeeklyEvaluation);
@@ -567,6 +614,9 @@ export function normalizeAppState(state: AppState, now: Date = new Date()): AppS
     rewards,
     appliedRewardSessionIds,
     recurrenceRules,
+    categories,
+    subCategories,
+    categorySystemInitialized,
     weeklyEvaluations,
     weeklyProgress,
     restWeeks,
@@ -595,6 +645,9 @@ export function toAppStateSnapshot(state: AppState): AppState {
     rewards: state.rewards,
     appliedRewardSessionIds: state.appliedRewardSessionIds,
     recurrenceRules: state.recurrenceRules,
+    categories: state.categories,
+    subCategories: state.subCategories,
+    categorySystemInitialized: state.categorySystemInitialized,
     weeklyEvaluations: state.weeklyEvaluations,
     weeklyProgress: state.weeklyProgress,
     restWeeks: state.restWeeks,
