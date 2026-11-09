@@ -1,9 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Button } from '../../components/ui/Button';
-import { Field, SelectInput, TextArea, TextInput } from '../../components/ui/Field';
+import { Field, TextArea, TextInput } from '../../components/ui/Field';
 import { isValidTimeRange, WEEKDAY_LABELS } from '../../domain/weekly';
 import { useAppStore } from '../../stores/appStore';
 import type { RecurrenceRule } from '../../types/index';
+import { CategorySelectFields, type CategorySelection } from '../taxonomy/CategorySelectFields';
 
 interface RecurrenceRuleModalProps {
   rule?: RecurrenceRule;
@@ -17,8 +18,10 @@ export function RecurrenceRuleModal({ rule, onClose }: RecurrenceRuleModalProps)
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('勉強');
-  const [subject, setSubject] = useState('');
+  const [selection, setSelection] = useState<CategorySelection>({
+    categoryId: '',
+    subCategoryId: '',
+  });
   const [estimatedMinutes, setEstimatedMinutes] = useState(25);
   const [daysOfWeek, setDaysOfWeek] = useState<number[]>([]);
   const [hasTime, setHasTime] = useState(true);
@@ -32,8 +35,10 @@ export function RecurrenceRuleModal({ rule, onClose }: RecurrenceRuleModalProps)
     if (rule === undefined) return;
     setTitle(rule.title);
     setDescription(rule.description);
-    setCategory(rule.category);
-    setSubject(rule.subject ?? '');
+    setSelection({
+      categoryId: rule.categoryId ?? '',
+      subCategoryId: rule.subCategoryId ?? '',
+    });
     setEstimatedMinutes(rule.estimatedMinutes);
     setDaysOfWeek([...rule.daysOfWeek]);
     const timed = rule.startTime !== undefined && rule.endTime !== undefined;
@@ -79,8 +84,9 @@ export function RecurrenceRuleModal({ rule, onClose }: RecurrenceRuleModalProps)
     updateRecurrenceRule(rule.id, {
       title: title.trim(),
       description: description.trim(),
-      category,
-      subject: subject.trim() === '' ? undefined : subject.trim(),
+      category: '',
+      categoryId: selection.categoryId === '' ? undefined : selection.categoryId,
+      subCategoryId: selection.subCategoryId === '' ? undefined : selection.subCategoryId,
       estimatedMinutes,
       daysOfWeek,
       startTime: hasTime ? startTime : undefined,
@@ -127,29 +133,7 @@ export function RecurrenceRuleModal({ rule, onClose }: RecurrenceRuleModalProps)
               maxLength={500}
             />
           </Field>
-          <div className="field-row field-row--two">
-            <Field label="カテゴリ" htmlFor="rule-category">
-              <SelectInput
-                id="rule-category"
-                value={category}
-                onChange={(event) => setCategory(event.target.value)}
-              >
-                <option value="勉強">勉強</option>
-                <option value="作業">作業</option>
-                <option value="運動">運動</option>
-                <option value="家事">家事</option>
-                <option value="その他">その他</option>
-              </SelectInput>
-            </Field>
-            <Field label="科目（任意）" htmlFor="rule-subject">
-              <TextInput
-                id="rule-subject"
-                value={subject}
-                onChange={(event) => setSubject(event.target.value)}
-                maxLength={30}
-              />
-            </Field>
-          </div>
+          <CategorySelectFields idPrefix="rule" value={selection} onChange={setSelection} />
           <Field label="予定時間（分）" htmlFor="rule-minutes">
             <TextInput
               id="rule-minutes"
