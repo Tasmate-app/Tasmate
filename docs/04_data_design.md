@@ -262,3 +262,15 @@
 - オフライン時のタイマーや報酬確定
 - データ削除・エクスポート方法
 - プライバシー上、AI に送信するタスク情報の範囲
+
+### 実装済みの AppState 拡張（報酬・育成）
+
+| フィールド | 意味 |
+|---|---|
+| itemInventory | 全キャラクター共通のアイテム所持数 |
+| itemHistory | アイテム増減履歴（上限500件） |
+| taskRewards | タスク完了報酬の抽選結果（上限500件） |
+| stardustCarry | 星屑の端数（分） |
+| OwnedCharacter.ascensionStage | レベル上限解放の段階（0〜5） |
+
+既存の `Inventory`（currency / shard_*）は互換維持のため残し、`itemInventory` の通貨・旧素材と同期する。旧保存データは `inventory` から `itemInventory` を補完する。
