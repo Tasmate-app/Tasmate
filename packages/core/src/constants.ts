@@ -49,6 +49,10 @@ export const BALANCE = {
   longWorkSupportMinutes: 50,
   /** 応援イベントの保持上限（古いものから削除） */
   maxSupportEvents: 20,
+  /** アイテム増減履歴の保持上限 */
+  maxItemHistory: 500,
+  /** タスク報酬抽選履歴の保持上限 */
+  maxTaskRewards: 500,
 } as const;
 
 /**

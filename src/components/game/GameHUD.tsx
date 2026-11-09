@@ -19,6 +19,7 @@ const MATERIAL_GLYPHS: Record<string, MaterialGlyph> = {
 /** ゲーム内HUD（ロゴ・通貨・素材・作業状態を画面上部に統合表示） */
 export function GameHUD() {
   const inventory = useAppStore((s) => s.inventory);
+  const itemInventory = useAppStore((s) => s.itemInventory);
   const activeSession = useAppStore((s) => s.activeSession);
   const restSession = useAppStore((s) => s.restSession);
   const tasks = useAppStore((s) => s.tasks);
@@ -47,6 +48,11 @@ export function GameHUD() {
             G
           </span>
           <span className="game-res__label">通貨</span> <strong>{inventory.currency}</strong>
+        </span>
+        <span className="game-res" title="星屑">
+          <span className="game-res__dot game-res__dot--stardust" aria-hidden="true" />
+          <span className="game-res__label">星屑</span>{' '}
+          <strong>{itemInventory['stardust'] ?? 0}</strong>
         </span>
         <span className="game-res" title={MATERIAL_NAMES['shard_sun']}>
           <span

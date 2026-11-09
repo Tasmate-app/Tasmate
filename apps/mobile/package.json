@@ -5,6 +5,7 @@
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-three/fiber": "9.8.2",
+    "@tasmate/ai-rewards": "*",
     "@tasmate/core": "*",
     "@tasmate/design-tokens": "*",
     "@tasmate/types": "*",

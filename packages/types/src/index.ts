@@ -204,6 +204,8 @@ export interface OwnedCharacter {
   definitionId: string;
   level: number;
   experience: number;
+  /** レベル上限解放の段階。未設定は 0（初期上限）として扱う */
+  ascensionStage?: number;
 }
 
 /** 収集先（戦闘先）定義 */
@@ -243,6 +245,10 @@ export interface Inventory {
   currency: number;
   materials: Record<MaterialId, number>;
 }
+
+export * from './inventory';
+export * from './progression';
+export * from './rewards';
 
 /** 報酬・収集の計算入力 */
 export interface WorkOutcomeInput {

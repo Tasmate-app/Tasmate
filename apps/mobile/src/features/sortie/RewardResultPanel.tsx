@@ -3,6 +3,7 @@ import {
   MATERIAL_NAMES,
   REST_PRESET_MINUTES,
   formatElapsed,
+  getItemDefinition,
   recommendedRestMinutes,
   remainingRestSeconds,
   sessionElapsedSeconds,
@@ -19,10 +20,20 @@ interface RewardResultPanelProps {
 
 export function RewardResultPanel({ rewardId, onClose }: RewardResultPanelProps) {
   const rewards = useMobileAppStore((s) => s.rewards);
+  const taskRewards = useMobileAppStore((s) => s.taskRewards);
   const sessionHistory = useMobileAppStore((s) => s.sessionHistory);
   const reward = rewards.find((item) => item.id === rewardId);
+  const taskReward = taskRewards.find((item) => item.rewardRecordId === rewardId);
 
   if (reward === undefined) return null;
+
+  const droppedItems =
+    taskReward === undefined
+      ? []
+      : [...taskReward.crystals, ...taskReward.materials].flatMap((stack) => {
+          const definition = getItemDefinition(stack.itemId);
+          return definition === undefined ? [] : [{ definition, quantity: stack.quantity }];
+        });
 
   const session = sessionHistory.find((item) => item.id === reward.workSessionId);
   const endedAtMs =
@@ -59,7 +70,25 @@ export function RewardResultPanel({ rewardId, onClose }: RewardResultPanelProps)
               color={colors.primary}
             />
           ))}
+          {taskReward !== undefined && (
+            <RewardChip label="星屑" value={`+${taskReward.stardust}`} color={colors.accent} />
+          )}
+          {droppedItems.map(({ definition, quantity }) => (
+            <RewardChip
+              key={definition.id}
+              label={`${definition.icon} ${definition.name}`}
+              value={`+${quantity}`}
+              color={rarityColor(definition.rarity)}
+            />
+          ))}
         </View>
+        {taskReward !== undefined && (
+          <Text style={styles.meta}>
+            判定: {taskReward.aiEvaluation.source === 'ai' ? 'AI' : '簡易判定'} ・ 難易度{' '}
+            {taskReward.aiEvaluation.difficulty}
+            {droppedItems.length === 0 ? ' ・ 結晶・素材なし' : ''}
+          </Text>
+        )}
         <Text style={styles.meta}>{reward.inputSummary}</Text>
         {reward.rewardMultiplier !== undefined && reward.rewardMultiplier !== 1 && (
           <Text style={styles.multiplier}>
@@ -143,6 +172,21 @@ function RestSection({
       </View>
     </View>
   );
+}
+
+function rarityColor(rarity: 'N' | 'R' | 'SR' | 'SSR' | 'UR'): string {
+  switch (rarity) {
+    case 'R':
+      return colors.primaryDark;
+    case 'SR':
+      return colors.accent;
+    case 'SSR':
+      return colors.orange;
+    case 'UR':
+      return colors.danger;
+    default:
+      return colors.textMuted;
+  }
 }
 
 function RewardChip({ label, value, color }: { label: string; value: string; color: string }) {

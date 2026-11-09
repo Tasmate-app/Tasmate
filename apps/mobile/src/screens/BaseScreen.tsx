@@ -15,7 +15,7 @@ import {
   MATERIAL_NAMES,
   experienceToNextLevel,
   facilityUpgradeCost,
-  levelUpCost,
+  planLevelUp,
 } from '@tasmate/core';
 import type { FacilityDefinition } from '@tasmate/types';
 import { RoomScene } from '../game3d/RoomScene';
@@ -55,6 +55,7 @@ export function BaseScreen() {
   const characters = useMobileAppStore((s) => s.characters);
   const facilities = useMobileAppStore((s) => s.facilities);
   const inventory = useMobileAppStore((s) => s.inventory);
+  const itemInventory = useMobileAppStore((s) => s.itemInventory);
   const levelUpCharacter = useMobileAppStore((s) => s.levelUpCharacter);
   const upgradeFacility = useMobileAppStore((s) => s.upgradeFacility);
   const toggleFacility = useMobileAppStore((s) => s.toggleFacility);
@@ -80,6 +81,16 @@ export function BaseScreen() {
   const selectedFacilityDefinition = FACILITY_DEFINITIONS.find(
     (definition) => definition.id === selectedFacilityId,
   );
+  const selectedLevelPlan =
+    selectedCharacter !== undefined ? planLevelUp(selectedCharacter, itemInventory) : null;
+  const selectedAtMaxLevel =
+    selectedCharacter !== undefined &&
+    selectedLevelPlan !== null &&
+    selectedCharacter.level >= selectedLevelPlan.maxLevel;
+  const levelUpCoinCost =
+    selectedLevelPlan?.items.find((stack) => stack.itemId === 'coin')?.quantity ?? 0;
+  const levelUpStardustCost =
+    selectedLevelPlan?.items.find((stack) => stack.itemId === 'stardust')?.quantity ?? 0;
 
   const selectCharacter = (id: string) => {
     setSelectedCharacterId(id);
@@ -243,7 +254,9 @@ export function BaseScreen() {
                   {selectedCharacterDefinition.description}
                 </Text>
                 <View style={styles.characterLevelRow}>
-                  <Text style={styles.characterLevel}>Lv.{selectedCharacter.level}</Text>
+                  <Text style={styles.characterLevel}>
+                    Lv.{selectedCharacter.level} / {selectedLevelPlan?.maxLevel ?? '-'}
+                  </Text>
                   <Text style={styles.characterLevelMeta}>
                     経験値 {selectedCharacter.experience} /{' '}
                     {experienceToNextLevel(selectedCharacter.level)}
@@ -281,8 +294,8 @@ export function BaseScreen() {
               />
             </View>
             <Text style={styles.note}>
-              基礎効率 {selectedCharacterDefinition.baseEfficiency.toFixed(1)} / レベルアップ費用 通貨
-              {levelUpCost(selectedCharacter.level)}
+              基礎効率 {selectedCharacterDefinition.baseEfficiency.toFixed(1)} / レベルアップ費用
+              硬貨 {levelUpCoinCost}・星屑 {levelUpStardustCost}
             </Text>
             <View style={styles.actions}>
               <GameButton
@@ -293,18 +306,16 @@ export function BaseScreen() {
               />
               <GameButton
                 label={
-                  selectedCharacter.experience <
-                  experienceToNextLevel(selectedCharacter.level)
-                    ? '経験値不足'
-                    : inventory.currency < levelUpCost(selectedCharacter.level)
-                      ? '通貨不足'
-                      : `レベルアップ（${levelUpCost(selectedCharacter.level)}）`
+                  selectedAtMaxLevel
+                    ? 'レベル上限に到達'
+                    : selectedLevelPlan?.canLevelUp
+                      ? `レベルアップ（硬貨 ${levelUpCoinCost} / 星屑 ${levelUpStardustCost}）`
+                      : selectedCharacter.experience <
+                          experienceToNextLevel(selectedCharacter.level)
+                        ? '経験値不足'
+                        : '素材不足'
                 }
-                disabled={
-                  selectedCharacter.experience <
-                    experienceToNextLevel(selectedCharacter.level) ||
-                  inventory.currency < levelUpCost(selectedCharacter.level)
-                }
+                disabled={selectedLevelPlan?.canLevelUp !== true}
                 onPress={() => {
                   const ok = levelUpCharacter(selectedCharacter.definitionId);
                   setFeedback(ok ? 'レベルアップしました。' : 'レベルアップできませんでした。');

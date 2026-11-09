@@ -13,7 +13,8 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "@tasmate/types": ["../types/src/index.ts"]
+      "@tasmate/types": ["../types/src/index.ts"],
+      "@tasmate/ai-rewards": ["../ai-rewards/src/index.ts"]
     }
   },
   "include": ["src"]

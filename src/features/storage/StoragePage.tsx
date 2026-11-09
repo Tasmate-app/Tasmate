@@ -1,14 +1,16 @@
 import { RewardHistory } from '../house/RewardHistory';
+import { InventoryPanel } from './InventoryPanel';
 
-/** 倉庫（ゲーム内の記録保管庫。報酬履歴を表示） */
+/** 倉庫（かばん・報酬履歴） */
 export function StoragePage() {
   return (
     <div className="game-screen">
       <div className="game-container">
         <h1 className="game-screen__title">倉庫</h1>
         <p className="list-item__meta companion-lead">
-          これまでの作業と報酬の記録を確認できます。
+          所持している素材と、これまでの作業報酬を確認できます。
         </p>
+        <InventoryPanel />
         <RewardHistory />
       </div>
     </div>

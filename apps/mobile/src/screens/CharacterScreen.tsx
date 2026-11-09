@@ -11,8 +11,9 @@ import {
   BALANCE,
   CHARACTER_DEFINITIONS,
   MATERIAL_NAMES,
-  experienceToNextLevel,
-  levelUpCost,
+  getItemDefinition,
+  planAscension,
+  planLevelUp,
 } from '@tasmate/core';
 import { useMobileAppStore } from '../stores/appStore';
 import {
@@ -42,8 +43,10 @@ type CharacterTab = 'status' | 'growth' | 'history';
 export function CharacterScreen() {
   const characters = useMobileAppStore((s) => s.characters);
   const inventory = useMobileAppStore((s) => s.inventory);
+  const itemInventory = useMobileAppStore((s) => s.itemInventory);
   const rewards = useMobileAppStore((s) => s.rewards);
   const levelUpCharacter = useMobileAppStore((s) => s.levelUpCharacter);
+  const ascendCharacter = useMobileAppStore((s) => s.ascendCharacter);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [tab, setTab] = useState<CharacterTab>('status');
@@ -64,13 +67,15 @@ export function CharacterScreen() {
       ? CHARACTER_DEFINITIONS.find((item) => item.id === selected.definitionId)
       : undefined;
   const palette = attributePalette[definition?.attribute ?? 'none'];
-  const nextExp = selected !== null ? experienceToNextLevel(selected.level) : 0;
-  const upgradeCost = selected !== null ? levelUpCost(selected.level) : 0;
+  const levelPlan = selected !== null ? planLevelUp(selected, itemInventory) : null;
+  const ascensionPlan = selected !== null ? planAscension(selected, itemInventory) : null;
+  const nextExp = levelPlan?.requiredExperience ?? 0;
+  const coinCost = levelPlan?.items.find((stack) => stack.itemId === 'coin')?.quantity ?? 0;
+  const stardustCost =
+    levelPlan?.items.find((stack) => stack.itemId === 'stardust')?.quantity ?? 0;
   const portraitSize = Math.min(236, Math.max(176, Math.round(width * 0.5)));
-  const canLevelUp =
-    selected !== null &&
-    selected.experience >= nextExp &&
-    inventory.currency >= upgradeCost;
+  const canLevelUp = levelPlan?.canLevelUp ?? false;
+  const atMaxLevel = selected !== null && levelPlan !== null && selected.level >= levelPlan.maxLevel;
 
   const selectCharacter = (id: string) => {
     setSelectedId(id);
@@ -325,8 +330,19 @@ export function CharacterScreen() {
                 </View>
 
                 <View style={styles.detailRows}>
-                  <DetailRow label="レベルアップ費用" value={`通貨 ${upgradeCost}`} />
+                  <DetailRow
+                    label="レベルアップ費用"
+                    value={`硬貨 ${coinCost} / 星屑 ${stardustCost}`}
+                  />
                   <DetailRow label="所持通貨" value={`${inventory.currency}`} />
+                  <DetailRow
+                    label="レベル上限"
+                    value={`Lv.${levelPlan?.maxLevel ?? 0}${
+                      selected.ascensionStage !== undefined && selected.ascensionStage > 0
+                        ? `（解放 ${selected.ascensionStage}）`
+                        : ''
+                    }`}
+                  />
                   <DetailRow
                     label="レベルアップ後の効率"
                     value={`${(definition.baseEfficiency * (1 + Math.max(0, selected.level) * BALANCE.efficiencyPerLevel)).toFixed(1)}`}
@@ -335,11 +351,13 @@ export function CharacterScreen() {
 
                 <GameButton
                   label={
-                    selected.experience < nextExp
-                      ? '経験値が足りません'
-                      : inventory.currency < upgradeCost
-                        ? '通貨が足りません'
-                        : `レベルアップ（通貨 ${upgradeCost}）`
+                    atMaxLevel
+                      ? 'レベル上限に到達'
+                      : selected.experience < nextExp
+                        ? '経験値が足りません'
+                        : !canLevelUp
+                          ? '素材が足りません'
+                          : `レベルアップ（硬貨 ${coinCost} / 星屑 ${stardustCost}）`
                   }
                   onPress={() => {
                     const ok = levelUpCharacter(selected.definitionId);
@@ -348,6 +366,43 @@ export function CharacterScreen() {
                   disabled={!canLevelUp}
                   size="lg"
                 />
+
+                {ascensionPlan !== null && ascensionPlan.requirement !== null && (
+                  <View style={styles.ascensionBox}>
+                    <Text style={styles.ascensionTitle}>
+                      上限解放 Lv.{ascensionPlan.requirement.fromMaxLevel} → Lv.
+                      {ascensionPlan.requirement.toMaxLevel}
+                    </Text>
+                    <Text style={styles.ascensionCost}>
+                      {ascensionPlan.requirement.crystals.rarity} 結晶 ×
+                      {ascensionPlan.requirement.crystals.quantity}（任意種類）
+                    </Text>
+                    <Text style={styles.ascensionCost}>
+                      {getItemDefinition(ascensionPlan.requirement.characterMaterial.itemId)?.name ??
+                        ascensionPlan.requirement.characterMaterial.itemId}{' '}
+                      ×
+                      {ascensionPlan.requirement.characterMaterial.quantity}
+                    </Text>
+                    <Text style={styles.ascensionCost}>
+                      硬貨 {ascensionPlan.requirement.coins}
+                    </Text>
+                    <GameButton
+                      label={
+                        ascensionPlan.canAscend
+                          ? 'レベル上限を解放'
+                          : !atMaxLevel
+                            ? `Lv.${ascensionPlan.currentMaxLevel} で解放可能`
+                            : '素材が足りません'
+                      }
+                      onPress={() => {
+                        const ok = ascendCharacter(selected.definitionId);
+                        setFeedback(ok ? 'レベル上限を解放しました。' : '上限解放できませんでした。');
+                      }}
+                      disabled={!ascensionPlan.canAscend}
+                      variant="secondary"
+                    />
+                  </View>
+                )}
                 {feedback !== null && <Text style={styles.feedback}>{feedback}</Text>}
               </Panel>
             )}
@@ -694,6 +749,24 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   growthMeta: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontWeight: '700',
+  },
+  ascensionBox: {
+    gap: spacing.xs,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.primaryPale,
+    padding: spacing.sm,
+  },
+  ascensionTitle: {
+    color: colors.primaryDark,
+    fontSize: fontSize.sm,
+    fontWeight: '900',
+  },
+  ascensionCost: {
     color: colors.textMuted,
     fontSize: fontSize.xs,
     fontWeight: '700',

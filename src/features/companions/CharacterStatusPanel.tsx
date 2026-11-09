@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { getItemDefinition, planAscension, planLevelUp } from '@tasmate/core';
+import type { ItemInventory, ItemStack } from '@tasmate/types';
 import { ATTRIBUTE_NAMES } from '../../domain/constants';
-import { experienceToNextLevel, levelUpCost } from '../../domain/reward';
 import { DESTINATIONS } from '../../data/seed';
 import type { CharacterDefinition, OwnedCharacter } from '../../types/index';
 import { attributeGlyph } from './characterVisual';
@@ -9,11 +10,25 @@ interface CharacterStatusPanelProps {
   definition: CharacterDefinition | undefined;
   owned: OwnedCharacter | undefined;
   currency: number;
+  itemInventory: ItemInventory;
   onLevelUp: (definitionId: string) => boolean;
+  onAscend: (definitionId: string) => boolean;
+}
+
+function stackLabel(stack: ItemStack): string {
+  const definition = getItemDefinition(stack.itemId);
+  return definition?.name ?? stack.itemId;
 }
 
 /** ステータスパネル（右側・能力と育成操作を整理して表示） */
-export function CharacterStatusPanel({ definition, owned, currency, onLevelUp }: CharacterStatusPanelProps) {
+export function CharacterStatusPanel({
+  definition,
+  owned,
+  currency,
+  itemInventory,
+  onLevelUp,
+  onAscend,
+}: CharacterStatusPanelProps) {
   const [pending, setPending] = useState(false);
 
   if (definition === undefined || owned === undefined) {
@@ -24,16 +39,16 @@ export function CharacterStatusPanel({ definition, owned, currency, onLevelUp }:
     );
   }
 
-  const cost = levelUpCost(owned.level);
-  const need = experienceToNextLevel(owned.level);
-  const canAfford = currency >= cost;
+  const levelPlan = planLevelUp(owned, itemInventory);
+  const ascension = planAscension(owned, itemInventory);
+  const need = levelPlan.requiredExperience;
   const hasExp = owned.experience >= need;
-  const canLevelUp = canAfford && hasExp;
   const expPercent = need > 0 ? Math.min(100, Math.round((owned.experience / need) * 100)) : 0;
+  const atMaxLevel = owned.level >= levelPlan.maxLevel;
   const affinity = DESTINATIONS.filter((d) => d.recommendedAttributes.includes(definition.attribute));
 
   const handleLevelUp = () => {
-    if (pending || !canLevelUp) return;
+    if (pending || !levelPlan.canLevelUp) return;
     setPending(true);
     try {
       onLevelUp(owned.definitionId);
@@ -42,17 +57,26 @@ export function CharacterStatusPanel({ definition, owned, currency, onLevelUp }:
     }
   };
 
+  const handleAscend = () => {
+    if (pending || !ascension.canAscend) return;
+    setPending(true);
+    try {
+      onAscend(owned.definitionId);
+    } finally {
+      setPending(false);
+    }
+  };
+
   return (
     <section className="companion-status" aria-label={`${definition.name}のステータス`}>
-      {/* 1. キャラクター名とレベル */}
       <div className="companion-status__header">
         <h2 className="companion-status__name">{definition.name}</h2>
         <p className="companion-status__level" key={owned.level}>
           Lv.{owned.level}
+          <span className="companion-status__max"> / {levelPlan.maxLevel}</span>
         </p>
       </div>
 
-      {/* 2. 経験値と進捗バー */}
       <div className="companion-status__exp">
         <p className="companion-status__label">
           経験値 {owned.experience} / {need}
@@ -69,7 +93,6 @@ export function CharacterStatusPanel({ definition, owned, currency, onLevelUp }:
         </div>
       </div>
 
-      {/* 3. 基本情報 */}
       <dl className="companion-status__rows">
         <div>
           <dt>属性</dt>
@@ -78,8 +101,13 @@ export function CharacterStatusPanel({ definition, owned, currency, onLevelUp }:
           </dd>
         </div>
         <div>
-          <dt>レベル</dt>
-          <dd>{owned.level}</dd>
+          <dt>レベル上限</dt>
+          <dd>
+            {levelPlan.maxLevel}
+            {typeof owned.ascensionStage === 'number' && owned.ascensionStage > 0
+              ? `（解放 ${owned.ascensionStage}）`
+              : ''}
+          </dd>
         </div>
         <div>
           <dt>所持通貨</dt>
@@ -87,7 +115,6 @@ export function CharacterStatusPanel({ definition, owned, currency, onLevelUp }:
         </div>
       </dl>
 
-      {/* 4. 作業・ゲーム内での効率（既存データから算出できる範囲のみ） */}
       <div className="companion-status__efficiency">
         <p className="companion-status__label">収集効率（基礎値）</p>
         <p className="companion-status__efficiency-value">{definition.baseEfficiency.toFixed(1)}</p>
@@ -98,27 +125,61 @@ export function CharacterStatusPanel({ definition, owned, currency, onLevelUp }:
         )}
       </div>
 
-      {/* 5. キャラクターの説明や特性 */}
       <p className="companion-status__desc">{definition.description}</p>
 
-      {/* 6. 育成アクション */}
       <div className="companion-status__action">
         <button
           type="button"
           className="btn companion-levelup"
-          disabled={!canLevelUp || pending}
+          disabled={!levelPlan.canLevelUp || pending}
           onClick={handleLevelUp}
         >
-          {pending ? 'レベルアップ中…' : `レベルアップ（通貨 ${cost}）`}
+          {pending
+            ? '処理中…'
+            : atMaxLevel
+              ? 'レベル上限に到達'
+              : `レベルアップ（${levelPlan.items.map((stack) => `${stackLabel(stack)} ${stack.quantity}`).join(' / ')}）`}
         </button>
-        {!canLevelUp && (
+        {!levelPlan.canLevelUp && !atMaxLevel && (
           <p className="list-item__meta" role="status">
-            {!canAfford
-              ? '通貨が足りません。作業して報酬を集めましょう。'
-              : '経験値が足りません。キャラを派遣して作業しましょう。'}
+            {!hasExp
+              ? '経験値が足りません。キャラを派遣して作業しましょう。'
+              : '必要な素材が足りません。タスクを完了して集めましょう。'}
           </p>
         )}
       </div>
+
+      {ascension.requirement !== null && (
+        <div className="companion-ascension">
+          <h3 className="companion-ascension__title">
+            レベル上限解放 {ascension.requirement.fromMaxLevel} → {ascension.requirement.toMaxLevel}
+          </h3>
+          <ul className="companion-ascension__costs">
+            <li>
+              {ascension.requirement.crystals.rarity} 結晶 ×{ascension.requirement.crystals.quantity}
+              <span className="list-item__meta">（同レアリティの任意種類）</span>
+            </li>
+            <li>
+              {stackLabel({ itemId: ascension.requirement.characterMaterial.itemId, quantity: 1 })} ×
+              {ascension.requirement.characterMaterial.quantity}
+            </li>
+            <li>硬貨 {ascension.requirement.coins}</li>
+          </ul>
+          <button
+            type="button"
+            className="btn btn--secondary companion-ascend"
+            disabled={!ascension.canAscend || pending}
+            onClick={handleAscend}
+          >
+            {ascension.canAscend ? 'レベル上限を解放' : '素材不足'}
+          </button>
+          {!atMaxLevel && (
+            <p className="list-item__meta" role="status">
+              Lv.{levelPlan.maxLevel} で上限解放できます。
+            </p>
+          )}
+        </div>
+      )}
     </section>
   );
 }
