@@ -39,6 +39,12 @@ import {
   loadAppStateFromStorage,
   type StorageAdapter,
 } from './storage';
+import {
+  activeCategories,
+  activeSubCategories,
+  findCategoryById,
+  findSubCategoryById,
+} from './categories';
 import { computeSessionReward } from './rewardService';
 import { CHARACTER_DEFINITIONS } from './seed';
 import { billableMinutes } from './session';
@@ -49,10 +55,12 @@ import { planAscension } from './progression/ascensionSystem';
 import { evaluateTaskWithFallback, rollTaskReward } from './rewards/rewardCalculator';
 import { applyTaskRewardToState } from './rewards/rewardProcessor';
 import type {
+  Category,
   OwnedCharacter,
   RecurrenceRule,
   RestSession,
   SessionResult,
+  SubCategory,
   SupportEvent,
   SupportEventKind,
   Task,
@@ -77,7 +85,9 @@ export interface TaskInput {
   title: string;
   description: string;
   category: string;
+  categoryId?: string;
   subject?: string;
+  subCategoryId?: string;
   estimatedMinutes: number;
   scheduledAt?: string;
   scheduledDate?: string;
@@ -89,13 +99,75 @@ export interface RecurrenceRuleInput {
   title: string;
   description: string;
   category: string;
+  categoryId?: string;
   subject?: string;
+  subCategoryId?: string;
   estimatedMinutes: number;
   daysOfWeek: number[];
   startTime?: string;
   endTime?: string;
   effectiveFrom: string;
   effectiveUntil?: string;
+}
+
+/** 入力されたカテゴリー／サブカテゴリーをマスタと突き合わせて名称・IDを確定する */
+interface ClassificationInput {
+  category?: string;
+  categoryId?: string;
+  subject?: string;
+  subCategoryId?: string;
+  subCategoryName?: string;
+}
+
+interface ResolvedClassification {
+  category: string;
+  categoryId: string | undefined;
+  subject: string | undefined;
+  subCategoryId: string | undefined;
+  subCategoryName: string | undefined;
+}
+
+export function resolveClassification(
+  state: Pick<AppState, 'categories' | 'subCategories'>,
+  input: ClassificationInput,
+): ResolvedClassification {
+  const byId =
+    input.categoryId !== undefined
+      ? findCategoryById(state.categories, input.categoryId)
+      : undefined;
+  const rawName = typeof input.category === 'string' ? input.category.trim() : '';
+  const byName =
+    rawName === '' ? undefined : state.categories.find((category) => category.name === rawName);
+  const category = byId ?? byName;
+  const categoryName = category?.name ?? (rawName === '' ? '勉強' : rawName);
+
+  let subCategory =
+    input.subCategoryId !== undefined
+      ? findSubCategoryById(state.subCategories, input.subCategoryId)
+      : undefined;
+  if (subCategory !== undefined && subCategory.categoryId !== category?.id) {
+    subCategory = undefined;
+  }
+  const rawSubName =
+    (typeof input.subCategoryName === 'string' && input.subCategoryName.trim() !== ''
+      ? input.subCategoryName
+      : undefined) ??
+    (typeof input.subject === 'string' && input.subject.trim() !== '' ? input.subject : undefined);
+  const subName = rawSubName?.trim();
+  if (subCategory === undefined && category !== undefined && subName !== undefined) {
+    subCategory = state.subCategories.find(
+      (item) => item.categoryId === category.id && item.name === subName,
+    );
+  }
+  const resolvedSubName = subCategory?.name ?? (subName === '' ? undefined : subName);
+
+  return {
+    category: categoryName,
+    categoryId: category?.id,
+    subject: resolvedSubName,
+    subCategoryId: subCategory?.id,
+    subCategoryName: resolvedSubName,
+  };
 }
 
 export interface AppActions {
@@ -107,6 +179,19 @@ export interface AppActions {
   updateRecurrenceRule: (id: string, patch: Partial<RecurrenceRuleInput>) => void;
   deleteRecurrenceRule: (id: string) => void;
   ensureRecurringOccurrencesForWeek: (weekStart: string) => void;
+
+  /** カテゴリーを追加する。空名・重複名は追加しない（戻り値は作成 ID、失敗時 ''） */
+  addCategory: (name: string) => string;
+  renameCategory: (id: string, name: string) => void;
+  /** 論理削除。配下のサブカテゴリーも選択肢から外す */
+  deleteCategory: (id: string) => void;
+  moveCategory: (id: string, direction: 'up' | 'down') => void;
+
+  /** サブカテゴリーを追加する。空名・重複名は追加しない（戻り値は作成 ID、失敗時 ''） */
+  addSubCategory: (categoryId: string, name: string) => string;
+  renameSubCategory: (id: string, name: string) => void;
+  deleteSubCategory: (id: string) => void;
+  moveSubCategory: (id: string, direction: 'up' | 'down') => void;
 
   startSession: (taskId: string, destinationId: string, characterIds: string[]) => void;
   pauseSession: () => void;
@@ -329,7 +414,10 @@ function applyRuleToUpcomingOccurrences(
       title: rule.title,
       description: rule.description,
       category: rule.category,
+      categoryId: rule.categoryId,
       subject: rule.subject,
+      subCategoryId: rule.subCategoryId,
+      subCategoryName: rule.subCategoryName,
       estimatedMinutes: rule.estimatedMinutes,
       startTime: rule.startTime,
       endTime: rule.endTime,
@@ -520,12 +608,16 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
     if (title.length === 0) return;
     const schedule = sanitizeSchedule(input.scheduledDate, input.startTime, input.endTime);
     if (schedule === null) return;
+    const classification = resolveClassification(get(), input);
     const task: Task = {
       id: newId('task'),
       title,
       description: input.description.trim(),
-      category: input.category.trim() === '' ? '勉強' : input.category.trim(),
-      subject: input.subject?.trim() === '' ? undefined : input.subject?.trim(),
+      category: classification.category,
+      categoryId: classification.categoryId,
+      subject: classification.subject,
+      subCategoryId: classification.subCategoryId,
+      subCategoryName: classification.subCategoryName,
       estimatedMinutes: Math.max(1, Math.floor(input.estimatedMinutes) || 25),
       scheduledAt:
         input.scheduledAt ?? combineDateAndTime(schedule.scheduledDate ?? '', schedule.startTime),
@@ -544,6 +636,26 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
       tasks: s.tasks.map((t) => {
         if (t.id !== id) return t;
         const merged: Task = { ...t, ...patch, updatedAt: nowIso() };
+        if (
+          'category' in patch ||
+          'categoryId' in patch ||
+          'subject' in patch ||
+          'subCategoryId' in patch ||
+          'subCategoryName' in patch
+        ) {
+          Object.assign(
+            merged,
+            resolveClassification(s, {
+              category: patch.category ?? t.category,
+              categoryId: 'categoryId' in patch ? patch.categoryId : t.categoryId,
+              subject: 'subject' in patch ? patch.subject : (t.subCategoryName ?? t.subject),
+              subCategoryId:
+                'subCategoryId' in patch ? patch.subCategoryId : t.subCategoryId,
+              subCategoryName:
+                'subCategoryName' in patch ? patch.subCategoryName : t.subCategoryName,
+            }),
+          );
+        }
         if (
           'scheduledDate' in patch &&
           patch.scheduledDate !== t.scheduledDate &&
@@ -587,6 +699,224 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
       };
     }),
 
+  addCategory: (name) => {
+    const trimmed = name.trim();
+    if (trimmed === '') return '';
+    let createdId = '';
+    set((s) => {
+      if (s.categories.some((category) => category.archivedAt === undefined && category.name === trimmed)) {
+        return s;
+      }
+      const timestamp = nowIso();
+      const order = activeCategories(s.categories).reduce(
+        (max, category) => Math.max(max, category.order + 1),
+        0,
+      );
+      const category: Category = {
+        id: newId('category'),
+        name: trimmed,
+        order,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      };
+      createdId = category.id;
+      return { categories: [...s.categories, category] };
+    });
+    return createdId;
+  },
+
+  renameCategory: (id, name) =>
+    set((s) => {
+      const trimmed = name.trim();
+      const current = s.categories.find((category) => category.id === id);
+      if (current === undefined || trimmed === '') return s;
+      if (
+        s.categories.some(
+          (category) =>
+            category.id !== id &&
+            category.archivedAt === undefined &&
+            category.name === trimmed,
+        )
+      ) {
+        return s;
+      }
+      const timestamp = nowIso();
+      return {
+        categories: s.categories.map((category) =>
+          category.id === id ? { ...category, name: trimmed, updatedAt: timestamp } : category,
+        ),
+        tasks: s.tasks.map((task) =>
+          task.categoryId === id ? { ...task, category: trimmed, updatedAt: timestamp } : task,
+        ),
+        recurrenceRules: s.recurrenceRules.map((rule) =>
+          rule.categoryId === id ? { ...rule, category: trimmed, updatedAt: timestamp } : rule,
+        ),
+      };
+    }),
+
+  deleteCategory: (id) =>
+    set((s) => {
+      const current = s.categories.find((category) => category.id === id);
+      if (current === undefined || current.archivedAt !== undefined) return s;
+      const timestamp = nowIso();
+      return {
+        categories: s.categories.map((category) =>
+          category.id === id
+            ? { ...category, archivedAt: timestamp, updatedAt: timestamp }
+            : category,
+        ),
+        subCategories: s.subCategories.map((subCategory) =>
+          subCategory.categoryId === id && subCategory.archivedAt === undefined
+            ? { ...subCategory, archivedAt: timestamp, updatedAt: timestamp }
+            : subCategory,
+        ),
+      };
+    }),
+
+  moveCategory: (id, direction) =>
+    set((s) => {
+      const ordered = activeCategories(s.categories);
+      const index = ordered.findIndex((category) => category.id === id);
+      const target = direction === 'up' ? index - 1 : index + 1;
+      if (index < 0 || target < 0 || target >= ordered.length) return s;
+      const swapped = [...ordered];
+      const current = swapped[index];
+      const other = swapped[target];
+      if (current === undefined || other === undefined) return s;
+      swapped[index] = other;
+      swapped[target] = current;
+      const timestamp = nowIso();
+      const orderById = new Map(swapped.map((category, order) => [category.id, order]));
+      return {
+        categories: s.categories.map((category) => {
+          const order = orderById.get(category.id);
+          return order === undefined || order === category.order
+            ? category
+            : { ...category, order, updatedAt: timestamp };
+        }),
+      };
+    }),
+
+  addSubCategory: (categoryId, name) => {
+    const trimmed = name.trim();
+    if (trimmed === '') return '';
+    let createdId = '';
+    set((s) => {
+      const category = findCategoryById(s.categories, categoryId);
+      if (category === undefined || category.archivedAt !== undefined) return s;
+      if (
+        s.subCategories.some(
+          (subCategory) =>
+            subCategory.categoryId === categoryId &&
+            subCategory.archivedAt === undefined &&
+            subCategory.name === trimmed,
+        )
+      ) {
+        return s;
+      }
+      const timestamp = nowIso();
+      const order = activeSubCategories(s.subCategories, categoryId).reduce(
+        (max, subCategory) => Math.max(max, subCategory.order + 1),
+        0,
+      );
+      const subCategory: SubCategory = {
+        id: newId('subcategory'),
+        categoryId,
+        name: trimmed,
+        order,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      };
+      createdId = subCategory.id;
+      return { subCategories: [...s.subCategories, subCategory] };
+    });
+    return createdId;
+  },
+
+  renameSubCategory: (id, name) =>
+    set((s) => {
+      const trimmed = name.trim();
+      const current = s.subCategories.find((subCategory) => subCategory.id === id);
+      if (current === undefined || trimmed === '') return s;
+      if (
+        s.subCategories.some(
+          (subCategory) =>
+            subCategory.id !== id &&
+            subCategory.categoryId === current.categoryId &&
+            subCategory.archivedAt === undefined &&
+            subCategory.name === trimmed,
+        )
+      ) {
+        return s;
+      }
+      const timestamp = nowIso();
+      return {
+        subCategories: s.subCategories.map((subCategory) =>
+          subCategory.id === id ? { ...subCategory, name: trimmed, updatedAt: timestamp } : subCategory,
+        ),
+        tasks: s.tasks.map((task) =>
+          task.subCategoryId === id
+            ? {
+                ...task,
+                subject: trimmed,
+                subCategoryName: trimmed,
+                updatedAt: timestamp,
+              }
+            : task,
+        ),
+        recurrenceRules: s.recurrenceRules.map((rule) =>
+          rule.subCategoryId === id
+            ? {
+                ...rule,
+                subject: trimmed,
+                subCategoryName: trimmed,
+                updatedAt: timestamp,
+              }
+            : rule,
+        ),
+      };
+    }),
+
+  deleteSubCategory: (id) =>
+    set((s) => {
+      const current = s.subCategories.find((subCategory) => subCategory.id === id);
+      if (current === undefined || current.archivedAt !== undefined) return s;
+      const timestamp = nowIso();
+      return {
+        subCategories: s.subCategories.map((subCategory) =>
+          subCategory.id === id
+            ? { ...subCategory, archivedAt: timestamp, updatedAt: timestamp }
+            : subCategory,
+        ),
+      };
+    }),
+
+  moveSubCategory: (id, direction) =>
+    set((s) => {
+      const current = s.subCategories.find((subCategory) => subCategory.id === id);
+      if (current === undefined) return s;
+      const ordered = activeSubCategories(s.subCategories, current.categoryId);
+      const index = ordered.findIndex((subCategory) => subCategory.id === id);
+      const target = direction === 'up' ? index - 1 : index + 1;
+      if (index < 0 || target < 0 || target >= ordered.length) return s;
+      const swapped = [...ordered];
+      const first = swapped[index];
+      const second = swapped[target];
+      if (first === undefined || second === undefined) return s;
+      swapped[index] = second;
+      swapped[target] = first;
+      const timestamp = nowIso();
+      const orderById = new Map(swapped.map((subCategory, order) => [subCategory.id, order]));
+      return {
+        subCategories: s.subCategories.map((subCategory) => {
+          const order = orderById.get(subCategory.id);
+          return order === undefined || order === subCategory.order
+            ? subCategory
+            : { ...subCategory, order, updatedAt: timestamp };
+        }),
+      };
+    }),
+
   createRecurrenceRule: (input) => {
     const title = input.title.trim();
     if (title.length === 0) return '';
@@ -600,12 +930,16 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
     const schedule = sanitizeRecurrenceSchedule(input.daysOfWeek, input.startTime, input.endTime);
     if (schedule === null) return '';
     const timestamp = nowIso();
+    const classification = resolveClassification(get(), input);
     const rule: RecurrenceRule = {
       id: newId('rule'),
       title,
       description: input.description.trim(),
-      category: input.category.trim() === '' ? '勉強' : input.category.trim(),
-      subject: input.subject?.trim() === '' ? undefined : input.subject?.trim(),
+      category: classification.category,
+      categoryId: classification.categoryId,
+      subject: classification.subject,
+      subCategoryId: classification.subCategoryId,
+      subCategoryName: classification.subCategoryName,
       estimatedMinutes: Math.max(1, Math.floor(input.estimatedMinutes) || 25),
       frequency: 'weekly',
       daysOfWeek: schedule.daysOfWeek,
@@ -637,7 +971,9 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
         title: patch.title ?? current.title,
         description: patch.description ?? current.description,
         category: patch.category ?? current.category,
+        categoryId: 'categoryId' in patch ? patch.categoryId : current.categoryId,
         subject: 'subject' in patch ? patch.subject : current.subject,
+        subCategoryId: 'subCategoryId' in patch ? patch.subCategoryId : current.subCategoryId,
         estimatedMinutes: patch.estimatedMinutes ?? current.estimatedMinutes,
         daysOfWeek: patch.daysOfWeek ?? current.daysOfWeek,
         startTime: 'startTime' in patch ? patch.startTime : current.startTime,
@@ -661,14 +997,16 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
       );
       if (schedule === null) return s;
       const timestamp = nowIso();
+      const classification = resolveClassification(s, mergedInput);
       const updated: RecurrenceRule = {
         ...current,
         title: mergedInput.title.trim(),
         description: mergedInput.description.trim(),
-        category:
-          mergedInput.category.trim() === '' ? '勉強' : mergedInput.category.trim(),
-        subject:
-          mergedInput.subject?.trim() === '' ? undefined : mergedInput.subject?.trim(),
+        category: classification.category,
+        categoryId: classification.categoryId,
+        subject: classification.subject,
+        subCategoryId: classification.subCategoryId,
+        subCategoryName: classification.subCategoryName,
         estimatedMinutes: Math.max(1, Math.floor(mergedInput.estimatedMinutes) || 25),
         daysOfWeek: schedule.daysOfWeek,
         startTime: schedule.startTime,
@@ -734,11 +1072,17 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
       id: newId('session'),
       taskId,
       startedAt,
+      firstStartedAt: startedAt,
       accumulatedSeconds: 0,
       pausedAt: undefined,
       state: 'running',
       destinationId,
       assignedCharacterIds: characterIds,
+      taskTitleSnapshot: task.title,
+      categoryIdSnapshot: task.categoryId,
+      categoryNameSnapshot: task.category,
+      subCategoryIdSnapshot: task.subCategoryId,
+      subCategoryNameSnapshot: task.subCategoryName ?? task.subject,
     };
     const previousSession = sessionHistory[0];
     const encourage = isConsecutiveWork({

@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Button } from '../../components/ui/Button';
-import { Field, SelectInput, TextArea, TextInput } from '../../components/ui/Field';
+import { Field, TextArea, TextInput } from '../../components/ui/Field';
 import {
   isValidTimeRange,
   parseDateKey,
@@ -9,6 +9,7 @@ import {
 } from '../../domain/weekly';
 import { useAppStore } from '../../stores/appStore';
 import type { Task } from '../../types/index';
+import { CategorySelectFields, type CategorySelection } from '../taxonomy/CategorySelectFields';
 
 interface CalendarTaskModalProps {
   open: boolean;
@@ -26,8 +27,10 @@ export function CalendarTaskModal({ open, initialDate, task, onClose }: Calendar
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('勉強');
-  const [subject, setSubject] = useState('');
+  const [selection, setSelection] = useState<CategorySelection>({
+    categoryId: '',
+    subCategoryId: '',
+  });
   const [estimatedMinutes, setEstimatedMinutes] = useState(25);
   const [date, setDate] = useState(initialDate);
   const [hasTime, setHasTime] = useState(false);
@@ -44,8 +47,10 @@ export function CalendarTaskModal({ open, initialDate, task, onClose }: Calendar
     if (task !== undefined) {
       setTitle(task.title);
       setDescription(task.description);
-      setCategory(task.category);
-      setSubject(task.subject ?? '');
+      setSelection({
+        categoryId: task.categoryId ?? '',
+        subCategoryId: task.subCategoryId ?? '',
+      });
       setEstimatedMinutes(task.estimatedMinutes);
       setDate(task.scheduledDate ?? initialDate);
       const timed = task.startTime !== undefined && task.endTime !== undefined;
@@ -56,8 +61,7 @@ export function CalendarTaskModal({ open, initialDate, task, onClose }: Calendar
     } else {
       setTitle('');
       setDescription('');
-      setCategory('勉強');
-      setSubject('');
+      setSelection({ categoryId: '', subCategoryId: '' });
       setEstimatedMinutes(25);
       setDate(initialDate);
       setHasTime(false);
@@ -107,8 +111,9 @@ export function CalendarTaskModal({ open, initialDate, task, onClose }: Calendar
       updateTask(task.id, {
         title: title.trim(),
         description: description.trim(),
-        category,
-        subject: subject.trim() === '' ? undefined : subject.trim(),
+        category: '',
+        categoryId: selection.categoryId === '' ? undefined : selection.categoryId,
+        subCategoryId: selection.subCategoryId === '' ? undefined : selection.subCategoryId,
         estimatedMinutes,
         ...schedule,
       });
@@ -116,8 +121,9 @@ export function CalendarTaskModal({ open, initialDate, task, onClose }: Calendar
       createRecurrenceRule({
         title,
         description,
-        category,
-        subject,
+        category: '',
+        categoryId: selection.categoryId === '' ? undefined : selection.categoryId,
+        subCategoryId: selection.subCategoryId === '' ? undefined : selection.subCategoryId,
         estimatedMinutes,
         daysOfWeek,
         startTime: hasTime ? startTime : undefined,
@@ -128,8 +134,9 @@ export function CalendarTaskModal({ open, initialDate, task, onClose }: Calendar
       createTask({
         title,
         description,
-        category,
-        subject,
+        category: '',
+        categoryId: selection.categoryId === '' ? undefined : selection.categoryId,
+        subCategoryId: selection.subCategoryId === '' ? undefined : selection.subCategoryId,
         estimatedMinutes,
         ...schedule,
       });
@@ -178,29 +185,7 @@ export function CalendarTaskModal({ open, initialDate, task, onClose }: Calendar
               maxLength={500}
             />
           </Field>
-          <div className="field-row field-row--two">
-            <Field label="カテゴリ" htmlFor="calendar-category">
-              <SelectInput
-                id="calendar-category"
-                value={category}
-                onChange={(event) => setCategory(event.target.value)}
-              >
-                <option value="勉強">勉強</option>
-                <option value="作業">作業</option>
-                <option value="運動">運動</option>
-                <option value="家事">家事</option>
-                <option value="その他">その他</option>
-              </SelectInput>
-            </Field>
-            <Field label="科目（任意）" htmlFor="calendar-subject">
-              <TextInput
-                id="calendar-subject"
-                value={subject}
-                onChange={(event) => setSubject(event.target.value)}
-                maxLength={30}
-              />
-            </Field>
-          </div>
+          <CategorySelectFields idPrefix="calendar" value={selection} onChange={setSelection} />
           <div className="field-row field-row--two">
             <Field label="予定日" htmlFor="calendar-date">
               <TextInput

@@ -8,6 +8,8 @@ export * from './collection';
 export * from './facility';
 export * from './rest';
 export * from './session';
+export * from './categories';
+export * from './analytics';
 export * from './weekly';
 export * from './recurrence';
 export * from './seed';

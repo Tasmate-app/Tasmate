@@ -7,6 +7,8 @@ import { CompanionsPage } from '../features/companions/CompanionsPage';
 import { FacilitiesPage } from '../features/facilities/FacilitiesPage';
 import { ShopPage } from '../features/shop/ShopPage';
 import { StoragePage } from '../features/storage/StoragePage';
+import { HistoryPage } from '../features/history/HistoryPage';
+import { CategoriesPage } from '../features/categories/CategoriesPage';
 
 export const router = createBrowserRouter([
   {
@@ -16,6 +18,8 @@ export const router = createBrowserRouter([
       { index: true, element: <HomePage /> },
       { path: 'sortie', element: <SortiePage /> },
       { path: 'calendar', element: <WeeklyCalendarPage /> },
+      { path: 'history', element: <HistoryPage /> },
+      { path: 'categories', element: <CategoriesPage /> },
       { path: 'companions', element: <CompanionsPage /> },
       { path: 'facilities', element: <FacilitiesPage /> },
       { path: 'shop', element: <ShopPage /> },

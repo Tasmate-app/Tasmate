@@ -14,6 +14,8 @@
     "./facility": "./src/facility.ts",
     "./rest": "./src/rest.ts",
     "./session": "./src/session.ts",
+    "./categories": "./src/categories.ts",
+    "./analytics": "./src/analytics.ts",
     "./weekly": "./src/weekly.ts",
     "./recurrence": "./src/recurrence.ts",
     "./seed": "./src/seed.ts",

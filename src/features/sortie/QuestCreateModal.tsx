@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Button } from '../../components/ui/Button';
-import { Field, SelectInput, TextArea, TextInput } from '../../components/ui/Field';
+import { Field, TextArea, TextInput } from '../../components/ui/Field';
 import { useAppStore } from '../../stores/appStore';
+import { CategorySelectFields, type CategorySelection } from '../taxonomy/CategorySelectFields';
 
 interface QuestCreateModalProps {
   open: boolean;
@@ -14,8 +15,10 @@ export function QuestCreateModal({ open, onClose, onCreated }: QuestCreateModalP
   const createTask = useAppStore((s) => s.createTask);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('勉強');
-  const [subject, setSubject] = useState('');
+  const [selection, setSelection] = useState<CategorySelection>({
+    categoryId: '',
+    subCategoryId: '',
+  });
   const [estimatedMinutes, setEstimatedMinutes] = useState(25);
 
   useEffect(() => {
@@ -32,10 +35,17 @@ export function QuestCreateModal({ open, onClose, onCreated }: QuestCreateModalP
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (title.trim() === '') return;
-    createTask({ title, description, category, subject, estimatedMinutes });
+    createTask({
+      title,
+      description,
+      category: '',
+      categoryId: selection.categoryId === '' ? undefined : selection.categoryId,
+      subCategoryId: selection.subCategoryId === '' ? undefined : selection.subCategoryId,
+      estimatedMinutes,
+    });
     setTitle('');
     setDescription('');
-    setSubject('');
+    setSelection({ categoryId: selection.categoryId, subCategoryId: '' });
     setEstimatedMinutes(25);
     onCreated?.();
     onClose();
@@ -77,30 +87,7 @@ export function QuestCreateModal({ open, onClose, onCreated }: QuestCreateModalP
               maxLength={500}
             />
           </Field>
-          <div className="field-row field-row--two">
-            <Field label="カテゴリ" htmlFor="quest-category">
-              <SelectInput
-                id="quest-category"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-              >
-                <option value="勉強">勉強</option>
-                <option value="作業">作業</option>
-                <option value="運動">運動</option>
-                <option value="家事">家事</option>
-                <option value="その他">その他</option>
-              </SelectInput>
-            </Field>
-            <Field label="科目（任意）" htmlFor="quest-subject">
-              <TextInput
-                id="quest-subject"
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                placeholder="例：数学"
-                maxLength={30}
-              />
-            </Field>
-          </div>
+          <CategorySelectFields idPrefix="quest" value={selection} onChange={setSelection} />
           <Field label="予定時間（分）" htmlFor="quest-estimated">
             <TextInput
               id="quest-estimated"

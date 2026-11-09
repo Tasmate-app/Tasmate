@@ -21,6 +21,7 @@ export default function TabsLayout() {
         }}
       >
         <Tabs.Screen name="index" options={{ title: '出撃' }} />
+        <Tabs.Screen name="history" options={{ title: '履歴' }} />
         <Tabs.Screen name="base" options={{ title: '拠点' }} />
         <Tabs.Screen name="character" options={{ title: 'キャラクター' }} />
         <Tabs.Screen name="inventory" options={{ title: 'かばん' }} />

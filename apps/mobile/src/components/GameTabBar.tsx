@@ -5,6 +5,7 @@ import { colors, fontSize, radius, shadows, spacing, withAlpha } from '../theme/
 
 const TAB_META: Record<string, { label: string; glyph: string; dish: string }> = {
   index: { label: '出撃', glyph: '◈', dish: 'クエスト' },
+  history: { label: '履歴', glyph: '◷', dish: '作業ログ' },
   base: { label: '拠点', glyph: '⌂', dish: 'シェアハウス' },
   character: { label: 'キャラ', glyph: '✦', dish: '仲間' },
   inventory: { label: 'かばん', glyph: '✧', dish: '所持品' },

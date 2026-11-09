@@ -30,8 +30,16 @@ export interface Task {
   id: string;
   title: string;
   description: string;
+  /** カテゴリー名のスナップショット。名称変更・削除後も表示に使う */
   category: string;
+  /** カテゴリー ID。旧データでは未設定 */
+  categoryId?: string;
+  /** 科目名（旧データ互換用）。新規作成時はサブカテゴリー名を保持する */
   subject?: string;
+  /** サブカテゴリー ID。未分類の場合は未設定 */
+  subCategoryId?: string;
+  /** サブカテゴリー名のスナップショット。削除後も履歴表示に使う */
+  subCategoryName?: string;
   estimatedMinutes: number;
   /** 予定日時（ISO 8601）。既存機能との互換用 */
   scheduledAt?: string;
@@ -63,7 +71,10 @@ export interface RecurrenceRule {
   title: string;
   description: string;
   category: string;
+  categoryId?: string;
   subject?: string;
+  subCategoryId?: string;
+  subCategoryName?: string;
   estimatedMinutes: number;
   frequency: 'weekly';
   /** 1=月曜 … 7=日曜 */
@@ -121,6 +132,11 @@ export interface WorkSession {
   taskId: string;
   /** 開始時刻（ISO 8601）。経過時間はこの時刻を基準に算出する */
   startedAt: string;
+  /**
+   * セッションを最初に開始した時刻（ISO 8601）。
+   * 再開時に startedAt が更新されても、履歴の作業日はこの時刻を優先する。
+   */
+  firstStartedAt?: string;
   endedAt?: string;
   /** 一時停止中に蓄積された作業秒数（一時停止→再開で加算） */
   accumulatedSeconds: number;
@@ -130,6 +146,13 @@ export interface WorkSession {
   result?: SessionResult;
   destinationId: string;
   assignedCharacterIds: string[];
+  /** 開始時点のタスク名スナップショット（履歴表示用） */
+  taskTitleSnapshot?: string;
+  /** 開始時点の分類スナップショット（カテゴリー削除後も履歴を表示する） */
+  categoryIdSnapshot?: string;
+  categoryNameSnapshot?: string;
+  subCategoryIdSnapshot?: string;
+  subCategoryNameSnapshot?: string;
 }
 
 /** 休憩セッションの状態 */
@@ -249,6 +272,8 @@ export interface Inventory {
 export * from './inventory';
 export * from './progression';
 export * from './rewards';
+export * from './taxonomy';
+export * from './analytics';
 
 /** 報酬・収集の計算入力 */
 export interface WorkOutcomeInput {

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import type { Task } from '@tasmate/types';
 import {
+  activeCategories,
   combineDateAndTime,
   isValidDateKey,
   isValidTime,
@@ -11,8 +12,8 @@ import {
   addDaysToKey,
 } from '@tasmate/core';
 import { useMobileAppStore } from '../../stores/appStore';
-import { ChipGroup, FormField, GameButton, GameTextInput, ModalSheet } from '../../ui';
-import { CATEGORY_OPTIONS } from '../../lib/taskMeta';
+import { FormField, GameButton, GameTextInput, ModalSheet } from '../../ui';
+import { CategoryPicker, type CategorySelection } from '../taxonomy/CategoryPicker';
 import { colors, fontSize, spacing } from '../../theme/tokens';
 
 interface TaskEditorModalProps {
@@ -29,8 +30,10 @@ export function TaskEditorModal({ open, task, initialDate, onClose }: TaskEditor
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState<string>('勉強');
-  const [subject, setSubject] = useState('');
+  const [selection, setSelection] = useState<CategorySelection>({
+    categoryId: '',
+    subCategoryId: '',
+  });
   const [estimatedMinutes, setEstimatedMinutes] = useState('25');
   const [scheduledDate, setScheduledDate] = useState('');
   const [startTime, setStartTime] = useState('');
@@ -42,8 +45,13 @@ export function TaskEditorModal({ open, task, initialDate, onClose }: TaskEditor
     const today = toDateKey(new Date());
     setTitle(task?.title ?? '');
     setDescription(task?.description ?? '');
-    setCategory(task?.category ?? '勉強');
-    setSubject(task?.subject ?? '');
+    setSelection({
+      categoryId:
+        task?.categoryId ??
+        activeCategories(useMobileAppStore.getState().categories)[0]?.id ??
+        '',
+      subCategoryId: task?.subCategoryId ?? '',
+    });
     setEstimatedMinutes(String(task?.estimatedMinutes ?? 25));
     setScheduledDate(
       task?.scheduledDate ?? (task !== undefined ? taskScheduledDateKey(task) : undefined) ?? initialDate ?? today,
@@ -102,8 +110,9 @@ export function TaskEditorModal({ open, task, initialDate, onClose }: TaskEditor
     const common = {
       title: trimmedTitle,
       description: description.trim(),
-      category,
-      subject: subject.trim() === '' ? undefined : subject.trim(),
+      category: '',
+      categoryId: selection.categoryId === '' ? undefined : selection.categoryId,
+      subCategoryId: selection.subCategoryId === '' ? undefined : selection.subCategoryId,
       estimatedMinutes: Math.floor(minutes),
       ...schedule,
     };
@@ -165,22 +174,7 @@ export function TaskEditorModal({ open, task, initialDate, onClose }: TaskEditor
         />
       </FormField>
 
-      <FormField label="カテゴリ">
-        <ChipGroup
-          options={CATEGORY_OPTIONS.map((option) => ({ value: option, label: option }))}
-          selected={[category]}
-          onToggle={(value) => setCategory(value)}
-        />
-      </FormField>
-
-      <FormField label="科目（任意）">
-        <GameTextInput
-          value={subject}
-          onChangeText={setSubject}
-          placeholder="例：数学"
-          maxLength={30}
-        />
-      </FormField>
+      <CategoryPicker value={selection} onChange={setSelection} />
 
       <FormField label="予定時間（分）">
         <GameTextInput
