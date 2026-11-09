@@ -111,6 +111,11 @@ test('週間カレンダーで予定と繰り返しを作成できる', async ({
   await repeatDialog.getByRole('button', { name: '予定を追加' }).click();
   await expect(page.getByRole('heading', { name: '繰り返し予定' })).toBeVisible();
   await expect(page.getByText('毎朝の復習', { exact: true }).first()).toBeVisible();
+  const recurrencePanel = page.getByRole('region', { name: '繰り返し予定' });
+  const notClipped = await recurrencePanel.evaluate(
+    (element) => element.scrollHeight <= element.clientHeight + 1,
+  );
+  expect(notClipped).toBe(true);
 });
 
 test('週間カレンダーは狭い画面で横スクロールしない', async ({ page }) => {
