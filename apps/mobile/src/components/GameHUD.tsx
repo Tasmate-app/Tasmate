@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   MATERIAL_NAMES,
@@ -43,10 +43,12 @@ export function GameHUD() {
       <View style={styles.bar}>
         <View style={styles.mainRow}>
           <View style={styles.brand}>
-            <View style={styles.brandMark}>
-              <View pointerEvents="none" style={styles.brandGloss} />
-              <Text style={styles.brandMarkText}>T</Text>
-            </View>
+            <Image
+              source={require('../../assets/icon.png')}
+              style={styles.brandMark}
+              resizeMode="cover"
+              accessibilityIgnoresInvertColors
+            />
             <View>
               <Text style={styles.brandWord}>Tasmate</Text>
               <Text style={styles.brandSub}>STUDY QUEST</Text>
@@ -188,24 +190,8 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: colors.primary,
     overflow: 'hidden',
-  },
-  brandGloss: {
-    position: 'absolute',
-    left: 4,
-    right: 4,
-    top: 2,
-    height: 2,
-    borderRadius: 2,
-    backgroundColor: colors.highlight,
-  },
-  brandMarkText: {
-    color: colors.white,
-    fontSize: fontSize.lg,
-    fontWeight: '900',
   },
   brandWord: {
     color: colors.text,

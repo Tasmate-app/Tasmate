@@ -1,4 +1,4 @@
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, fontSize, radius, shadows, spacing } from '../theme/tokens';
 
@@ -10,9 +10,12 @@ export function HydrationGate({ error }: HydrationGateProps) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.card}>
-        <View style={styles.mark}>
-          <Text style={styles.markText}>T</Text>
-        </View>
+        <Image
+          source={require('../../assets/icon.png')}
+          style={styles.mark}
+          resizeMode="cover"
+          accessibilityIgnoresInvertColors
+        />
         <Text style={styles.title}>Tasmate</Text>
         <Text style={styles.subtitle}>STUDY QUEST</Text>
         <ActivityIndicator color={colors.primary} size="large" style={styles.spinner} />
@@ -46,15 +49,8 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: colors.primary,
     marginBottom: spacing.md,
-  },
-  markText: {
-    color: colors.white,
-    fontSize: 34,
-    fontWeight: '900',
   },
   title: {
     color: colors.text,

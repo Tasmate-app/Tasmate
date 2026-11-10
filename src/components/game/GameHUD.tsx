@@ -34,9 +34,12 @@ export function GameHUD() {
   return (
     <div className="game-hud">
       <div className="game-brand" aria-label="Tasmate">
-        <span className="game-brand__mark" aria-hidden="true">
-          T
-        </span>
+        <img
+          className="game-brand__mark"
+          src={`${import.meta.env.BASE_URL}assets/brand/appicon.png`}
+          alt=""
+          aria-hidden="true"
+        />
         <span className="game-brand__text">
           <span className="game-brand__word">Tasmate</span>
           <span className="game-brand__sub">STUDY &amp; TASK</span>
