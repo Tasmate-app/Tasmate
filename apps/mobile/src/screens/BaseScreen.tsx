@@ -297,9 +297,11 @@ export function BaseScreen() {
               基礎効率 {selectedCharacterDefinition.baseEfficiency.toFixed(1)} / レベルアップ費用
               硬貨 {levelUpCoinCost}・星屑 {levelUpStardustCost}
             </Text>
-            <Text style={styles.note}>
-              経験値が貯まると自動でレベルアップします。硬貨と星屑で早めに育てることもできます。
-            </Text>
+            {!selectedAtMaxLevel && (
+              <Text style={styles.note}>
+                経験値が貯まると自動でレベルアップします。硬貨と星屑で早めに育てることもできます。
+              </Text>
+            )}
             <View style={styles.actions}>
               <GameButton
                 label="キャラクター画面で育成"

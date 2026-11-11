@@ -295,9 +295,11 @@ export function CharacterScreen() {
                     value={`×${BALANCE.affinityBonus.toFixed(1)}`}
                   />
                 </View>
-                <Text style={styles.note}>
-                  作業に派遣すると経験値を獲得し、貯まると自動でレベルアップします。探索先と属性が一致すると収集効率がアップします。
-                </Text>
+                {!atMaxLevel && (
+                  <Text style={styles.note}>
+                    作業に派遣すると経験値を獲得し、貯まると自動でレベルアップします。探索先と属性が一致すると収集効率がアップします。
+                  </Text>
+                )}
               </Panel>
             )}
 
@@ -349,9 +351,11 @@ export function CharacterScreen() {
                   />
                 </View>
 
-                <Text style={styles.note}>
-                  経験値が貯まると自動でレベルアップします。硬貨と星屑を使えば、経験値が足りなくても早めにレベルアップできます。
-                </Text>
+                {!atMaxLevel && (
+                  <Text style={styles.note}>
+                    経験値が貯まると自動でレベルアップします。硬貨と星屑を使えば、経験値が足りなくても早めにレベルアップできます。
+                  </Text>
+                )}
 
                 <GameButton
                   label={

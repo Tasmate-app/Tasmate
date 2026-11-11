@@ -59,7 +59,9 @@ export function CharacterPanel() {
                 {def?.description !== undefined && def.description !== '' && (
                   <div className="list-item__meta">{def.description}</div>
                 )}
-                <div className="list-item__meta">経験値が貯まると自動でレベルアップします。</div>
+                {!atMaxLevel && (
+                  <div className="list-item__meta">経験値が貯まると自動でレベルアップします。</div>
+                )}
                 <div className="btn-row">
                   <Button disabled={!canLevelUp} onClick={() => levelUpCharacter(c.definitionId)}>
                     {atMaxLevel

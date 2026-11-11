@@ -90,9 +90,11 @@ export function CharacterStatusPanel({
         >
           <div className="progress__bar" style={{ width: `${expPercent}%` }} />
         </div>
-        <p className="list-item__meta">
-          経験値が貯まると自動でレベルアップします。
-        </p>
+        {!atMaxLevel && (
+          <p className="list-item__meta">
+            経験値が貯まると自動でレベルアップします。
+          </p>
+        )}
       </div>
 
       <dl className="companion-status__rows">
