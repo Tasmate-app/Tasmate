@@ -2,9 +2,10 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Field, SelectInput, TextArea, TextInput } from '../../components/ui/Field';
-import { CHARACTER_DEFINITIONS, DESTINATIONS } from '../../data/seed';
+import { DESTINATIONS } from '../../data/seed';
 import { useAppStore } from '../../stores/appStore';
 import { CategorySelectFields, type CategorySelection } from '../taxonomy/CategorySelectFields';
+import { PartyFormation } from './PartyFormation';
 
 interface StopwatchStartModalProps {
   open: boolean;
@@ -54,6 +55,8 @@ export function StopwatchStartModal({ open, onClose }: StopwatchStartModalProps)
       prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id],
     );
   };
+
+  const destination = DESTINATIONS.find((item) => item.id === destinationId) ?? DESTINATIONS[0];
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -132,25 +135,12 @@ export function StopwatchStartModal({ open, onClose }: StopwatchStartModalProps)
               ))}
             </SelectInput>
           </Field>
-          <Field label="派遣キャラクター（1人以上）" htmlFor="stopwatch-characters">
-            <div className="checkbox-list" id="stopwatch-characters">
-              {characters.map((character) => {
-                const definition = CHARACTER_DEFINITIONS.find(
-                  (item) => item.id === character.definitionId,
-                );
-                return (
-                  <label key={character.definitionId}>
-                    <input
-                      type="checkbox"
-                      checked={characterIds.includes(character.definitionId)}
-                      onChange={() => toggleCharacter(character.definitionId)}
-                    />
-                    {definition?.name ?? character.definitionId}（Lv.{character.level}）
-                  </label>
-                );
-              })}
-            </div>
-          </Field>
+          <PartyFormation
+            characters={characters}
+            selectedIds={characterIds}
+            destination={destination}
+            onToggle={toggleCharacter}
+          />
           <p className="list-item__meta">
             <Badge>予定時間なし</Badge> 作業中は経過時間のみ表示されます。
           </p>
