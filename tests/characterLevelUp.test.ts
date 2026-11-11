@@ -55,6 +55,32 @@ describe('経験値による自動レベルアップ', () => {
   });
 });
 
+describe('上限解放後の自動レベルアップ', () => {
+  it('保留中の経験値を消費してレベルが上がる', () => {
+    const store = createAppStore({
+      initialState: {
+        ...initialAppState(),
+        characters: [
+          { definitionId: 'c-hinata', level: 20, experience: 2500, ascensionStage: 0 },
+        ],
+        itemInventory: {
+          knowledge_crystal_N: 3,
+          sun_feather: 3,
+          coin: 200,
+        },
+      },
+    });
+
+    expect(store.getState().ascendCharacter('c-hinata')).toBe(true);
+
+    expect(findCharacter(store, 'c-hinata')).toMatchObject({
+      level: 21,
+      experience: 500,
+      ascensionStage: 1,
+    });
+  });
+});
+
 describe('素材による手動レベルアップ', () => {
   it('経験値なしでも硬貨と星屑を消費してレベルが上がる', () => {
     const store = createAppStore({
