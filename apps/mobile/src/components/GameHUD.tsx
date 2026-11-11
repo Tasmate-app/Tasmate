@@ -54,40 +54,40 @@ export function GameHUD() {
               <Text style={styles.brandSub}>STUDY QUEST</Text>
             </View>
           </View>
+        </View>
 
-          <View style={styles.resources}>
-            <ResourceChip
-              glyph="◈"
-              value={inventory.currency}
-              color={colors.gold}
-              label="通貨"
-              highlight
-            />
-            <ResourceChip
-              glyph="✦"
-              value={itemInventory['stardust'] ?? 0}
-              color={colors.accent}
-              label="星屑"
-            />
-            <ResourceChip
-              glyph={MATERIAL_META.shard_sun.glyph}
-              value={inventory.materials.shard_sun}
-              color={MATERIAL_META.shard_sun.color}
-              label={MATERIAL_NAMES.shard_sun ?? '太陽のかけら'}
-            />
-            <ResourceChip
-              glyph={MATERIAL_META.shard_moon.glyph}
-              value={inventory.materials.shard_moon}
-              color={MATERIAL_META.shard_moon.color}
-              label={MATERIAL_NAMES.shard_moon ?? '月のかけら'}
-            />
-            <ResourceChip
-              glyph={MATERIAL_META.shard_star.glyph}
-              value={inventory.materials.shard_star}
-              color={MATERIAL_META.shard_star.color}
-              label={MATERIAL_NAMES.shard_star ?? '星のかけら'}
-            />
-          </View>
+        <View style={styles.resources}>
+          <ResourceChip
+            glyph="◈"
+            value={inventory.currency}
+            color={colors.gold}
+            label="通貨"
+            highlight
+          />
+          <ResourceChip
+            glyph="✦"
+            value={itemInventory['stardust'] ?? 0}
+            color={colors.accent}
+            label="星屑"
+          />
+          <ResourceChip
+            glyph={MATERIAL_META.shard_sun.glyph}
+            value={inventory.materials.shard_sun}
+            color={MATERIAL_META.shard_sun.color}
+            label={MATERIAL_NAMES.shard_sun ?? '太陽のかけら'}
+          />
+          <ResourceChip
+            glyph={MATERIAL_META.shard_moon.glyph}
+            value={inventory.materials.shard_moon}
+            color={MATERIAL_META.shard_moon.color}
+            label={MATERIAL_NAMES.shard_moon ?? '月のかけら'}
+          />
+          <ResourceChip
+            glyph={MATERIAL_META.shard_star.glyph}
+            value={inventory.materials.shard_star}
+            color={MATERIAL_META.shard_star.color}
+            label={MATERIAL_NAMES.shard_star ?? '星のかけら'}
+          />
         </View>
 
         {(isWorking || isResting) && (
@@ -176,7 +176,6 @@ const styles = StyleSheet.create({
   mainRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     gap: spacing.sm,
     minHeight: 38,
   },
@@ -208,10 +207,10 @@ const styles = StyleSheet.create({
   },
   resources: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
-    justifyContent: 'flex-end',
     gap: 4,
-    flexShrink: 1,
+    width: '100%',
   },
   resource: {
     flexDirection: 'row',
