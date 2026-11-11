@@ -70,6 +70,7 @@ export function HomePage() {
           {working ? (
             <Link to="/sortie" className="home-chip home-chip--working">
               作業中：{activeTask?.title ?? 'タスク'} {formatElapsed(elapsed)}
+              {activeSession.timerMode === 'stopwatch' ? '（ストップウォッチ）' : ''}
               {activeSession.state === 'paused' ? '（停止中）' : ''} — 出撃へ
             </Link>
           ) : (

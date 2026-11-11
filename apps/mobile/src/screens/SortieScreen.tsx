@@ -17,6 +17,7 @@ import { ActiveSortiePanel } from '../features/sortie/ActiveSortiePanel';
 import { RecurrenceEditorModal } from '../features/sortie/RecurrenceEditorModal';
 import { RewardResultPanel } from '../features/sortie/RewardResultPanel';
 import { SortieSetupModal } from '../features/sortie/SortieSetupModal';
+import { StopwatchStartModal } from '../features/sortie/StopwatchStartModal';
 import { TaskEditorModal } from '../features/sortie/TaskEditorModal';
 import { WeeklyPlannerSection } from '../features/sortie/WeeklyPlannerSection';
 import { useNow } from '../hooks/useNow';
@@ -54,6 +55,7 @@ export function SortieScreen() {
   const [editor, setEditor] = useState<EditorState | null>(null);
   const [ruleEditor, setRuleEditor] = useState<{ rule?: RecurrenceRule } | null>(null);
   const [setupTaskId, setSetupTaskId] = useState<string | null>(null);
+  const [stopwatchOpen, setStopwatchOpen] = useState(false);
   const [lastRewardId, setLastRewardId] = useState<string | null>(null);
   const [showPlanner, setShowPlanner] = useState(false);
 
@@ -214,6 +216,11 @@ export function SortieScreen() {
                 style={styles.heroAction}
               />
             </View>
+            <GameButton
+              label="⏱ 即時開始（ストップウォッチ）"
+              variant="secondary"
+              onPress={() => setStopwatchOpen(true)}
+            />
           </View>
 
           {activeSession !== null ? (
@@ -241,7 +248,9 @@ export function SortieScreen() {
                     </Text>
                     <Text style={styles.nextMissionMeta}>
                       {taskScheduleLabel(nextTask)} / {taskTimeLabel(nextTask)} /{' '}
-                      {nextTask.estimatedMinutes}分
+                      {nextTask.timerMode === 'stopwatch'
+                        ? 'ストップウォッチ'
+                        : `${nextTask.estimatedMinutes}分`}
                     </Text>
                   </View>
                   <GameButton
@@ -291,6 +300,7 @@ export function SortieScreen() {
                           schedule={taskScheduleLabel(task)}
                           time={taskTimeLabel(task)}
                           estimatedMinutes={task.estimatedMinutes}
+                          timerMode={task.timerMode}
                           description={task.description}
                           badges={[
                             ...(isToday ? [{ label: '今日', tone: 'primary' as const }] : []),
@@ -355,6 +365,10 @@ export function SortieScreen() {
         open={setupTask !== null}
         task={setupTask}
         onClose={() => setSetupTaskId(null)}
+      />
+      <StopwatchStartModal
+        open={stopwatchOpen}
+        onClose={() => setStopwatchOpen(false)}
       />
       <RecurrenceEditorModal
         open={ruleEditor !== null}

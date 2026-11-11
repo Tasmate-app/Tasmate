@@ -7,6 +7,7 @@ import { DESTINATIONS } from '../../data/seed';
 import { useAppStore } from '../../stores/appStore';
 import { PartyFormation } from './PartyFormation';
 import { QuestCreateModal } from './QuestCreateModal';
+import { StopwatchStartModal } from './StopwatchStartModal';
 
 /** クエスト選択＋出撃準備（タスクをクエストとして扱う） */
 export function QuestBoard() {
@@ -20,6 +21,7 @@ export function QuestBoard() {
   const [destinationId, setDestinationId] = useState(DESTINATIONS[0].id);
   const [characterIds, setCharacterIds] = useState<string[]>(['c-hinata']);
   const [modalOpen, setModalOpen] = useState(false);
+  const [stopwatchOpen, setStopwatchOpen] = useState(false);
 
   const plannedTasks = tasks.filter(
     (t) => t.status === 'planned' && t.archivedAt === undefined,
@@ -38,6 +40,7 @@ export function QuestBoard() {
           <Button variant="secondary" onClick={() => setModalOpen(true)}>
             新しいクエストを作成
           </Button>
+          <Button onClick={() => setStopwatchOpen(true)}>ストップウォッチで開始</Button>
         </div>
         {plannedTasks.length === 0 ? (
           <p className="list-item__meta">
@@ -47,6 +50,7 @@ export function QuestBoard() {
           <ul className="list quest-list">
             {plannedTasks.map((t) => {
               const selected = selectedTask?.id === t.id;
+              const stopwatch = t.timerMode === 'stopwatch';
               return (
                 <li key={t.id} className={`list-item quest${selected ? ' is-selected' : ''}`}>
                   <button
@@ -58,8 +62,8 @@ export function QuestBoard() {
                     <span className="list-item__title">{t.title}</span>
                     <span className="list-item__meta">
                       <Badge>予定</Badge> {t.category}
-                      {t.subject !== undefined && t.subject !== '' ? ` / ${t.subject}` : ''} /
-                      予定 {t.estimatedMinutes} 分
+                      {t.subject !== undefined && t.subject !== '' ? ` / ${t.subject}` : ''} /{' '}
+                      {stopwatch ? 'ストップウォッチ（予定時間なし）' : `予定 ${t.estimatedMinutes} 分`}
                     </span>
                     {t.description !== '' && (
                       <span className="list-item__meta">{t.description}</span>
@@ -88,7 +92,9 @@ export function QuestBoard() {
           <>
             <p className="list-item__title">{selectedTask.title}</p>
             <p className="list-item__meta">
-              予定 {selectedTask.estimatedMinutes} 分
+              {selectedTask.timerMode === 'stopwatch'
+                ? 'ストップウォッチ（予定時間なし）'
+                : `予定 ${selectedTask.estimatedMinutes} 分`}
               {destination !== undefined && ` ／ 派遣先：${destination.name}`}
             </p>
             <Field label="派遣先（探索先）" htmlFor="sortie-destination">
@@ -117,7 +123,7 @@ export function QuestBoard() {
                 disabled={characterIds.length === 0}
                 onClick={() => startSession(selectedTask.id, destinationId, characterIds)}
               >
-                出撃（作業開始）
+                {selectedTask.timerMode === 'stopwatch' ? '計測を開始' : '出撃（作業開始）'}
               </Button>
             </div>
           </>
@@ -125,6 +131,7 @@ export function QuestBoard() {
       </Card>
 
       <QuestCreateModal open={modalOpen} onClose={() => setModalOpen(false)} />
+      <StopwatchStartModal open={stopwatchOpen} onClose={() => setStopwatchOpen(false)} />
     </div>
   );
 }

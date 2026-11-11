@@ -34,7 +34,8 @@
 | description | 詳細 |
 | category | 勉強・作業などのカテゴリ |
 | subject | 勉強科目（任意） |
-| estimatedMinutes | 予定時間 |
+| estimatedMinutes | 予定時間。ストップウォッチは 0（予定時間なし） |
+| timerMode | estimate / stopwatch（任意。未指定は estimate 相当） |
 | scheduledAt | 予定日時（任意、旧データ互換） |
 | scheduledDate | 予定日（ローカル日付キー） |
 | startTime / endTime | 同日の開始・終了時刻（任意） |
@@ -76,6 +77,7 @@
 | elapsedSeconds | 経過時間 |
 | activeSeconds | 実際に作業した時間の扱い（定義要） |
 | result | completed / interrupted など |
+| timerMode | estimate / stopwatch（開始時点のスナップショット） |
 | destinationId | 選択した戦闘先 ID |
 | assignedCharacterIds | 派遣キャラクター ID 一覧 |
 

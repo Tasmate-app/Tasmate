@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import type { TimerMode } from '@tasmate/types';
 import { Badge, type BadgeTone } from './Badge';
 import { GameButton } from './GameButton';
 import { colors, fontSize, radius, shadows, spacing, withAlpha } from '../theme/tokens';
@@ -15,6 +16,7 @@ interface QuestCardProps {
   schedule: string;
   time: string;
   estimatedMinutes: number;
+  timerMode?: TimerMode;
   description?: string;
   badges?: QuestCardBadge[];
   onPress: () => void;
@@ -28,11 +30,13 @@ export function QuestCard({
   schedule,
   time,
   estimatedMinutes,
+  timerMode,
   description,
   badges = [],
   onPress,
   onStart,
 }: QuestCardProps) {
+  const stopwatch = timerMode === 'stopwatch';
   return (
     <View style={[styles.card, { borderColor: withAlpha(categoryColor, 0.24) }]}>
       <View pointerEvents="none" style={[styles.rail, { backgroundColor: categoryColor }]} />
@@ -63,8 +67,10 @@ export function QuestCard({
               <Text style={styles.metaText}>{time}</Text>
             </View>
             <View style={styles.metaChip}>
-              <Text style={styles.metaGlyph}>✦</Text>
-              <Text style={styles.metaText}>{estimatedMinutes}分</Text>
+              <Text style={styles.metaGlyph}>{stopwatch ? '⏱' : '✦'}</Text>
+              <Text style={styles.metaText}>
+                {stopwatch ? '予定なし' : `${estimatedMinutes}分`}
+              </Text>
             </View>
             <View style={styles.metaChip}>
               <Text style={[styles.metaGlyph, { color: categoryColor }]}>◎</Text>
@@ -87,7 +93,7 @@ export function QuestCard({
           style={styles.edit}
         />
         <GameButton
-          label="出撃準備 →"
+          label={stopwatch ? '計測開始 →' : '出撃準備 →'}
           size="sm"
           onPress={onStart}
           style={styles.start}

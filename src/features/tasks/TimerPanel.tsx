@@ -77,7 +77,11 @@ export function TimerPanel() {
                 <option value="">選択してください</option>
                 {plannedTasks.map((t) => (
                   <option key={t.id} value={t.id}>
-                    {t.title}（予定 {t.estimatedMinutes} 分）
+                    {t.title}（
+                    {t.timerMode === 'stopwatch'
+                      ? 'ストップウォッチ'
+                      : `予定 ${t.estimatedMinutes} 分`}
+                    ）
                   </option>
                 ))}
               </SelectInput>

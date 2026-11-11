@@ -16,6 +16,13 @@ export type SessionResult = 'completed' | 'interrupted';
 /** 作業セッションの状態（タイマー状態機械） */
 export type WorkSessionState = 'idle' | 'running' | 'paused';
 
+/**
+ * 計測方式。
+ * estimate = 予定時間に対する見積タイマー、stopwatch = 予定時間なしのストップウォッチ。
+ * 未設定は既存データ互換のため estimate として扱う。
+ */
+export type TimerMode = 'estimate' | 'stopwatch';
+
 /** 報酬レコードの状態 */
 export type RewardStatus = 'pending' | 'approved' | 'rejected';
 
@@ -41,6 +48,11 @@ export interface Task {
   /** サブカテゴリー名のスナップショット。削除後も履歴表示に使う */
   subCategoryName?: string;
   estimatedMinutes: number;
+  /**
+   * 計測方式。未設定は estimate。
+   * stopwatch の場合は estimatedMinutes を 0（見積なし）として扱い、予定日を持たない。
+   */
+  timerMode?: TimerMode;
   /** 予定日時（ISO 8601）。既存機能との互換用 */
   scheduledAt?: string;
   /** 予定日（ローカル日付 YYYY-MM-DD）。週間カレンダーの基準 */
@@ -144,6 +156,8 @@ export interface WorkSession {
   pausedAt?: string;
   state: WorkSessionState;
   result?: SessionResult;
+  /** 開始時点の計測方式。未設定は estimate */
+  timerMode?: TimerMode;
   destinationId: string;
   assignedCharacterIds: string[];
   /** 開始時点のタスク名スナップショット（履歴表示用） */

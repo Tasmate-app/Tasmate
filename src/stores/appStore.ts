@@ -42,5 +42,6 @@ export type {
   AppStore,
   CreateAppStoreOptions,
   RecurrenceRuleInput,
+  StopwatchTaskInput,
   TaskInput,
 } from '@tasmate/core';

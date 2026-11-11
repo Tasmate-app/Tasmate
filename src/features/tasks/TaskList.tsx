@@ -42,8 +42,10 @@ export function TaskList() {
                 {statusLabel(t.status)}
               </Badge>{' '}
               {t.category}
-              {t.subject !== undefined && t.subject !== '' ? ` / ${t.subject}` : ''} / 予定{' '}
-              {t.estimatedMinutes} 分
+              {t.subject !== undefined && t.subject !== '' ? ` / ${t.subject}` : ''} /{' '}
+              {t.timerMode === 'stopwatch'
+                ? 'ストップウォッチ（予定時間なし）'
+                : `予定 ${t.estimatedMinutes} 分`}
             </div>
             {t.description !== '' && <div className="list-item__meta">{t.description}</div>}
             <div className="btn-row">

@@ -88,11 +88,23 @@ export interface TaskInput {
   categoryId?: string;
   subject?: string;
   subCategoryId?: string;
-  estimatedMinutes: number;
+  estimatedMinutes?: number;
+  /** 計測方式。stopwatch の場合は予定時間を 0 として扱う */
+  timerMode?: Task['timerMode'];
   scheduledAt?: string;
   scheduledDate?: string;
   startTime?: string;
   endTime?: string;
+}
+
+/** ストップウォッチ即時タスクの内容。予定日・予定時間は持たない */
+export interface StopwatchTaskInput {
+  title: string;
+  description: string;
+  category: string;
+  categoryId?: string;
+  subject?: string;
+  subCategoryId?: string;
 }
 
 export interface RecurrenceRuleInput {
@@ -171,7 +183,17 @@ export function resolveClassification(
 }
 
 export interface AppActions {
-  createTask: (input: TaskInput) => void;
+  /** タスクを作成し、作成 ID を返す。失敗時は空文字 */
+  createTask: (input: TaskInput) => string;
+  /**
+   * 内容を設定したストップウォッチタスクを作成し、その場で計測を開始する。
+   * 予定日は付与しない。開始できなかった場合は null。
+   */
+  startStopwatchTask: (
+    input: StopwatchTaskInput,
+    destinationId: string,
+    characterIds: string[],
+  ) => string | null;
   updateTask: (id: string, patch: Partial<Task>) => void;
   deleteTask: (id: string) => void;
 
@@ -605,9 +627,15 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
   createTask: (input) => {
     const timestamp = nowIso();
     const title = input.title.trim();
-    if (title.length === 0) return;
+    if (title.length === 0) return '';
     const schedule = sanitizeSchedule(input.scheduledDate, input.startTime, input.endTime);
-    if (schedule === null) return;
+    if (schedule === null) return '';
+    const timerMode = input.timerMode === 'stopwatch' ? 'stopwatch' : undefined;
+    // ストップウォッチは予定時間を持たない（0 = 見積なし）
+    const estimatedMinutes =
+      timerMode === 'stopwatch'
+        ? 0
+        : Math.max(1, Math.floor(input.estimatedMinutes ?? 25) || 25);
     const classification = resolveClassification(get(), input);
     const task: Task = {
       id: newId('task'),
@@ -618,7 +646,8 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
       subject: classification.subject,
       subCategoryId: classification.subCategoryId,
       subCategoryName: classification.subCategoryName,
-      estimatedMinutes: Math.max(1, Math.floor(input.estimatedMinutes) || 25),
+      estimatedMinutes,
+      timerMode,
       scheduledAt:
         input.scheduledAt ?? combineDateAndTime(schedule.scheduledDate ?? '', schedule.startTime),
       scheduledDate: schedule.scheduledDate,
@@ -629,6 +658,24 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
       updatedAt: timestamp,
     };
     set((s) => ({ tasks: [task, ...s.tasks] }));
+    return task.id;
+  },
+
+  startStopwatchTask: (input, destinationId, characterIds) => {
+    const state = get();
+    if (state.activeSession !== null || characterIds.length === 0) return null;
+    const taskId = state.createTask({
+      title: input.title,
+      description: input.description,
+      category: input.category,
+      categoryId: input.categoryId,
+      subject: input.subject,
+      subCategoryId: input.subCategoryId,
+      timerMode: 'stopwatch',
+    });
+    if (taskId === '') return null;
+    get().startSession(taskId, destinationId, characterIds);
+    return get().activeSession?.id ?? null;
   },
 
   updateTask: (id, patch) =>
@@ -1076,6 +1123,7 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
       accumulatedSeconds: 0,
       pausedAt: undefined,
       state: 'running',
+      timerMode: task.timerMode === 'stopwatch' ? 'stopwatch' : 'estimate',
       destinationId,
       assignedCharacterIds: characterIds,
       taskTitleSnapshot: task.title,
