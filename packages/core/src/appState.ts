@@ -34,6 +34,7 @@ import {
   normalizeSubCategoryList,
 } from './categories';
 import { normalizeItemInventoryWithLegacy } from './inventory/materialStorage';
+import { applyExperienceToCharacter } from './progression/levelSystem';
 import { normalizeAscensionStage } from './progression/progressionConfig';
 
 /**
@@ -202,10 +203,12 @@ function isWorkSession(value: unknown): value is WorkSession {
 }
 
 function normalizeOwnedCharacter(value: OwnedCharacter): OwnedCharacter {
-  return {
+  const normalized: OwnedCharacter = {
     ...value,
     ascensionStage: normalizeAscensionStage(value.ascensionStage),
   };
+  // 旧仕様で未処理だった経験値を、読み込み時に自動レベルアップへ反映する
+  return applyExperienceToCharacter(normalized, 0);
 }
 
 function isOwnedCharacter(value: unknown): value is OwnedCharacter {

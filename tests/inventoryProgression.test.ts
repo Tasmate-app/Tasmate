@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { OwnedCharacter } from '@tasmate/types';
 import {
   addItems,
+  applyExperienceToCharacter,
   consumeItems,
   getItemQuantity,
   itemInventoryFromLegacy,
@@ -61,8 +62,8 @@ describe('共通インベントリ', () => {
 });
 
 describe('育成ロジック', () => {
-  it('通常レベルアップは経験値・硬貨・星屑を必要とする', () => {
-    const character: OwnedCharacter = { definitionId: 'c-hinata', level: 1, experience: 100 };
+  it('素材によるレベルアップは経験値なしでも可能', () => {
+    const character: OwnedCharacter = { definitionId: 'c-hinata', level: 1, experience: 0 };
     expect(planLevelUp(character, { coin: 49, stardust: 10 }).canLevelUp).toBe(false);
     const plan = planLevelUp(character, { coin: 50, stardust: 1 });
     expect(plan.canLevelUp).toBe(true);
@@ -71,6 +72,34 @@ describe('育成ロジック', () => {
       { itemId: 'coin', quantity: 50 },
       { itemId: 'stardust', quantity: 1 },
     ]);
+  });
+
+  it('経験値が閾値に達すると自動でレベルアップする', () => {
+    const character: OwnedCharacter = { definitionId: 'c-hinata', level: 1, experience: 0 };
+    expect(applyExperienceToCharacter(character, 99)).toMatchObject({
+      level: 1,
+      experience: 99,
+    });
+    expect(applyExperienceToCharacter(character, 100)).toMatchObject({
+      level: 2,
+      experience: 0,
+    });
+  });
+
+  it('余剰経験値を持ち越して複数レベル上がる', () => {
+    const character: OwnedCharacter = { definitionId: 'c-hinata', level: 1, experience: 0 };
+    expect(applyExperienceToCharacter(character, 350)).toMatchObject({
+      level: 3,
+      experience: 50,
+    });
+  });
+
+  it('上限レベルでは自動レベルアップせず経験値を保持する', () => {
+    const character: OwnedCharacter = { definitionId: 'c-hinata', level: 20, experience: 0 };
+    expect(applyExperienceToCharacter(character, 500)).toMatchObject({
+      level: 20,
+      experience: 500,
+    });
   });
 
   it('上限レベルではレベルアップできない', () => {
