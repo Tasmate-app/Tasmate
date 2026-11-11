@@ -32,6 +32,7 @@ export function ActiveSortie({ onFinished }: ActiveSortieProps) {
 
   const task = tasks.find((t) => t.id === activeSession.taskId);
   const destination = DESTINATIONS.find((d) => d.id === activeSession.destinationId);
+  const stopwatch = activeSession.timerMode === 'stopwatch';
   const estimatedTotal = (task?.estimatedMinutes ?? 25) * 60;
   const progress = estimatedTotal > 0 ? Math.min(1, elapsed / estimatedTotal) : 0;
   const runningFacilities = facilities.filter((f) => f.enabled);
@@ -51,6 +52,7 @@ export function ActiveSortie({ onFinished }: ActiveSortieProps) {
         <p className="list-item__meta">
           派遣先：{destination?.name} / 開始：
           {new Date(activeSession.startedAt).toLocaleTimeString('ja-JP')}
+          {stopwatch ? ' / ストップウォッチ（予定時間なし）' : ''}
         </p>
         <p>
           {activeSession.state === 'running' ? (
@@ -86,20 +88,31 @@ export function ActiveSortie({ onFinished }: ActiveSortieProps) {
         <p className="list-item__meta">
           {destination?.name} — {destination?.description}
         </p>
-        <div
-          className="progress"
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={Math.round(progress * 100)}
-          aria-label="予定時間に対する進行状況"
-        >
-          <div className="progress__bar" style={{ width: `${Math.round(progress * 100)}%` }} />
-        </div>
-        <p className="list-item__meta">
-          予定 {task?.estimatedMinutes ?? 25} 分 に対して {Math.floor(elapsed / 60)} 分経過（
-          {Math.round(progress * 100)}%）
-        </p>
+        {stopwatch ? (
+          <p className="list-item__meta">
+            ストップウォッチで計測中 — 経過 {formatElapsed(elapsed)}（予定時間なし）
+          </p>
+        ) : (
+          <>
+            <div
+              className="progress"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(progress * 100)}
+              aria-label="予定時間に対する進行状況"
+            >
+              <div
+                className="progress__bar"
+                style={{ width: `${Math.round(progress * 100)}%` }}
+              />
+            </div>
+            <p className="list-item__meta">
+              予定 {task?.estimatedMinutes ?? 25} 分 に対して {Math.floor(elapsed / 60)} 分経過（
+              {Math.round(progress * 100)}%）
+            </p>
+          </>
+        )}
         <p className="list-item__meta">派遣中：{dispatchedNames.join('、')}</p>
         <p className="list-item__meta">
           稼働中の施設：{runningFacilities.length} 件

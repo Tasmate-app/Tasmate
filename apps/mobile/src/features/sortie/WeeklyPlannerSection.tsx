@@ -265,7 +265,10 @@ export function WeeklyPlannerSection({
                 <View style={styles.taskBody}>
                   <Text style={styles.taskTitle} numberOfLines={1}>{task.title}</Text>
                   <Text style={styles.taskMeta}>
-                    {taskTimeLabel(task)} / {task.category} / {task.estimatedMinutes}分
+                    {taskTimeLabel(task)} / {task.category} /{' '}
+                    {task.timerMode === 'stopwatch'
+                      ? 'ストップウォッチ'
+                      : `${task.estimatedMinutes}分`}
                   </Text>
                 </View>
                 <Badge label={STATUS_LABELS[task.status]} tone={STATUS_TONES[task.status]} />

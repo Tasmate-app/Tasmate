@@ -402,10 +402,25 @@ export function isValidAppState(value: unknown): value is AppState {
   return true;
 }
 
+function normalizeTimerMode(value: unknown): 'stopwatch' | undefined {
+  return value === 'stopwatch' ? 'stopwatch' : undefined;
+}
+
 function normalizeTask(task: Task): Task {
-  if (task.scheduledDate !== undefined) return task;
-  const dateKey = taskScheduledDateKey(task);
-  return dateKey === undefined ? task : { ...task, scheduledDate: dateKey };
+  const timerMode = normalizeTimerMode(task.timerMode);
+  const estimatedMinutes = timerMode === 'stopwatch' ? 0 : task.estimatedMinutes;
+  const withTimer =
+    timerMode === task.timerMode && estimatedMinutes === task.estimatedMinutes
+      ? task
+      : { ...task, timerMode, estimatedMinutes };
+  if (withTimer.scheduledDate !== undefined) return withTimer;
+  const dateKey = taskScheduledDateKey(withTimer);
+  return dateKey === undefined ? withTimer : { ...withTimer, scheduledDate: dateKey };
+}
+
+function normalizeWorkSession(session: WorkSession): WorkSession {
+  const timerMode = normalizeTimerMode(session.timerMode);
+  return timerMode === session.timerMode ? session : { ...session, timerMode };
 }
 
 function normalizeReward(reward: RewardRecord): RewardRecord {
@@ -473,11 +488,13 @@ export function normalizeAppState(state: AppState, now: Date = new Date()): AppS
   const sessionHistory = (Array.isArray(source['sessionHistory'])
     ? source['sessionHistory']
     : []
-  ).filter(isWorkSession);
+  )
+    .filter(isWorkSession)
+    .map(normalizeWorkSession);
   const rawActiveSession = source['activeSession'];
   const activeSession =
     rawActiveSession !== undefined && rawActiveSession !== null && isWorkSession(rawActiveSession)
-      ? rawActiveSession
+      ? normalizeWorkSession(rawActiveSession)
       : null;
   const characters = (Array.isArray(source['characters']) ? source['characters'] : [])
     .filter(isOwnedCharacter)

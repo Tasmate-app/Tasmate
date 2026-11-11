@@ -35,6 +35,7 @@ export function ActiveSortiePanel({
 
   const task = tasks.find((item) => item.id === activeSession.taskId);
   const destination = DESTINATIONS.find((item) => item.id === activeSession.destinationId);
+  const stopwatch = activeSession.timerMode === 'stopwatch';
   const totalSeconds = (task?.estimatedMinutes ?? 25) * 60;
   const progress = totalSeconds > 0 ? Math.min(100, (elapsed / totalSeconds) * 100) : 0;
   const runningFacilities = facilities.filter((facility) => facility.enabled).length;
@@ -76,11 +77,15 @@ export function ActiveSortiePanel({
           {formatElapsed(elapsed)}
         </Text>
         <Text style={styles.timerSub}>
-          予定 {task?.estimatedMinutes ?? 25}分 ・ {Math.round(progress)}%
+          {stopwatch
+            ? 'ストップウォッチ（予定時間なし）'
+            : `予定 ${task?.estimatedMinutes ?? 25}分 ・ ${Math.round(progress)}%`}
         </Text>
-        <View style={styles.timerProgress}>
-          <ProgressBar value={progress} height={12} />
-        </View>
+        {!stopwatch && (
+          <View style={styles.timerProgress}>
+            <ProgressBar value={progress} height={12} />
+          </View>
+        )}
         <View style={styles.timerStats}>
           <View style={styles.timerStat}>
             <Text style={styles.timerStatLabel}>稼働施設</Text>
