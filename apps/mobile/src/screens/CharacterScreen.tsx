@@ -295,9 +295,11 @@ export function CharacterScreen() {
                     value={`×${BALANCE.affinityBonus.toFixed(1)}`}
                   />
                 </View>
-                <Text style={styles.note}>
-                  作業に派遣すると経験値を獲得します。探索先と属性が一致すると収集効率がアップします。
-                </Text>
+                {!atMaxLevel && (
+                  <Text style={styles.note}>
+                    作業に派遣すると経験値を獲得し、貯まると自動でレベルアップします。探索先と属性が一致すると収集効率がアップします。
+                  </Text>
+                )}
               </Panel>
             )}
 
@@ -349,15 +351,19 @@ export function CharacterScreen() {
                   />
                 </View>
 
+                {!atMaxLevel && (
+                  <Text style={styles.note}>
+                    経験値が貯まると自動でレベルアップします。硬貨と星屑を使えば、経験値が足りなくても早めにレベルアップできます。
+                  </Text>
+                )}
+
                 <GameButton
                   label={
                     atMaxLevel
                       ? 'レベル上限に到達'
-                      : selected.experience < nextExp
-                        ? '経験値が足りません'
-                        : !canLevelUp
-                          ? '素材が足りません'
-                          : `レベルアップ（硬貨 ${coinCost} / 星屑 ${stardustCost}）`
+                      : !canLevelUp
+                        ? '素材が足りません'
+                        : `素材でレベルアップ（硬貨 ${coinCost} / 星屑 ${stardustCost}）`
                   }
                   onPress={() => {
                     const ok = levelUpCharacter(selected.definitionId);

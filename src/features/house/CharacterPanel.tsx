@@ -59,18 +59,19 @@ export function CharacterPanel() {
                 {def?.description !== undefined && def.description !== '' && (
                   <div className="list-item__meta">{def.description}</div>
                 )}
+                {!atMaxLevel && (
+                  <div className="list-item__meta">経験値が貯まると自動でレベルアップします。</div>
+                )}
                 <div className="btn-row">
                   <Button disabled={!canLevelUp} onClick={() => levelUpCharacter(c.definitionId)}>
                     {atMaxLevel
                       ? 'レベル上限に到達'
-                      : `レベルアップ（硬貨 ${coinCost} / 星屑 ${stardustCost}）`}
+                      : `素材でレベルアップ（硬貨 ${coinCost} / 星屑 ${stardustCost}）`}
                   </Button>
                 </div>
                 {!canLevelUp && !atMaxLevel && (
                   <div className="list-item__meta">
-                    {c.experience < need
-                      ? '経験値が足りません。キャラを派遣して作業しましょう。'
-                      : '必要な素材が足りません。タスクを完了して集めましょう。'}
+                    素材が足りません。タスクを完了して硬貨・星屑を集めましょう。
                   </div>
                 )}
               </div>

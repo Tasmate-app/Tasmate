@@ -50,7 +50,7 @@ import { CHARACTER_DEFINITIONS } from './seed';
 import { billableMinutes } from './session';
 import { createItemTransaction, consumeItems, COIN_ITEM_ID } from './inventory/inventoryManager';
 import { legacyInventoryFromItems } from './inventory/materialStorage';
-import { planLevelUp } from './progression/levelSystem';
+import { applyExperienceToCharacter, planLevelUp } from './progression/levelSystem';
 import { planAscension } from './progression/ascensionSystem';
 import { evaluateTaskWithFallback, rollTaskReward } from './rewards/rewardCalculator';
 import { applyTaskRewardToState } from './rewards/rewardProcessor';
@@ -1256,7 +1256,7 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
         taskRewards: [applied.reward, ...prev.taskRewards].slice(0, BALANCE.maxTaskRewards),
         stardustCarry: taskRewardResult.stardustCarry,
         characters: prev.characters.map((c) =>
-          dispatched.has(c.definitionId) ? { ...c, experience: c.experience + gainedExp } : c,
+          dispatched.has(c.definitionId) ? applyExperienceToCharacter(c, gainedExp) : c,
         ),
         rewards: [record, ...prev.rewards],
         appliedRewardSessionIds: [...prev.appliedRewardSessionIds, activeSession.id],
@@ -1363,13 +1363,7 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
         ...prev.itemHistory,
       ].slice(0, BALANCE.maxItemHistory),
       characters: prev.characters.map((c) =>
-        c.definitionId === definitionId
-          ? {
-              ...c,
-              level: c.level + 1,
-              experience: c.experience - plan.requiredExperience,
-            }
-          : c,
+        c.definitionId === definitionId ? { ...c, level: c.level + 1 } : c,
       ),
     }));
     return true;
@@ -1399,9 +1393,11 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
         ),
         ...prev.itemHistory,
       ].slice(0, BALANCE.maxItemHistory),
-      characters: prev.characters.map((c) =>
-        c.definitionId === definitionId ? { ...c, ascensionStage: plan.nextStage ?? c.ascensionStage } : c,
-      ),
+      characters: prev.characters.map((c) => {
+        if (c.definitionId !== definitionId) return c;
+        const ascended = { ...c, ascensionStage: plan.nextStage ?? c.ascensionStage };
+        return applyExperienceToCharacter(ascended, 0);
+      }),
     }));
     return true;
   },

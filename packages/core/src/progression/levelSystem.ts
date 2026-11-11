@@ -24,6 +24,40 @@ export function levelUpItems(level: number): ItemStack[] {
   ];
 }
 
+function safeLevel(value: number): number {
+  return Number.isFinite(value) ? Math.max(1, Math.floor(value)) : 1;
+}
+
+function safeExperience(value: number): number {
+  return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+}
+
+/**
+ * 経験値を加算し、上限レベルまで自動でレベルアップする。
+ * レベルアップで必要な経験値だけを消費し、余剰は次のレベルへ持ち越す。
+ * 上限レベルではレベルを上げず、経験値は保持する。
+ */
+export function applyExperienceToCharacter(
+  character: OwnedCharacter,
+  gainedExperience: number,
+): OwnedCharacter {
+  let level = safeLevel(character.level);
+  let experience = safeExperience(character.experience) + safeExperience(gainedExperience);
+  const maxLevel = maxLevelForStage(normalizeAscensionStage(character.ascensionStage));
+  while (level < maxLevel) {
+    const required = experienceToNextLevel(level);
+    if (experience < required) break;
+    experience -= required;
+    level += 1;
+  }
+  if (level === character.level && experience === character.experience) return character;
+  return { ...character, level, experience };
+}
+
+/**
+ * 素材（硬貨・星屑）による手動レベルアップの計画。
+ * 経験値は条件に含めない。経験値はタスク完了時の自動レベルアップで消費する。
+ */
 export function planLevelUp(
   character: OwnedCharacter,
   inventory: ItemInventory,
@@ -34,7 +68,6 @@ export function planLevelUp(
   const requiredExperience = experienceToNextLevel(level);
   const items = levelUpItems(level);
   const atMaxLevel = level >= maxLevel;
-  const hasExperience = character.experience >= requiredExperience;
   const consumed = consumeItems(inventory, atMaxLevel ? [] : items);
   return {
     level,
@@ -43,6 +76,6 @@ export function planLevelUp(
     experience: character.experience,
     requiredExperience,
     items,
-    canLevelUp: !atMaxLevel && hasExperience && consumed.ok,
+    canLevelUp: !atMaxLevel && consumed.ok,
   };
 }
