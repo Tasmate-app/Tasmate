@@ -42,7 +42,6 @@ export function CharacterStatusPanel({
   const levelPlan = planLevelUp(owned, itemInventory);
   const ascension = planAscension(owned, itemInventory);
   const need = levelPlan.requiredExperience;
-  const hasExp = owned.experience >= need;
   const expPercent = need > 0 ? Math.min(100, Math.round((owned.experience / need) * 100)) : 0;
   const atMaxLevel = owned.level >= levelPlan.maxLevel;
   const affinity = DESTINATIONS.filter((d) => d.recommendedAttributes.includes(definition.attribute));
@@ -91,6 +90,9 @@ export function CharacterStatusPanel({
         >
           <div className="progress__bar" style={{ width: `${expPercent}%` }} />
         </div>
+        <p className="list-item__meta">
+          経験値が貯まると自動でレベルアップします。
+        </p>
       </div>
 
       <dl className="companion-status__rows">
@@ -138,13 +140,11 @@ export function CharacterStatusPanel({
             ? '処理中…'
             : atMaxLevel
               ? 'レベル上限に到達'
-              : `レベルアップ（${levelPlan.items.map((stack) => `${stackLabel(stack)} ${stack.quantity}`).join(' / ')}）`}
+              : `素材でレベルアップ（${levelPlan.items.map((stack) => `${stackLabel(stack)} ${stack.quantity}`).join(' / ')}）`}
         </button>
         {!levelPlan.canLevelUp && !atMaxLevel && (
           <p className="list-item__meta" role="status">
-            {!hasExp
-              ? '経験値が足りません。キャラを派遣して作業しましょう。'
-              : '必要な素材が足りません。タスクを完了して集めましょう。'}
+            素材が足りません。タスクを完了して硬貨・星屑を集めましょう。
           </p>
         )}
       </div>

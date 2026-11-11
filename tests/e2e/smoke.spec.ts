@@ -63,7 +63,7 @@ test('仲間一覧から詳細を開いて戻れる', async ({ page }) => {
   await expect(page.getByRole('region', { name: 'ルナの表示' })).toBeVisible();
   await expect(page.getByRole('region', { name: 'ルナのステータス' })).toBeVisible();
   await expect(page.getByRole('button', { name: /レベルアップ/ })).toBeDisabled();
-  await expect(page.getByText('経験値が足りません')).toBeVisible();
+  await expect(page.getByText('素材が足りません。')).toBeVisible();
   await page.getByRole('button', { name: '← 仲間一覧に戻る' }).click();
   await expect(page.getByRole('group', { name: 'キャラクター選択' })).toBeVisible();
   // 狭い画面でもページ全体に横スクロールが発生しないこと
