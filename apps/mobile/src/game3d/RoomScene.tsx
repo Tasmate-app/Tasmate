@@ -4,6 +4,7 @@ import { useIsFocused } from 'expo-router';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import lunaAsset from '../../assets/luna.glb';
+import { TouchCameraControls } from './TouchCameraControls';
 
 if (typeof navigator !== 'undefined' && typeof navigator.userAgent !== 'string') {
   Object.defineProperty(navigator, 'userAgent', {
@@ -88,6 +89,7 @@ export function RoomScene({
       onCreated={({ gl }) => patchShaderInfoLogs(gl)}
     >
       <color attach="background" args={['#ecf9ff']} />
+      <TouchCameraControls />
       <ambientLight intensity={1.1} />
       <hemisphereLight args={['#ffffff', '#7dd3fc', 1.2]} />
       <directionalLight position={[4, 6, 4]} intensity={2.6} />

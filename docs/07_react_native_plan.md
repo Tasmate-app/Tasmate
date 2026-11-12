@@ -199,8 +199,8 @@ appStore
 | `primitive` によるGLB表示 | 対応 | 読み込み方法のみ変更 |
 | GLB読込 | 要変更 | MetroのassetExtsに`glb`追加。`useGLTF`（`@react-three/drei/native`）または`Asset.fromModule` + loader |
 | テクスチャ | 今回は内包 | 追加テクスチャを使う場合はMetro設定とURI解決を検証 |
-| カメラ操作 | **要注意** | `OrbitControls` はDOMイベント前提。Nativeではマルチタッチで問題報告あり。初期は固定カメラ推奨 |
-| タッチ操作 | 要実装 | `react-native-gesture-handler` で1本指回転・ピンチズームを独自実装 |
+| カメラ操作 | 実装済み | 独自タッチ操作で1本指回転・ピンチズームを実装。`OrbitControls` はNativeのマルチタッチ問題を避けるため未使用 |
+| タッチ操作 | 実装済み | R3F Nativeのpointerイベントを購読し、1本指回転・ピンチズームを独自実装 |
 | ホバー | 非対応 | `onPointerOver/Out` とカーソル処理をWeb専用化。タップ選択に変更 |
 | アニメーション | 対応 | 現在の`useFrame`は問題なし |
 | `onPointerMissed` | 要検証 | Native Canvasでの挙動を実機確認 |
@@ -217,12 +217,11 @@ Web版の `RoomScene.tsx` を無理に共通化せず、次のように分離す
 - Web: 既存 `RoomScene.tsx` を維持
 - Native: `RoomScene.native.tsx` を新規実装
   - `Canvas` は `@react-three/fiber/native`
-  - 初期検証は固定カメラ
+  - カメラ操作は独自タッチ操作（1本指回転・ピンチズーム）
   - GLBは `useGLTF` + Metroアセット
-  - タッチ操作は後から追加
   - 選択はタップ、ホバーなし
 
-まず「LunaのGLBが表示され、タップで選択でき、フレームレートが実用範囲」を確認してから、カメラ操作を追加するのがよい。
+LunaのGLB表示・タップ選択・カメラ操作・フレームレートは実機で確認する。
 
 ## 8. 推奨バージョンと互換性
 
