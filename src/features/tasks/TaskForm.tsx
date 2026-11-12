@@ -4,16 +4,17 @@ import { Card } from '../../components/ui/Card';
 import { Field, TextArea, TextInput } from '../../components/ui/Field';
 import { useAppStore } from '../../stores/appStore';
 import { CategorySelectFields, type CategorySelection } from '../taxonomy/CategorySelectFields';
+import { createDefaultCategorySelection } from '../taxonomy/categorySelection';
 
 /** タスク作成フォーム */
 export function TaskForm() {
   const createTask = useAppStore((s) => s.createTask);
+  const categories = useAppStore((s) => s.categories);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [selection, setSelection] = useState<CategorySelection>({
-    categoryId: '',
-    subCategoryId: '',
-  });
+  const [selection, setSelection] = useState<CategorySelection>(() =>
+    createDefaultCategorySelection(categories),
+  );
   const [estimatedMinutes, setEstimatedMinutes] = useState(25);
 
   const onSubmit = (e: FormEvent) => {

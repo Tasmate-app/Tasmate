@@ -5,6 +5,7 @@ import { Field, SelectInput, TextArea, TextInput } from '../../components/ui/Fie
 import { DESTINATIONS } from '../../data/seed';
 import { useAppStore } from '../../stores/appStore';
 import { CategorySelectFields, type CategorySelection } from '../taxonomy/CategorySelectFields';
+import { createDefaultCategorySelection } from '../taxonomy/categorySelection';
 import { PartyFormation } from './PartyFormation';
 
 interface StopwatchStartModalProps {
@@ -15,14 +16,14 @@ interface StopwatchStartModalProps {
 /** 内容を設定したストップウォッチタスクを、その場で開始するモーダル */
 export function StopwatchStartModal({ open, onClose }: StopwatchStartModalProps) {
   const characters = useAppStore((s) => s.characters);
+  const categories = useAppStore((s) => s.categories);
   const startStopwatchTask = useAppStore((s) => s.startStopwatchTask);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [selection, setSelection] = useState<CategorySelection>({
-    categoryId: '',
-    subCategoryId: '',
-  });
+  const [selection, setSelection] = useState<CategorySelection>(() =>
+    createDefaultCategorySelection(categories),
+  );
   const [destinationId, setDestinationId] = useState(DESTINATIONS[0].id);
   const [characterIds, setCharacterIds] = useState<string[]>([]);
   const [error, setError] = useState('');
@@ -31,13 +32,13 @@ export function StopwatchStartModal({ open, onClose }: StopwatchStartModalProps)
     if (!open) return;
     setTitle('');
     setDescription('');
-    setSelection({ categoryId: '', subCategoryId: '' });
+    setSelection(createDefaultCategorySelection(categories));
     setDestinationId(DESTINATIONS[0].id);
     setCharacterIds(
       characters[0] !== undefined ? [characters[0].definitionId] : [],
     );
     setError('');
-  }, [open, characters]);
+  }, [open, characters, categories]);
 
   useEffect(() => {
     if (!open) return;

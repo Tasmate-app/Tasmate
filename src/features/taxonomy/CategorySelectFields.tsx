@@ -1,11 +1,9 @@
 import { activeCategories, activeSubCategories, findCategoryById } from '@tasmate/core';
 import { Field, SelectInput } from '../../components/ui/Field';
 import { useAppStore } from '../../stores/appStore';
+import type { CategorySelection } from './categorySelection';
 
-export interface CategorySelection {
-  categoryId: string;
-  subCategoryId: string;
-}
+export type { CategorySelection } from './categorySelection';
 
 interface CategorySelectFieldsProps {
   idPrefix: string;
