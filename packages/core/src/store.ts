@@ -32,6 +32,7 @@ import {
   supportMessage,
 } from './rest';
 import { initialAppState, toAppStateSnapshot, type AppState } from './appState';
+import { parseBackup, type BackupParseResult } from './backup';
 import {
   DEFAULT_SAVE_DEBOUNCE_MS,
   LEGACY_STORAGE_KEY,
@@ -246,6 +247,11 @@ export interface AppActions {
 
   resetAll: () => void;
 
+  /** バックアップ文字列から状態を復元する。進行中のタイマー・休憩は破棄する */
+  importAppState: (raw: string) => BackupParseResult;
+  /** バックアップを書き出した日時を記録する */
+  markBackupExported: (exportedAt: string) => void;
+
   /** 非同期ストレージから状態を復元する。復元済みなら何もしない */
   hydrate: () => Promise<void>;
   /** 保留中の保存を即座に実行し、完了を待つ */
@@ -257,6 +263,8 @@ export interface AppStore extends AppState, AppActions {
   hasHydrated: boolean;
   /** 直近の保存・復元エラー。成功すると null に戻る */
   storageError: string | null;
+  /** 保存先が利用可能か。読み込み失敗時は false になり、保存を停止する */
+  canPersist: boolean;
 }
 
 /** 現在のセッションの経過秒数を算出するセレクタ用ヘルパー */
@@ -590,7 +598,12 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
         lastSavedJson = result.serialized;
         failedJson = null;
         desiredJson = null;
-        store.setState({ ...result.state, hasHydrated: true, storageError: result.error });
+        store.setState({
+          ...result.state,
+          hasHydrated: true,
+          storageError: result.error,
+          canPersist: true,
+        });
         return;
       }
       if (result.readFailed) {
@@ -598,18 +611,18 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
         // 破損データ（パース失敗）とは区別し、次回起動時の復元に委ねる。
         canPersist = false;
         lastSavedJson = null;
-        store.setState({ hasHydrated: true, storageError: result.error });
+        store.setState({ hasHydrated: true, storageError: result.error, canPersist: false });
         return;
       }
       // 破損データを復元直後に上書きしない。次の状態変更まで保存を待つ
       canPersist = true;
       lastSavedJson = JSON.stringify(toAppStateSnapshot(initialAppState()));
-      store.setState({ hasHydrated: true, storageError: result.error });
+      store.setState({ hasHydrated: true, storageError: result.error, canPersist: true });
     })()
       .catch((error: unknown) => {
         canPersist = false;
         reportError(error);
-        store.setState({ hasHydrated: true });
+        store.setState({ hasHydrated: true, canPersist: false });
       })
       .finally(() => {
         hydrationPromise = null;
@@ -621,6 +634,7 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
     ...startState,
     hasHydrated: startsHydrated,
     storageError: null,
+    canPersist,
     hydrate,
     flush,
 
@@ -1522,6 +1536,22 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
     if (!isRestWeekAllowed(state.restWeeks, weekStart, currentWeek)) return false;
     set((s) => ({ restWeeks: [...s.restWeeks, weekStart].sort() }));
     return true;
+  },
+
+  importAppState: (raw) => {
+    const result = parseBackup(raw);
+    if (!result.ok) return result;
+    set({
+      ...result.state,
+      hasHydrated: true,
+      storageError: null,
+    });
+    return result;
+  },
+
+  markBackupExported: (exportedAt) => {
+    if (Number.isNaN(Date.parse(exportedAt))) return;
+    set((s) => ({ settings: { ...s.settings, lastBackupAt: exportedAt } }));
   },
 
   resetAll: () => set({ ...initialAppState() }),

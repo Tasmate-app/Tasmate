@@ -21,6 +21,7 @@
     "./seed": "./src/seed.ts",
     "./rewardService": "./src/rewardService.ts",
     "./appState": "./src/appState.ts",
+    "./backup": "./src/backup.ts",
     "./storage": "./src/storage.ts",
     "./store": "./src/store.ts"
   },

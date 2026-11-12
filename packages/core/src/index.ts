@@ -15,6 +15,7 @@ export * from './recurrence';
 export * from './seed';
 export * from './rewardService';
 export * from './appState';
+export * from './backup';
 export * from './storage';
 export * from './store';
 export * from './inventory/itemDefinitions';

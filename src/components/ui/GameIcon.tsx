@@ -7,7 +7,8 @@ export type GameIconName =
   | 'shop'
   | 'storage'
   | 'history'
-  | 'categories';
+  | 'categories'
+  | 'settings';
 
 /** ゲームメニュー用のオリジナル線画アイコン（外部素材不使用） */
 export function GameIcon({ name }: { name: GameIconName }) {
@@ -82,6 +83,12 @@ export function GameIcon({ name }: { name: GameIconName }) {
           <rect x="11.5" y="3.5" width="5.5" height="5.5" rx="1.4" />
           <rect x="3" y="11" width="5.5" height="5.5" rx="1.4" />
           <rect x="11.5" y="11" width="5.5" height="5.5" rx="1.4" />
+        </>
+      )}
+      {name === 'settings' && (
+        <>
+          <circle cx="10" cy="10" r="2.6" />
+          <path d="M10 2.4v2.3M10 15.3v2.3M2.4 10h2.3M15.3 10h2.3M4.6 4.6l1.6 1.6M13.8 13.8l1.6 1.6M15.4 4.6l-1.6 1.6M6.2 13.8l-1.6 1.6" />
         </>
       )}
     </svg>

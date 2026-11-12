@@ -145,6 +145,14 @@ describe('保存データの検証', () => {
   it('任意フィールドが欠けた旧データは受け入れる', () => {
     expect(isValidAppState(base)).toBe(true);
   });
+
+  it('settings がオブジェクトでないデータを不正として扱う', () => {
+    expect(isValidAppState({ ...base, settings: 'invalid' })).toBe(false);
+  });
+
+  it('lastBackupAt が文字列でない settings を不正として扱う', () => {
+    expect(isValidAppState({ ...base, settings: { lastBackupAt: 123 } })).toBe(false);
+  });
 });
 
 describe('不足フィールドの補完', () => {
@@ -191,5 +199,24 @@ describe('不足フィールドの補完', () => {
     );
     expect(normalized.weeklyProgress.lastEvaluatedWeekStart).toBeNull();
     expect(normalized.weeklyProgress.trackingStartedWeek).toBe('2026-10-19');
+  });
+
+  it('settings の欠落を未バックアップとして補完する', () => {
+    const normalized = normalizeAppState(makeLegacy());
+    expect(normalized.settings).toEqual({ lastBackupAt: null });
+  });
+
+  it('不正な lastBackupAt を null に補完する', () => {
+    const normalized = normalizeAppState(
+      makeLegacy({ settings: { lastBackupAt: 'not-a-date' } }),
+    );
+    expect(normalized.settings).toEqual({ lastBackupAt: null });
+  });
+
+  it('正しい lastBackupAt を維持する', () => {
+    const normalized = normalizeAppState(
+      makeLegacy({ settings: { lastBackupAt: '2026-11-12T09:30:00.000Z' } }),
+    );
+    expect(normalized.settings.lastBackupAt).toBe('2026-11-12T09:30:00.000Z');
   });
 });

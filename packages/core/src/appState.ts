@@ -1,4 +1,5 @@
 import type {
+  AppSettings,
   Category,
   Inventory,
   ItemInventory,
@@ -80,6 +81,8 @@ export interface AppState {
   restSession: RestSession | null;
   /** キャラクターの応援・声かけイベント（新しい順） */
   supportEvents: SupportEvent[];
+  /** アプリ全体のユーザー設定 */
+  settings: AppSettings;
 }
 
 /** 初期状態（仮データ） */
@@ -118,6 +121,9 @@ export function initialAppState(): AppState {
     restWeeks: [],
     restSession: null,
     supportEvents: [],
+    settings: {
+      lastBackupAt: null,
+    },
   };
 }
 
@@ -401,6 +407,17 @@ export function isValidAppState(value: unknown): value is AppState {
   if (value['restWeeks'] !== undefined && !Array.isArray(value['restWeeks'])) {
     return false;
   }
+  if (value['settings'] !== undefined) {
+    if (!isRecord(value['settings'])) return false;
+    const lastBackupAt = value['settings']['lastBackupAt'];
+    if (
+      lastBackupAt !== undefined &&
+      lastBackupAt !== null &&
+      typeof lastBackupAt !== 'string'
+    ) {
+      return false;
+    }
+  }
 
   return true;
 }
@@ -476,6 +493,17 @@ function normalizeSupportEvent(value: unknown): SupportEvent | null {
     createdAt: v['createdAt'],
     workSessionId: typeof v['workSessionId'] === 'string' ? v['workSessionId'] : undefined,
     seen: v['seen'] === true,
+  };
+}
+
+function normalizeSettings(value: unknown): AppSettings {
+  if (!isRecord(value)) return { lastBackupAt: null };
+  const lastBackupAt = value['lastBackupAt'];
+  return {
+    lastBackupAt:
+      typeof lastBackupAt === 'string' && !Number.isNaN(Date.parse(lastBackupAt))
+        ? lastBackupAt
+        : null,
   };
 }
 
@@ -579,6 +607,7 @@ export function normalizeAppState(state: AppState, now: Date = new Date()): AppS
         .filter((event): event is SupportEvent => event !== null)
         .slice(0, BALANCE.maxSupportEvents)
     : [];
+  const settings = normalizeSettings(source['settings']);
 
   if (!isValidDateKey(weeklyProgress.trackingStartedWeek)) {
     weeklyProgress = {
@@ -642,6 +671,7 @@ export function normalizeAppState(state: AppState, now: Date = new Date()): AppS
     restWeeks,
     restSession,
     supportEvents,
+    settings,
   };
 }
 
@@ -673,5 +703,6 @@ export function toAppStateSnapshot(state: AppState): AppState {
     restWeeks: state.restWeeks,
     restSession: state.restSession,
     supportEvents: state.supportEvents,
+    settings: state.settings,
   };
 }

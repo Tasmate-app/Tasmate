@@ -20,7 +20,7 @@
 |---|---|
 | id | プレイヤー ID |
 | createdAt | 作成日時 |
-| settings | タイマーなどの設定 |
+| settings | アプリ設定（バックアップ日時など） |
 | currentCurrency | 通貨残高（別の台帳から算出する設計も可） |
 
 ### Task
@@ -107,6 +107,14 @@
 | workSessionId | 関連する作業セッション ID（任意） |
 | createdAt | 発生時刻 |
 | seen | プレイヤーが確認済みか |
+
+### AppSettings
+
+アプリ全体のユーザー設定。現状はバックアップ状態のみを持つ。
+
+| フィールド案 | 意味 |
+|---|---|
+| lastBackupAt | 最後にバックアップを書き出した日時（ISO 8601）。未実施は null |
 
 ### RewardRecord
 
@@ -258,14 +266,14 @@
 
 ## 5. 未決定事項
 
-- 保存先（ローカル、クラウド、または併用）
+- 保存先（現状はローカルのみ。クラウド併用は未定）
 - アカウントや複数端末同期の要否
 - 使用する DB・ORM・データ形式
 - オフライン時のタイマーや報酬確定
-- データ削除・エクスポート方法
+- クラウド同期時のデータ削除・エクスポート方法
 - プライバシー上、AI に送信するタスク情報の範囲
 
-### 実装済みの AppState 拡張（報酬・育成）
+### 実装済みの AppState 拡張
 
 | フィールド | 意味 |
 |---|---|
@@ -274,5 +282,25 @@
 | taskRewards | タスク完了報酬の抽選結果（上限500件） |
 | stardustCarry | 星屑の端数（分） |
 | OwnedCharacter.ascensionStage | レベル上限解放の段階（0〜5） |
+| settings | アプリ設定（`lastBackupAt`） |
 
-既存の `Inventory`（currency / shard_*）は互換維持のため残し、`itemInventory` の通貨・旧素材と同期する。旧保存データは `inventory` から `itemInventory` を補完する。
+既存の `Inventory`（currency / shard_*）は互換維持のため残し、`itemInventory` の通貨・旧素材と同期する。旧保存データは `inventory` から `itemInventory` を補完する。`settings` がない旧データは `{ lastBackupAt: null }` を補完する。
+
+## 6. ローカル保存とバックアップ
+
+- Web は `localStorage`（キー `tasmate:state:v1`）、Native は同じキー・JSON 構造を `AsyncStorage` に保存する。
+- バックアップは次の形式で書き出す。
+
+```json
+{
+  "format": "tasmate-backup",
+  "formatVersion": 1,
+  "exportedAt": "2026-11-12T09:30:00.000Z",
+  "state": { "...AppState..." }
+}
+```
+
+- 生の `AppState` JSON も復元入力として受け付ける。
+- バックアップと復元では `activeSession` / `restSession` を破棄する。復元は現在の状態を上書きし、形式付きバックアップの場合は `lastBackupAt` に `exportedAt` を記録する。生の `AppState` は保存されている設定を正規化して使う。
+- ファイルサイズの上限は 5MB。形式・`version`・主要フィールドを検証し、不正なデータは状態へ反映しない。
+- データリセットは確認入力「リセット」を必要とし、`AppState` を初期状態へ戻す。

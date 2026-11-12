@@ -1,5 +1,6 @@
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import {
   MATERIAL_NAMES,
   formatElapsed,
@@ -25,6 +26,7 @@ const MATERIAL_META: Record<string, { glyph: string; color: string }> = {
 };
 
 export function GameHUD() {
+  const router = useRouter();
   const inventory = useMobileAppStore((s) => s.inventory);
   const itemInventory = useMobileAppStore((s) => s.itemInventory);
   const activeSession = useMobileAppStore((s) => s.activeSession);
@@ -54,6 +56,17 @@ export function GameHUD() {
               <Text style={styles.brandSub}>STUDY QUEST</Text>
             </View>
           </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="設定を開く"
+            onPress={() => router.push('/settings')}
+            style={({ pressed }) => [
+              styles.settingsButton,
+              pressed ? styles.settingsButtonPressed : null,
+            ]}
+          >
+            <Text style={styles.settingsGlyph}>⚙</Text>
+          </Pressable>
         </View>
 
         <View style={styles.resources}>
@@ -204,6 +217,26 @@ const styles = StyleSheet.create({
     fontSize: 7,
     fontWeight: '900',
     letterSpacing: 1.4,
+  },
+  settingsButton: {
+    marginLeft: 'auto',
+    width: 34,
+    height: 34,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+  },
+  settingsButtonPressed: {
+    opacity: 0.7,
+  },
+  settingsGlyph: {
+    color: colors.primaryDark,
+    fontSize: 17,
+    fontWeight: '900',
+    lineHeight: 20,
   },
   resources: {
     flexDirection: 'row',

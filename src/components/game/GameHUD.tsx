@@ -1,8 +1,10 @@
+import { Link } from 'react-router-dom';
 import { MATERIAL_NAMES } from '../../domain/constants';
 import { remainingRestSeconds } from '../../domain/rest';
 import { formatElapsed } from '../../domain/session';
 import { useNow } from '../../hooks/useNow';
 import { sessionElapsedSeconds, useAppStore } from '../../stores/appStore';
+import { GameIcon } from '../ui/GameIcon';
 
 interface MaterialGlyph {
   glyph: string;
@@ -33,17 +35,22 @@ export function GameHUD() {
 
   return (
     <div className="game-hud">
-      <div className="game-brand" aria-label="Tasmate">
-        <img
-          className="game-brand__mark"
-          src={`${import.meta.env.BASE_URL}assets/brand/appicon.png`}
-          alt=""
-          aria-hidden="true"
-        />
-        <span className="game-brand__text">
-          <span className="game-brand__word">Tasmate</span>
-          <span className="game-brand__sub">STUDY &amp; TASK</span>
-        </span>
+      <div className="game-hud__head">
+        <div className="game-brand" aria-label="Tasmate">
+          <img
+            className="game-brand__mark"
+            src={`${import.meta.env.BASE_URL}assets/brand/appicon.png`}
+            alt=""
+            aria-hidden="true"
+          />
+          <span className="game-brand__text">
+            <span className="game-brand__word">Tasmate</span>
+            <span className="game-brand__sub">STUDY &amp; TASK</span>
+          </span>
+        </div>
+        <Link to="/settings" className="game-hud__settings" title="設定" aria-label="設定を開く">
+          <GameIcon name="settings" />
+        </Link>
       </div>
       <div className="game-hud__resources" aria-label="所持資源">
         <span className="game-res game-res--coin" title="ゲーム内通貨">
