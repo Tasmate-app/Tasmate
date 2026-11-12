@@ -10,6 +10,7 @@ import {
 import { useAppStore } from '../../stores/appStore';
 import type { Task } from '../../types/index';
 import { CategorySelectFields, type CategorySelection } from '../taxonomy/CategorySelectFields';
+import { createDefaultCategorySelection } from '../taxonomy/categorySelection';
 
 interface CalendarTaskModalProps {
   open: boolean;
@@ -24,13 +25,13 @@ export function CalendarTaskModal({ open, initialDate, task, onClose }: Calendar
   const updateTask = useAppStore((s) => s.updateTask);
   const deleteTask = useAppStore((s) => s.deleteTask);
   const createRecurrenceRule = useAppStore((s) => s.createRecurrenceRule);
+  const categories = useAppStore((s) => s.categories);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [selection, setSelection] = useState<CategorySelection>({
-    categoryId: '',
-    subCategoryId: '',
-  });
+  const [selection, setSelection] = useState<CategorySelection>(() =>
+    createDefaultCategorySelection(categories),
+  );
   const [estimatedMinutes, setEstimatedMinutes] = useState(25);
   const [date, setDate] = useState(initialDate);
   const [hasTime, setHasTime] = useState(false);
@@ -48,7 +49,7 @@ export function CalendarTaskModal({ open, initialDate, task, onClose }: Calendar
       setTitle(task.title);
       setDescription(task.description);
       setSelection({
-        categoryId: task.categoryId ?? '',
+        categoryId: task.categoryId ?? createDefaultCategorySelection(categories).categoryId,
         subCategoryId: task.subCategoryId ?? '',
       });
       setEstimatedMinutes(task.estimatedMinutes);
@@ -61,7 +62,7 @@ export function CalendarTaskModal({ open, initialDate, task, onClose }: Calendar
     } else {
       setTitle('');
       setDescription('');
-      setSelection({ categoryId: '', subCategoryId: '' });
+      setSelection(createDefaultCategorySelection(categories));
       setEstimatedMinutes(25);
       setDate(initialDate);
       setHasTime(false);
@@ -71,7 +72,7 @@ export function CalendarTaskModal({ open, initialDate, task, onClose }: Calendar
       setDaysOfWeek([weekdayNumber(parseDateKey(initialDate))]);
     }
     setError('');
-  }, [open, task, initialDate]);
+  }, [open, task, initialDate, categories]);
 
   useEffect(() => {
     if (!open) return;

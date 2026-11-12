@@ -5,6 +5,7 @@ import { isValidTimeRange, WEEKDAY_LABELS } from '../../domain/weekly';
 import { useAppStore } from '../../stores/appStore';
 import type { RecurrenceRule } from '../../types/index';
 import { CategorySelectFields, type CategorySelection } from '../taxonomy/CategorySelectFields';
+import { createDefaultCategorySelection } from '../taxonomy/categorySelection';
 
 interface RecurrenceRuleModalProps {
   rule?: RecurrenceRule;
@@ -15,13 +16,13 @@ interface RecurrenceRuleModalProps {
 export function RecurrenceRuleModal({ rule, onClose }: RecurrenceRuleModalProps) {
   const updateRecurrenceRule = useAppStore((s) => s.updateRecurrenceRule);
   const deleteRecurrenceRule = useAppStore((s) => s.deleteRecurrenceRule);
+  const categories = useAppStore((s) => s.categories);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [selection, setSelection] = useState<CategorySelection>({
-    categoryId: '',
-    subCategoryId: '',
-  });
+  const [selection, setSelection] = useState<CategorySelection>(() =>
+    createDefaultCategorySelection(categories),
+  );
   const [estimatedMinutes, setEstimatedMinutes] = useState(25);
   const [daysOfWeek, setDaysOfWeek] = useState<number[]>([]);
   const [hasTime, setHasTime] = useState(true);
@@ -36,7 +37,7 @@ export function RecurrenceRuleModal({ rule, onClose }: RecurrenceRuleModalProps)
     setTitle(rule.title);
     setDescription(rule.description);
     setSelection({
-      categoryId: rule.categoryId ?? '',
+      categoryId: rule.categoryId ?? createDefaultCategorySelection(categories).categoryId,
       subCategoryId: rule.subCategoryId ?? '',
     });
     setEstimatedMinutes(rule.estimatedMinutes);
@@ -48,7 +49,7 @@ export function RecurrenceRuleModal({ rule, onClose }: RecurrenceRuleModalProps)
     setEffectiveFrom(rule.effectiveFrom);
     setEffectiveUntil(rule.effectiveUntil ?? '');
     setError('');
-  }, [rule]);
+  }, [rule, categories]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {

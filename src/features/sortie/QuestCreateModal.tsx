@@ -3,6 +3,7 @@ import { Button } from '../../components/ui/Button';
 import { Field, TextArea, TextInput } from '../../components/ui/Field';
 import { useAppStore } from '../../stores/appStore';
 import { CategorySelectFields, type CategorySelection } from '../taxonomy/CategorySelectFields';
+import { createDefaultCategorySelection } from '../taxonomy/categorySelection';
 
 interface QuestCreateModalProps {
   open: boolean;
@@ -13,12 +14,12 @@ interface QuestCreateModalProps {
 /** クエスト（タスク）作成モーダル。一覧とは独立したパネルで表示する */
 export function QuestCreateModal({ open, onClose, onCreated }: QuestCreateModalProps) {
   const createTask = useAppStore((s) => s.createTask);
+  const categories = useAppStore((s) => s.categories);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [selection, setSelection] = useState<CategorySelection>({
-    categoryId: '',
-    subCategoryId: '',
-  });
+  const [selection, setSelection] = useState<CategorySelection>(() =>
+    createDefaultCategorySelection(categories),
+  );
   const [estimatedMinutes, setEstimatedMinutes] = useState(25);
 
   useEffect(() => {
