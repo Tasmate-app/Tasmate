@@ -112,6 +112,39 @@ h3 {
   box-shadow: var(--shadow-card);
 }
 
+.game-hud__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex: 1;
+  min-width: 0;
+}
+
+.game-hud__settings {
+  margin-left: auto;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  text-decoration: none;
+  transition:
+    background var(--anim-fast) var(--ease-smooth),
+    color var(--anim-fast) var(--ease-smooth),
+    transform var(--anim-fast) var(--ease-pop);
+}
+
+.game-hud__settings:hover {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-dark);
+  transform: translateY(-1px);
+}
+
 .game-brand {
   display: flex;
   align-items: center;
@@ -3565,7 +3598,7 @@ h3 {
 }
 
 /* ------------------------------------------------------------------ */
-/* —š—ð / ƒJƒeƒSƒŠ[ŠÇ—                                               */
+/* ï¿½ï¿½ï¿½ï¿½ / ï¿½Jï¿½eï¿½Sï¿½ï¿½ï¿½[ï¿½Ç—ï¿½                                               */
 /* ------------------------------------------------------------------ */
 
 .history-summary {
@@ -3881,5 +3914,142 @@ h3 {
   .category-sub-form {
     flex-direction: column;
     align-items: stretch;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Ý’è                                                               */
+/* ------------------------------------------------------------------ */
+
+.settings-lead,
+.settings-note {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  line-height: 1.65;
+}
+
+.settings-warning {
+  padding: var(--space-md) var(--space-lg);
+  border: 1px solid var(--color-danger-soft);
+  border-radius: var(--radius-lg);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.settings-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin: 0;
+}
+
+.settings-info > div {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px dashed var(--color-border);
+}
+
+.settings-info > div:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.settings-info span,
+.settings-info dt {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.settings-info strong,
+.settings-info dd {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 0.84rem;
+  font-weight: 900;
+  text-align: right;
+}
+
+.settings-info dd .badge {
+  margin-right: 4px;
+}
+
+.settings-actions {
+  margin-top: var(--space-md);
+}
+
+.settings-file-input {
+  display: none;
+}
+
+.settings-danger {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  margin-top: var(--space-lg);
+  padding-top: var(--space-lg);
+  border-top: 1px dashed var(--color-border-strong);
+}
+
+.settings-danger h3 {
+  margin: 0 0 4px;
+  font-size: 0.96rem;
+}
+
+.settings-danger .btn {
+  align-self: center;
+}
+
+.settings-message,
+.settings-error {
+  margin: var(--space-md) 0 0;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.settings-message {
+  border: 1px solid var(--color-success-soft);
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.settings-error {
+  border: 1px solid var(--color-danger-soft);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.settings-reset-modal {
+  width: min(440px, calc(100% - 32px));
+}
+
+@media (max-width: 640px) {
+  .settings-danger {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .settings-danger .btn {
+    width: 100%;
+  }
+
+  .settings-info > div {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .settings-info strong,
+  .settings-info dd {
+    text-align: left;
   }
 }

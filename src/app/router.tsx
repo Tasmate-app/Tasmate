@@ -9,6 +9,7 @@ import { ShopPage } from '../features/shop/ShopPage';
 import { StoragePage } from '../features/storage/StoragePage';
 import { HistoryPage } from '../features/history/HistoryPage';
 import { CategoriesPage } from '../features/categories/CategoriesPage';
+import { SettingsPage } from '../features/settings/SettingsPage';
 
 export const router = createBrowserRouter([
   {
@@ -24,6 +25,7 @@ export const router = createBrowserRouter([
       { path: 'facilities', element: <FacilitiesPage /> },
       { path: 'shop', element: <ShopPage /> },
       { path: 'storage', element: <StoragePage /> },
+      { path: 'settings', element: <SettingsPage /> },
       // 旧シェアハウスURLの互換用
       { path: 'house', element: <Navigate to="/" replace /> },
     ],
