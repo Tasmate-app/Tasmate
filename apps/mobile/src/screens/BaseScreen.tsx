@@ -180,7 +180,7 @@ export function BaseScreen() {
           </View>
           <View pointerEvents="none" style={styles.roomHint}>
             <Text style={styles.roomHintText}>
-              机：コイン工房 / 棚：星屑ハウス / 住人をタップして詳細を表示
+              ドラッグで視点回転・ピンチでズーム / 机：コイン工房 / 棚：星屑ハウス / 住人をタップ
             </Text>
           </View>
           <View pointerEvents="none" style={styles.roomShine} />
