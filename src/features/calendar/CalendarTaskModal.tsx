@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Button } from '../../components/ui/Button';
 import { Field, TextArea, TextInput } from '../../components/ui/Field';
+import { SegmentedControl } from '../../components/ui/SegmentedControl';
 import {
   isValidTimeRange,
   parseDateKey,
@@ -8,9 +9,14 @@ import {
   WEEKDAY_LABELS,
 } from '../../domain/weekly';
 import { useAppStore } from '../../stores/appStore';
-import type { Task } from '../../types/index';
+import type { Task, TimerMode } from '../../types/index';
 import { CategorySelectFields, type CategorySelection } from '../taxonomy/CategorySelectFields';
 import { createDefaultCategorySelection } from '../taxonomy/categorySelection';
+
+const TIMER_MODE_OPTIONS: ReadonlyArray<{ value: TimerMode; label: string }> = [
+  { value: 'estimate', label: '予定時間' },
+  { value: 'stopwatch', label: 'ストップウォッチ' },
+];
 
 interface CalendarTaskModalProps {
   open: boolean;
@@ -33,6 +39,7 @@ export function CalendarTaskModal({ open, initialDate, task, onClose }: Calendar
     createDefaultCategorySelection(categories),
   );
   const [estimatedMinutes, setEstimatedMinutes] = useState(25);
+  const [timerMode, setTimerMode] = useState<TimerMode>('estimate');
   const [date, setDate] = useState(initialDate);
   const [hasTime, setHasTime] = useState(false);
   const [startTime, setStartTime] = useState('18:00');
@@ -52,18 +59,20 @@ export function CalendarTaskModal({ open, initialDate, task, onClose }: Calendar
         categoryId: task.categoryId ?? createDefaultCategorySelection(categories).categoryId,
         subCategoryId: task.subCategoryId ?? '',
       });
-      setEstimatedMinutes(task.estimatedMinutes);
+      setEstimatedMinutes(task.timerMode === 'stopwatch' ? 25 : task.estimatedMinutes);
       setDate(task.scheduledDate ?? initialDate);
       const timed = task.startTime !== undefined && task.endTime !== undefined;
       setHasTime(timed);
       setStartTime(task.startTime ?? '18:00');
       setEndTime(task.endTime ?? '19:00');
+      setTimerMode(task.timerMode === 'stopwatch' ? 'stopwatch' : 'estimate');
       setRepeat(false);
     } else {
       setTitle('');
       setDescription('');
       setSelection(createDefaultCategorySelection(categories));
       setEstimatedMinutes(25);
+      setTimerMode('estimate');
       setDate(initialDate);
       setHasTime(false);
       setStartTime('18:00');
@@ -91,6 +100,15 @@ export function CalendarTaskModal({ open, initialDate, task, onClose }: Calendar
     );
   };
 
+  const handleTimerModeChange = (mode: TimerMode) => {
+    setTimerMode(mode);
+    if (mode === 'stopwatch') {
+      setRepeat(false);
+      return;
+    }
+    setEstimatedMinutes((previous) => (previous >= 1 ? previous : 25));
+  };
+
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
     if (title.trim() === '') return;
@@ -107,17 +125,20 @@ export function CalendarTaskModal({ open, initialDate, task, onClose }: Calendar
       startTime: hasTime ? startTime : undefined,
       endTime: hasTime ? endTime : undefined,
     };
+    const stopwatch = timerMode === 'stopwatch';
+    const input = {
+      title: title.trim(),
+      description: description.trim(),
+      category: '',
+      categoryId: selection.categoryId === '' ? undefined : selection.categoryId,
+      subCategoryId: selection.subCategoryId === '' ? undefined : selection.subCategoryId,
+      estimatedMinutes: stopwatch ? 0 : estimatedMinutes,
+      timerMode: stopwatch ? ('stopwatch' as const) : undefined,
+      ...schedule,
+    };
 
     if (task !== undefined) {
-      updateTask(task.id, {
-        title: title.trim(),
-        description: description.trim(),
-        category: '',
-        categoryId: selection.categoryId === '' ? undefined : selection.categoryId,
-        subCategoryId: selection.subCategoryId === '' ? undefined : selection.subCategoryId,
-        estimatedMinutes,
-        ...schedule,
-      });
+      updateTask(task.id, input);
     } else if (repeat) {
       createRecurrenceRule({
         title,
@@ -132,15 +153,7 @@ export function CalendarTaskModal({ open, initialDate, task, onClose }: Calendar
         effectiveFrom: date,
       });
     } else {
-      createTask({
-        title,
-        description,
-        category: '',
-        categoryId: selection.categoryId === '' ? undefined : selection.categoryId,
-        subCategoryId: selection.subCategoryId === '' ? undefined : selection.subCategoryId,
-        estimatedMinutes,
-        ...schedule,
-      });
+      createTask(input);
     }
     onClose();
   };
@@ -187,7 +200,18 @@ export function CalendarTaskModal({ open, initialDate, task, onClose }: Calendar
             />
           </Field>
           <CategorySelectFields idPrefix="calendar" value={selection} onChange={setSelection} />
-          <div className="field-row field-row--two">
+          <SegmentedControl
+            label="計測方式"
+            options={TIMER_MODE_OPTIONS}
+            value={timerMode}
+            onChange={handleTimerModeChange}
+          />
+          {timerMode === 'stopwatch' && (
+            <p className="list-item__meta">
+              予定時間なしで登録します。終了時の実作業時間を記録します。
+            </p>
+          )}
+          <div className={timerMode === 'estimate' ? 'field-row field-row--two' : undefined}>
             <Field label="予定日" htmlFor="calendar-date">
               <TextInput
                 id="calendar-date"
@@ -203,16 +227,18 @@ export function CalendarTaskModal({ open, initialDate, task, onClose }: Calendar
                 required
               />
             </Field>
-            <Field label="予定時間（分）" htmlFor="calendar-minutes">
-              <TextInput
-                id="calendar-minutes"
-                type="number"
-                min={1}
-                max={480}
-                value={estimatedMinutes}
-                onChange={(event) => setEstimatedMinutes(Number(event.target.value))}
-              />
-            </Field>
+            {timerMode === 'estimate' && (
+              <Field label="予定時間（分）" htmlFor="calendar-minutes">
+                <TextInput
+                  id="calendar-minutes"
+                  type="number"
+                  min={1}
+                  max={480}
+                  value={estimatedMinutes}
+                  onChange={(event) => setEstimatedMinutes(Number(event.target.value))}
+                />
+              </Field>
+            )}
           </div>
           <label className="checkbox-inline">
             <input
@@ -245,7 +271,13 @@ export function CalendarTaskModal({ open, initialDate, task, onClose }: Calendar
             </div>
           )}
 
-          {!isEdit && (
+          {!isEdit && timerMode === 'stopwatch' && (
+            <p className="list-item__meta">
+              ストップウォッチ形式は繰り返し予定に対応していません。
+            </p>
+          )}
+
+          {!isEdit && timerMode !== 'stopwatch' && (
             <>
               <label className="checkbox-inline">
                 <input

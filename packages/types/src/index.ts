@@ -19,6 +19,7 @@ export type WorkSessionState = 'idle' | 'running' | 'paused';
 /**
  * 計測方式。
  * estimate = 予定時間に対する見積タイマー、stopwatch = 予定時間なしのストップウォッチ。
+ * stopwatch でも予定日・時刻は任意で設定できる。
  * 未設定は既存データ互換のため estimate として扱う。
  */
 export type TimerMode = 'estimate' | 'stopwatch';
@@ -56,7 +57,8 @@ export interface Task {
   estimatedMinutes: number;
   /**
    * 計測方式。未設定は estimate。
-   * stopwatch の場合は estimatedMinutes を 0（見積なし）として扱い、予定日を持たない。
+   * stopwatch の場合は estimatedMinutes を 0（見積なし）として扱う。
+   * 予定日・開始時刻・終了時刻は stopwatch でも任意で保持できる。
    */
   timerMode?: TimerMode;
   /** 予定日時（ISO 8601）。既存機能との互換用 */

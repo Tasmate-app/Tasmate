@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
-import type { Task } from '@tasmate/types';
+import type { Task, TimerMode } from '@tasmate/types';
 import {
   activeCategories,
   combineDateAndTime,
@@ -12,9 +12,14 @@ import {
   addDaysToKey,
 } from '@tasmate/core';
 import { useMobileAppStore } from '../../stores/appStore';
-import { FormField, GameButton, GameTextInput, ModalSheet } from '../../ui';
+import { FormField, GameButton, GameTextInput, ModalSheet, SegmentedControl } from '../../ui';
 import { CategoryPicker, type CategorySelection } from '../taxonomy/CategoryPicker';
 import { colors, fontSize, radius, spacing } from '../../theme/tokens';
+
+const TIMER_MODE_OPTIONS = [
+  { value: 'estimate', label: '予定時間' },
+  { value: 'stopwatch', label: 'ストップウォッチ' },
+];
 
 interface TaskEditorModalProps {
   open: boolean;
@@ -35,6 +40,7 @@ export function TaskEditorModal({ open, task, initialDate, onClose }: TaskEditor
     subCategoryId: '',
   });
   const [estimatedMinutes, setEstimatedMinutes] = useState('25');
+  const [timerMode, setTimerMode] = useState<TimerMode>('estimate');
   const [scheduledDate, setScheduledDate] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
@@ -52,16 +58,20 @@ export function TaskEditorModal({ open, task, initialDate, onClose }: TaskEditor
         '',
       subCategoryId: task?.subCategoryId ?? '',
     });
-    setEstimatedMinutes(String(task?.estimatedMinutes ?? 25));
+    const editingStopwatch = task?.timerMode === 'stopwatch';
+    setEstimatedMinutes(editingStopwatch ? '25' : String(task?.estimatedMinutes ?? 25));
+    setTimerMode(editingStopwatch ? 'stopwatch' : 'estimate');
+    const existingDate =
+      task?.scheduledDate ?? (task !== undefined ? taskScheduledDateKey(task) : undefined);
     setScheduledDate(
-      task?.scheduledDate ?? (task !== undefined ? taskScheduledDateKey(task) : undefined) ?? initialDate ?? today,
+      task === undefined ? (existingDate ?? initialDate ?? today) : (existingDate ?? ''),
     );
     setStartTime(task?.startTime ?? '');
     setEndTime(task?.endTime ?? '');
     setError(null);
   }, [open, task, initialDate]);
 
-  const stopwatch = task?.timerMode === 'stopwatch';
+  const stopwatch = timerMode === 'stopwatch';
 
   const handleSave = () => {
     const trimmedTitle = title.trim();
@@ -70,17 +80,6 @@ export function TaskEditorModal({ open, task, initialDate, onClose }: TaskEditor
       return;
     }
 
-    let schedule: {
-      scheduledDate: string | undefined;
-      startTime: string | undefined;
-      endTime: string | undefined;
-      scheduledAt: string | undefined;
-    } = {
-      scheduledDate: undefined,
-      startTime: undefined,
-      endTime: undefined,
-      scheduledAt: undefined,
-    };
     let minutes = 0;
 
     if (!stopwatch) {
@@ -89,41 +88,41 @@ export function TaskEditorModal({ open, task, initialDate, onClose }: TaskEditor
         setError('予定時間は1〜480分の範囲で入力してください。');
         return;
       }
-      const dateKey = scheduledDate.trim();
-      if (dateKey !== '' && !isValidDateKey(dateKey)) {
-        setError('日付は YYYY-MM-DD 形式で入力してください。');
-        return;
-      }
-      const start = startTime.trim();
-      const end = endTime.trim();
-      if ((start === '') !== (end === '')) {
-        setError('開始時刻と終了時刻は両方入力してください。');
-        return;
-      }
-      if (start !== '' && !isValidTime(start)) {
-        setError('開始時刻は HH:mm 形式で入力してください。');
-        return;
-      }
-      if (end !== '' && !isValidTime(end)) {
-        setError('終了時刻は HH:mm 形式で入力してください。');
-        return;
-      }
-      if (!isValidTimeRange(start === '' ? undefined : start, end === '' ? undefined : end)) {
-        setError('終了時刻は開始時刻より後にしてください。');
-        return;
-      }
-      if (start !== '' && dateKey === '') {
-        setError('時刻を設定する場合は日付も入力してください。');
-        return;
-      }
-      schedule = {
-        scheduledDate: dateKey === '' ? undefined : dateKey,
-        startTime: start === '' ? undefined : start,
-        endTime: end === '' ? undefined : end,
-        scheduledAt:
-          dateKey !== '' && start !== '' ? combineDateAndTime(dateKey, start) : undefined,
-      };
     }
+
+    const dateKey = scheduledDate.trim();
+    if (dateKey !== '' && !isValidDateKey(dateKey)) {
+      setError('日付は YYYY-MM-DD 形式で入力してください。');
+      return;
+    }
+    const start = startTime.trim();
+    const end = endTime.trim();
+    if ((start === '') !== (end === '')) {
+      setError('開始時刻と終了時刻は両方入力してください。');
+      return;
+    }
+    if (start !== '' && !isValidTime(start)) {
+      setError('開始時刻は HH:mm 形式で入力してください。');
+      return;
+    }
+    if (end !== '' && !isValidTime(end)) {
+      setError('終了時刻は HH:mm 形式で入力してください。');
+      return;
+    }
+    if (!isValidTimeRange(start === '' ? undefined : start, end === '' ? undefined : end)) {
+      setError('終了時刻は開始時刻より後にしてください。');
+      return;
+    }
+    if (start !== '' && dateKey === '') {
+      setError('時刻を設定する場合は日付も入力してください。');
+      return;
+    }
+    const schedule = {
+      scheduledDate: dateKey === '' ? undefined : dateKey,
+      startTime: start === '' ? undefined : start,
+      endTime: end === '' ? undefined : end,
+      scheduledAt: dateKey !== '' && start !== '' ? combineDateAndTime(dateKey, start) : undefined,
+    };
 
     const common = {
       title: trimmedTitle,
@@ -132,7 +131,7 @@ export function TaskEditorModal({ open, task, initialDate, onClose }: TaskEditor
       categoryId: selection.categoryId === '' ? undefined : selection.categoryId,
       subCategoryId: selection.subCategoryId === '' ? undefined : selection.subCategoryId,
       estimatedMinutes: stopwatch ? 0 : Math.floor(minutes),
-      ...(stopwatch ? { timerMode: 'stopwatch' as const } : {}),
+      timerMode: stopwatch ? ('stopwatch' as const) : undefined,
       ...schedule,
     };
 
@@ -171,11 +170,7 @@ export function TaskEditorModal({ open, task, initialDate, onClose }: TaskEditor
     <ModalSheet
       visible={open}
       title={task === undefined ? '新しいクエスト' : 'クエストを編集'}
-      subtitle={
-        stopwatch
-          ? 'ストップウォッチで記録したクエストの内容を編集します'
-          : '現実で取り組む内容を予定として登録します'
-      }
+      subtitle="現実で取り組む内容と計測方式を登録します"
       onClose={onClose}
     >
       <FormField label="クエスト名（必須）">
@@ -199,68 +194,74 @@ export function TaskEditorModal({ open, task, initialDate, onClose }: TaskEditor
 
       <CategoryPicker value={selection} onChange={setSelection} />
 
+      <FormField label="計測方式">
+        <SegmentedControl
+          options={TIMER_MODE_OPTIONS}
+          value={timerMode}
+          onChange={(value) => setTimerMode(value === 'stopwatch' ? 'stopwatch' : 'estimate')}
+        />
+      </FormField>
+
       {stopwatch ? (
         <Text style={styles.stopwatchNote}>
-          ストップウォッチのクエストには予定時間・予定日がありません。
+          予定時間なしで計測します。予定日・時刻は任意で設定できます。
         </Text>
       ) : (
-        <>
-          <FormField label="予定時間（分）">
-            <GameTextInput
-              value={estimatedMinutes}
-              onChangeText={setEstimatedMinutes}
-              keyboardType="number-pad"
-              placeholder="25"
-              maxLength={3}
-            />
-          </FormField>
-
-          <FormField label="予定日" hint="YYYY-MM-DD。未入力なら日付なしで登録します。">
-            <GameTextInput
-              value={scheduledDate}
-              onChangeText={setScheduledDate}
-              placeholder="2026-11-01"
-              autoCapitalize="none"
-            />
-            <View style={styles.dateButtons}>
-              {dateChoices.map((choice) => (
-                <GameButton
-                  key={choice.value}
-                  label={choice.label}
-                  size="sm"
-                  variant={scheduledDate === choice.value ? 'primary' : 'ghost'}
-                  onPress={() => setScheduledDate(choice.value)}
-                />
-              ))}
-            </View>
-          </FormField>
-
-          <View style={styles.timeRow}>
-            <View style={styles.timeField}>
-              <FormField label="開始時刻">
-                <GameTextInput
-                  value={startTime}
-                  onChangeText={setStartTime}
-                  placeholder="19:00"
-                  keyboardType="numbers-and-punctuation"
-                  maxLength={5}
-                />
-              </FormField>
-            </View>
-            <View style={styles.timeField}>
-              <FormField label="終了時刻">
-                <GameTextInput
-                  value={endTime}
-                  onChangeText={setEndTime}
-                  placeholder="19:25"
-                  keyboardType="numbers-and-punctuation"
-                  maxLength={5}
-                />
-              </FormField>
-            </View>
-          </View>
-        </>
+        <FormField label="予定時間（分）">
+          <GameTextInput
+            value={estimatedMinutes}
+            onChangeText={setEstimatedMinutes}
+            keyboardType="number-pad"
+            placeholder="25"
+            maxLength={3}
+          />
+        </FormField>
       )}
+
+      <FormField label="予定日" hint="YYYY-MM-DD。未入力なら日付なしで登録します。">
+        <GameTextInput
+          value={scheduledDate}
+          onChangeText={setScheduledDate}
+          placeholder="2026-11-01"
+          autoCapitalize="none"
+        />
+        <View style={styles.dateButtons}>
+          {dateChoices.map((choice) => (
+            <GameButton
+              key={choice.value}
+              label={choice.label}
+              size="sm"
+              variant={scheduledDate === choice.value ? 'primary' : 'ghost'}
+              onPress={() => setScheduledDate(choice.value)}
+            />
+          ))}
+        </View>
+      </FormField>
+
+      <View style={styles.timeRow}>
+        <View style={styles.timeField}>
+          <FormField label="開始時刻">
+            <GameTextInput
+              value={startTime}
+              onChangeText={setStartTime}
+              placeholder="19:00"
+              keyboardType="numbers-and-punctuation"
+              maxLength={5}
+            />
+          </FormField>
+        </View>
+        <View style={styles.timeField}>
+          <FormField label="終了時刻">
+            <GameTextInput
+              value={endTime}
+              onChangeText={setEndTime}
+              placeholder="19:25"
+              keyboardType="numbers-and-punctuation"
+              maxLength={5}
+            />
+          </FormField>
+        </View>
+      </View>
 
       {error !== null && <Text style={styles.error}>{error}</Text>}
 

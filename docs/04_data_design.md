@@ -37,7 +37,7 @@
 | estimatedMinutes | 予定時間。ストップウォッチは 0（予定時間なし） |
 | timerMode | estimate / stopwatch（任意。未指定は estimate 相当） |
 | scheduledAt | 予定日時（任意、旧データ互換） |
-| scheduledDate | 予定日（ローカル日付キー） |
+| scheduledDate | 予定日（ローカル日付キー）。stopwatch でも任意で設定可能 |
 | startTime / endTime | 同日の開始・終了時刻（任意） |
 | recurrenceId | 生成元の繰り返しルール ID（任意） |
 | originalScheduledDate | 日付移動前のルール上の予定日（任意） |
@@ -46,6 +46,8 @@
 | status | planned / active / completed / cancelled など |
 | createdAt | 作成日時 |
 | updatedAt | 更新日時 |
+
+`timerMode` は予定時間の扱いだけを表し、予定日・時刻の有無とは独立している。stopwatch でも `scheduledDate` / `startTime` / `endTime` を保持でき、週間カレンダーや次のクエストに表示される。
 
 ### RecurrenceRule
 

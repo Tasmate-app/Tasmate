@@ -28,6 +28,16 @@ test('クエストを作成できる', async ({ page }) => {
   await expect(page.getByText('E2Eテストクエスト', { exact: true }).first()).toBeVisible();
 });
 
+test('ストップウォッチ形式のクエストを作成できる', async ({ page }) => {
+  await page.goto('/sortie');
+  await page.getByRole('button', { name: '新しいクエストを作成' }).click();
+  await page.getByLabel('クエスト名（必須）').fill('ストップウォッチ予定テスト');
+  await page.getByRole('button', { name: 'ストップウォッチ', exact: true }).click();
+  await expect(page.getByLabel('予定時間（分）')).toHaveCount(0);
+  await page.getByRole('button', { name: 'クエストを追加' }).click();
+  await expect(page.getByText('ストップウォッチ（予定時間なし）').first()).toBeVisible();
+});
+
 test('作成したクエストが再読み込み後も復元される', async ({ page }) => {
   await page.goto('/sortie');
   await page.getByRole('button', { name: '新しいクエストを作成' }).click();

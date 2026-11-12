@@ -69,7 +69,7 @@ export function QuestCard({
             <View style={styles.metaChip}>
               <Text style={styles.metaGlyph}>{stopwatch ? '⏱' : '✦'}</Text>
               <Text style={styles.metaText}>
-                {stopwatch ? '予定なし' : `${estimatedMinutes}分`}
+                {stopwatch ? '予定時間なし' : `${estimatedMinutes}分`}
               </Text>
             </View>
             <View style={styles.metaChip}>
