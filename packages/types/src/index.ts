@@ -23,6 +23,12 @@ export type WorkSessionState = 'idle' | 'running' | 'paused';
  */
 export type TimerMode = 'estimate' | 'stopwatch';
 
+/** アプリ全体のユーザー設定 */
+export interface AppSettings {
+  /** 最後にバックアップを書き出した日時（ISO 8601）。未実施は null */
+  lastBackupAt: string | null;
+}
+
 /** 報酬レコードの状態 */
 export type RewardStatus = 'pending' | 'approved' | 'rejected';
 
