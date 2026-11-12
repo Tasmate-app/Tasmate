@@ -117,6 +117,33 @@ const legacySession = {
   taskTitleSnapshot: legacyTask.title,
 } as WorkSession;
 
+describe('ストップウォッチ形式の予定', () => {
+  beforeEach(resetStore);
+
+  it('予定日時を保持してストップウォッチ予定を作成する', () => {
+    const taskId = useAppStore.getState().createTask({
+      title: '英語の復習',
+      description: '',
+      category: '',
+      estimatedMinutes: 30,
+      timerMode: 'stopwatch',
+      scheduledDate: '2026-11-20',
+      startTime: '18:00',
+      endTime: '19:00',
+    });
+
+    const task = useAppStore.getState().tasks.find((item) => item.id === taskId);
+    expect(task).toMatchObject({
+      timerMode: 'stopwatch',
+      estimatedMinutes: 0,
+      scheduledDate: '2026-11-20',
+      startTime: '18:00',
+      endTime: '19:00',
+    });
+    expect(task?.scheduledAt).toBeDefined();
+  });
+});
+
 describe('ストップウォッチの保存データ正規化', () => {
   it('ストップウォッチタスクの予定時間を 0 にそろえる', () => {
     const normalized = normalizeAppState(
@@ -126,6 +153,28 @@ describe('ストップウォッチの保存データ正規化', () => {
 
     expect(normalized.tasks[0].timerMode).toBe('stopwatch');
     expect(normalized.tasks[0].estimatedMinutes).toBe(0);
+  });
+
+  it('予定日時付きストップウォッチタスクの予定日時を保持する', () => {
+    const scheduledTask = {
+      ...legacyTask,
+      estimatedMinutes: 45,
+      scheduledDate: '2026-11-20',
+      startTime: '18:00',
+      endTime: '19:00',
+    } as Task;
+    const normalized = normalizeAppState(
+      makeLegacyState([scheduledTask], [legacySession]),
+      new Date(2026, 9, 23, 12),
+    );
+
+    expect(normalized.tasks[0]).toMatchObject({
+      timerMode: 'stopwatch',
+      estimatedMinutes: 0,
+      scheduledDate: '2026-11-20',
+      startTime: '18:00',
+      endTime: '19:00',
+    });
   });
 
   it('計測方式を持たない旧データは見積タイマーとして扱う', () => {
