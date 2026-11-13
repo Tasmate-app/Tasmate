@@ -27,6 +27,11 @@ describe('OSSライセンス一覧', () => {
     }
   });
 
+  it('推移依存も含む', () => {
+    expect(webLicenseEntries.map((entry) => entry.name)).toContain('scheduler');
+    expect(mobileLicenseEntries.map((entry) => entry.name)).toContain('@babel/runtime');
+  });
+
   it('各エントリに名前・バージョン・ライセンスがある', () => {
     for (const entry of [...webLicenseEntries, ...mobileLicenseEntries]) {
       expect(entry.name).not.toBe('');

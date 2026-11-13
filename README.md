@@ -101,7 +101,7 @@ npm run e2e        # Playwright スモークテスト（dev サーバーを自�
 - `/storage` 倉庫：報酬履歴の確認
 - `/settings` 設定：データのバックアップ書き出し・復元・リセット、アプリ情報、
   OSSライセンス一覧への導線
-- `/settings/licenses` OSSライセンス：直接依存しているライブラリとライセンス全文
+- `/settings/licenses` OSSライセンス：直接・間接依存のライブラリとライセンス全文
 - `/house` は `/` へリダイレクト（旧URL互換）
 
 ## データ保存
