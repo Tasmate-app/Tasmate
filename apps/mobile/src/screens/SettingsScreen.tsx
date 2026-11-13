@@ -213,7 +213,7 @@ export function SettingsScreen() {
             onPress={() => router.push('/licenses')}
           />
           <Text style={styles.note}>
-            使用している直接依存ライブラリのライセンスを確認できます。バックアップファイルは外部に送信されません。
+            使用しているライブラリのライセンスを確認できます。バックアップファイルは外部に送信されません。
           </Text>
         </Panel>
       </ScrollView>

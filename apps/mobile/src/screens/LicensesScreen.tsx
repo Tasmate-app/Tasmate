@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Linking, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Linking, Platform, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { mobileLicenseEntries } from '@tasmate/core/licenses';
@@ -10,9 +10,9 @@ import {
   ScreenBackground,
   ScreenHeader,
 } from '../ui';
-import { colors, fontSize, radius, spacing } from '../theme/tokens';
+import { colors, fontSize, radius, shadows, spacing } from '../theme/tokens';
 
-/** OSSライセンス一覧。直接依存しているサードパーティ製ライブラリを表示する */
+/** OSSライセンス一覧。直接・間接依存のサードパーティ製ライブラリを表示する */
 export function LicensesScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -20,8 +20,10 @@ export function LicensesScreen() {
 
   return (
     <ScreenBackground>
-      <ScrollView
-        style={styles.scroll}
+      <FlatList
+        data={mobileLicenseEntries}
+        keyExtractor={(entry) => `${entry.name}@${entry.version}`}
+        style={styles.list}
         contentContainerStyle={[
           styles.content,
           {
@@ -30,100 +32,116 @@ export function LicensesScreen() {
           },
         ]}
         showsVerticalScrollIndicator={false}
-      >
-        <ScreenHeader
-          eyebrow="SETTINGS / LICENSES"
-          title="OSSライセンス"
-          subtitle="Tasmate が使用している直接依存のサードパーティ製ライブラリです。"
-          right={
-            <GameButton
-              label="戻る"
-              size="sm"
-              variant="secondary"
-              onPress={() => (router.canGoBack() ? router.back() : router.replace('/settings'))}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={7}
+        removeClippedSubviews
+        ListHeaderComponent={
+          <View style={styles.header}>
+            <ScreenHeader
+              eyebrow="SETTINGS / LICENSES"
+              title="OSSライセンス"
+              subtitle="Tasmate が使用している直接・間接依存のサードパーティ製ライブラリです。"
+              right={
+                <GameButton
+                  label="戻る"
+                  size="sm"
+                  variant="secondary"
+                  onPress={() =>
+                    router.canGoBack() ? router.back() : router.replace('/settings')
+                  }
+                />
+              }
             />
-          }
-        />
 
-        <Panel
-          title={`使用ライブラリ（${mobileLicenseEntries.length}件）`}
-          eyebrow="LICENSES"
-          tone="accent"
-        >
-          {mobileLicenseEntries.map((entry, index) => {
-            const key = `${entry.name}@${entry.version}`;
-            const expanded = expandedKey === key;
-            const repository = entry.repository;
-            const isLast = index === mobileLicenseEntries.length - 1;
-            return (
-              <View key={key} style={[styles.item, isLast && styles.itemLast]}>
-                <View style={styles.head}>
-                  <View style={styles.titleWrap}>
-                    <Text style={styles.name}>{entry.name}</Text>
-                    <Text style={styles.version}>v{entry.version}</Text>
-                  </View>
-                  <Badge label={entry.license} tone="neutral" />
+            <Panel
+              title={`使用ライブラリ（${mobileLicenseEntries.length}件）`}
+              eyebrow="LICENSES"
+              tone="accent"
+            >
+              <Text style={styles.note}>
+                直接依存に加え、それらが依存するライブラリも掲載しています。
+              </Text>
+            </Panel>
+          </View>
+        }
+        renderItem={({ item }) => {
+          const key = `${item.name}@${item.version}`;
+          const expanded = expandedKey === key;
+          const repository = item.repository;
+          return (
+            <View style={styles.item}>
+              <View style={styles.head}>
+                <View style={styles.titleWrap}>
+                  <Text style={styles.name}>{item.name}</Text>
+                  <Text style={styles.version}>v{item.version}</Text>
                 </View>
-
-                {repository !== null && (
-                  <GameButton
-                    label="リポジトリを開く"
-                    size="sm"
-                    variant="ghost"
-                    accessibilityLabel={`${entry.name} のリポジトリを開く`}
-                    onPress={() => {
-                      void Linking.openURL(repository);
-                    }}
-                  />
-                )}
-
-                {entry.licenseText !== null ? (
-                  <>
-                    <GameButton
-                      label={expanded ? 'ライセンス全文を閉じる' : 'ライセンス全文を表示'}
-                      size="sm"
-                      variant="secondary"
-                      accessibilityLabel={`${entry.name} のライセンス全文を${expanded ? '閉じる' : '表示'}`}
-                      onPress={() => setExpandedKey(expanded ? null : key)}
-                    />
-                    {expanded && (
-                      <Text selectable style={styles.licenseText}>
-                        {entry.licenseText}
-                      </Text>
-                    )}
-                  </>
-                ) : (
-                  <Text style={styles.note}>
-                    ライセンス全文はパッケージに同梱されていません。リポジトリを参照してください。
-                  </Text>
-                )}
+                <Badge
+                  label={item.license === 'UNKNOWN' ? '不明' : item.license}
+                  tone="neutral"
+                />
               </View>
-            );
-          })}
-        </Panel>
-      </ScrollView>
+
+              {repository !== null && (
+                <GameButton
+                  label="リポジトリを開く"
+                  size="sm"
+                  variant="ghost"
+                  accessibilityLabel={`${item.name} のリポジトリを開く`}
+                  onPress={() => {
+                    void Linking.openURL(repository);
+                  }}
+                />
+              )}
+
+              {item.licenseText !== null ? (
+                <>
+                  <GameButton
+                    label={expanded ? 'ライセンス全文を閉じる' : 'ライセンス全文を表示'}
+                    size="sm"
+                    variant="secondary"
+                    accessibilityLabel={`${item.name} のライセンス全文を${expanded ? '閉じる' : '表示'}`}
+                    onPress={() => setExpandedKey(expanded ? null : key)}
+                  />
+                  {expanded && (
+                    <Text selectable style={styles.licenseText}>
+                      {item.licenseText}
+                    </Text>
+                  )}
+                </>
+              ) : (
+                <Text style={styles.note}>
+                  ライセンス全文はパッケージに同梱されていません。リポジトリを参照してください。
+                </Text>
+              )}
+            </View>
+          );
+        }}
+      />
     </ScreenBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  scroll: {
+  list: {
     flex: 1,
   },
   content: {
     paddingHorizontal: spacing.md,
+    gap: spacing.sm,
+  },
+  header: {
     gap: spacing.md,
+    marginBottom: spacing.xs,
   },
   item: {
     gap: spacing.sm,
-    paddingBottom: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    borderStyle: 'dashed',
-  },
-  itemLast: {
-    paddingBottom: 0,
-    borderBottomWidth: 0,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    ...shadows.card,
   },
   head: {
     flexDirection: 'row',

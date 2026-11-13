@@ -10,7 +10,6 @@ import { StoragePage } from '../features/storage/StoragePage';
 import { HistoryPage } from '../features/history/HistoryPage';
 import { CategoriesPage } from '../features/categories/CategoriesPage';
 import { SettingsPage } from '../features/settings/SettingsPage';
-import { LicensesPage } from '../features/settings/LicensesPage';
 
 export const router = createBrowserRouter([
   {
@@ -27,7 +26,13 @@ export const router = createBrowserRouter([
       { path: 'shop', element: <ShopPage /> },
       { path: 'storage', element: <StoragePage /> },
       { path: 'settings', element: <SettingsPage /> },
-      { path: 'settings/licenses', element: <LicensesPage /> },
+      {
+        path: 'settings/licenses',
+        lazy: async () => {
+          const { LicensesPage } = await import('../features/settings/LicensesPage');
+          return { Component: LicensesPage };
+        },
+      },
       // 旧シェアハウスURLの互換用
       { path: 'house', element: <Navigate to="/" replace /> },
     ],

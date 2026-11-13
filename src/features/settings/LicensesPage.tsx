@@ -3,7 +3,7 @@ import { webLicenseEntries } from '@tasmate/core/licenses';
 import { Badge } from '../../components/ui/Badge';
 import { Card } from '../../components/ui/Card';
 
-/** OSSライセンス一覧。直接依存しているサードパーティ製ライブラリを表示する */
+/** OSSライセンス一覧。直接・間接依存のサードパーティ製ライブラリを表示する */
 export function LicensesPage() {
   return (
     <div className="game-container licenses-page">
@@ -12,7 +12,7 @@ export function LicensesPage() {
           <p className="eyebrow">SETTINGS / LICENSES</p>
           <h1 className="game-screen__title">OSSライセンス</h1>
           <p className="settings-lead">
-            Tasmate が使用しているオープンソースソフトウェアの一覧です。直接依存しているサードパーティ製ライブラリを掲載しています。
+            Tasmate が使用しているオープンソースソフトウェアの一覧です。直接依存に加え、それらが依存するライブラリも掲載しています。
           </p>
         </div>
         <Link to="/settings" className="btn btn--secondary licenses-back">
@@ -29,7 +29,9 @@ export function LicensesPage() {
                   <strong>{entry.name}</strong>
                   <span className="license-item__version">v{entry.version}</span>
                 </div>
-                <Badge tone="neutral">{entry.license}</Badge>
+                <Badge tone="neutral">
+                  {entry.license === 'UNKNOWN' ? '不明' : entry.license}
+                </Badge>
               </div>
 
               {entry.repository !== null && (
