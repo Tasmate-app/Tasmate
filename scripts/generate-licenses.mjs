@@ -6,7 +6,6 @@ const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const lock = JSON.parse(readFileSync(join(rootDir, 'package-lock.json'), 'utf8'));
 const lockedPackages = lock.packages;
 
-const WORKSPACE_PREFIX = '@tasmate/';
 const LICENSE_FILE_RE = /^(licen[cs]e|copying|notice)([._-].*)?$/i;
 
 function readJson(path) {
@@ -86,7 +85,12 @@ function readLicenseText(dir) {
 function buildEntry(key) {
   const lockEntry = lockedPackages[key];
   const dir = join(rootDir, key);
-  const pkg = readJson(join(dir, 'package.json'));
+  let pkg = {};
+  try {
+    pkg = readJson(join(dir, 'package.json'));
+  } catch {
+    // 未インストールのプラットフォーム別パッケージなどは lock 情報のみ使う
+  }
   return {
     name: pkg.name ?? key.replace(/^.*node_modules\//, ''),
     version: pkg.version ?? lockEntry.version ?? '',
@@ -97,23 +101,55 @@ function buildEntry(key) {
 }
 
 function collectEntries(sources) {
-  const keys = new Set();
-  for (const { fromKey, packagePath } of sources) {
-    const pkg = readJson(join(rootDir, packagePath));
-    for (const name of Object.keys(pkg.dependencies ?? {})) {
-      if (name.startsWith(WORKSPACE_PREFIX)) continue;
+  const visitedPaths = new Set();
+  const entriesByKey = new Map();
+  const queue = [];
+
+  const enqueueDependencies = (fromKey, dependencies) => {
+    for (const name of Object.keys(dependencies ?? {})) {
       const key = resolveDependency(fromKey, name);
       if (key === null) {
-        console.warn(`[licenses] 解決できない依存をスキップしました: ${name} (${packagePath})`);
+        console.warn(`[licenses] 解決できない依存をスキップしました: ${name} (${fromKey || 'root'})`);
         continue;
       }
-      if (lockedPackages[key].link === true) continue;
-      keys.add(key);
+      queue.push(key);
     }
+  };
+
+  for (const { fromKey, packagePath } of sources) {
+    enqueueDependencies(fromKey, readJson(join(rootDir, packagePath)).dependencies);
   }
-  return [...keys]
-    .map((key) => buildEntry(key))
-    .sort((a, b) => a.name.localeCompare(b.name) || a.version.localeCompare(b.version));
+
+  while (queue.length > 0) {
+    const key = queue.shift();
+    if (visitedPaths.has(key)) continue;
+    visitedPaths.add(key);
+
+    const lockEntry = lockedPackages[key];
+    if (lockEntry.link === true) {
+      const target = lockEntry.resolved;
+      if (target !== undefined && lockedPackages[target] !== undefined) {
+        enqueueDependencies(target, lockedPackages[target].dependencies);
+      }
+      continue;
+    }
+    if (lockEntry.dev === true) continue;
+
+    const entry = buildEntry(key);
+    const entryKey = `${entry.name}@${entry.version}`;
+    const existing = entriesByKey.get(entryKey);
+    if (existing === undefined) {
+      entriesByKey.set(entryKey, entry);
+    } else if (existing.licenseText === null && entry.licenseText !== null) {
+      existing.licenseText = entry.licenseText;
+    }
+
+    enqueueDependencies(key, lockEntry.dependencies);
+  }
+
+  return [...entriesByKey.values()].sort(
+    (a, b) => a.name.localeCompare(b.name) || a.version.localeCompare(b.version),
+  );
 }
 
 const workspaceSources = readdirSync(join(rootDir, 'packages'), { withFileTypes: true })
