@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   backupFileName,
   serializeBackup,
@@ -26,6 +26,7 @@ function formatBackupDate(value: string | null): string {
 
 /** 設定画面。データ管理・アプリ情報・ライセンス導線をまとめる */
 export function SettingsPage() {
+  const navigate = useNavigate();
   const settings = useAppStore((s) => s.settings);
   const canPersist = useAppStore((s) => s.canPersist);
   const importAppState = useAppStore((s) => s.importAppState);
@@ -218,6 +219,11 @@ export function SettingsPage() {
               </dd>
             </div>
           </dl>
+          <div className="settings-actions">
+            <Button variant="secondary" onClick={() => navigate('/privacy')}>
+              プライバシーポリシーを確認
+            </Button>
+          </div>
           <p className="settings-note">
             バックアップファイルは外部に送信されません。必要な場合はご自身で安全な場所に保管してください。
           </p>

@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GameRuntime } from '../src/components/GameRuntime';
 import { HydrationGate } from '../src/components/HydrationGate';
 import { SupportToast } from '../src/components/SupportToast';
+import { UndoToast } from '../src/components/UndoToast';
 import { useMobileAppStore } from '../src/stores/appStore';
 
 export default function RootLayout() {
@@ -25,6 +26,7 @@ export default function RootLayout() {
           <GameRuntime />
           <Stack screenOptions={{ headerShown: false }} />
           <SupportToast />
+          <UndoToast />
         </View>
       ) : (
         <HydrationGate error={storageError} />

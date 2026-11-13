@@ -10,6 +10,7 @@ import { StoragePage } from '../features/storage/StoragePage';
 import { HistoryPage } from '../features/history/HistoryPage';
 import { CategoriesPage } from '../features/categories/CategoriesPage';
 import { SettingsPage } from '../features/settings/SettingsPage';
+import { PrivacyPolicyPage } from '../features/privacy/PrivacyPolicyPage';
 
 export const router = createBrowserRouter([
   {
@@ -33,6 +34,7 @@ export const router = createBrowserRouter([
           return { Component: LicensesPage };
         },
       },
+      { path: 'privacy', element: <PrivacyPolicyPage /> },
       // 旧シェアハウスURLの互換用
       { path: 'house', element: <Navigate to="/" replace /> },
     ],

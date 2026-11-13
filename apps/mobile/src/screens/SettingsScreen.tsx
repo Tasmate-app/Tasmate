@@ -212,6 +212,11 @@ export function SettingsScreen() {
             variant="secondary"
             onPress={() => router.push('/licenses')}
           />
+          <GameButton
+            label="プライバシーポリシーを確認"
+            variant="secondary"
+            onPress={() => router.push('/privacy')}
+          />
           <Text style={styles.note}>
             使用しているライブラリのライセンスを確認できます。バックアップファイルは外部に送信されません。
           </Text>

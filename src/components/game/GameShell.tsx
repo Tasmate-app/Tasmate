@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom';
 import { GameHUD } from './GameHUD';
 import { GameNavigation } from './GameNavigation';
 import { SupportEventLayer } from './SupportEventLayer';
+import { UndoToast } from './UndoToast';
 
 /** ゲーム画面全体のフレーム（HUD＋メイン領域＋下部ナビ） */
 export function GameShell() {
@@ -11,6 +12,7 @@ export function GameShell() {
         <GameHUD />
       </header>
       <SupportEventLayer />
+      <UndoToast />
       <main className="game-main">
         <Outlet />
       </main>
