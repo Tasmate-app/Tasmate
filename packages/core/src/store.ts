@@ -183,6 +183,28 @@ export function resolveClassification(
   };
 }
 
+/**
+ * 直近の削除操作。トーストの「元に戻す」で復元するために一時的に保持する。
+ * 保存対象には含めない。
+ */
+export type PendingDeletion =
+  | { kind: 'task'; id: string; label: string; deletedAt: string }
+  | {
+      kind: 'category';
+      id: string;
+      label: string;
+      subCategoryIds: string[];
+      deletedAt: string;
+    }
+  | { kind: 'subCategory'; id: string; label: string; deletedAt: string }
+  | {
+      kind: 'recurrenceRule';
+      id: string;
+      label: string;
+      rule: RecurrenceRule;
+      deletedAt: string;
+    };
+
 export interface AppActions {
   /** タスクを作成し、作成 ID を返す。失敗時は空文字 */
   createTask: (input: TaskInput) => string;
@@ -197,6 +219,10 @@ export interface AppActions {
   ) => string | null;
   updateTask: (id: string, patch: Partial<Task>) => void;
   deleteTask: (id: string) => void;
+  /** 直近の削除を元に戻す。対象がない場合は何もしない */
+  undoLastDeletion: () => void;
+  /** 直近の削除トーストを閉じる */
+  dismissLastDeletion: () => void;
 
   createRecurrenceRule: (input: RecurrenceRuleInput) => string;
   updateRecurrenceRule: (id: string, patch: Partial<RecurrenceRuleInput>) => void;
@@ -265,6 +291,8 @@ export interface AppStore extends AppState, AppActions {
   storageError: string | null;
   /** 保存先が利用可能か。読み込み失敗時は false になり、保存を停止する */
   canPersist: boolean;
+  /** 直近の削除。トーストからの復元にだけ使い、保存はしない */
+  lastDeletion: PendingDeletion | null;
 }
 
 /** 現在のセッションの経過秒数を算出するセレクタ用ヘルパー */
@@ -603,6 +631,7 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
           hasHydrated: true,
           storageError: result.error,
           canPersist: true,
+          lastDeletion: null,
         });
         return;
       }
@@ -635,6 +664,7 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
     hasHydrated: startsHydrated,
     storageError: null,
     canPersist,
+    lastDeletion: null,
     hydrate,
     flush,
 
@@ -750,6 +780,8 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
     set((s) => {
       // 進行中セッションのタスクは削除不可
       if (s.activeSession?.taskId === id) return s;
+      const target = s.tasks.find((task) => task.id === id);
+      if (target === undefined || target.archivedAt !== undefined) return s;
       const timestamp = nowIso();
       return {
         tasks: s.tasks.map((t) =>
@@ -757,6 +789,12 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
             ? { ...t, archivedAt: timestamp, archiveReason: 'user' as const, updatedAt: timestamp }
             : t,
         ),
+        lastDeletion: {
+          kind: 'task' as const,
+          id,
+          label: target.title,
+          deletedAt: timestamp,
+        },
       };
     }),
 
@@ -820,6 +858,9 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
       const current = s.categories.find((category) => category.id === id);
       if (current === undefined || current.archivedAt !== undefined) return s;
       const timestamp = nowIso();
+      const subCategoryIds = s.subCategories
+        .filter((subCategory) => subCategory.categoryId === id && subCategory.archivedAt === undefined)
+        .map((subCategory) => subCategory.id);
       return {
         categories: s.categories.map((category) =>
           category.id === id
@@ -831,6 +872,13 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
             ? { ...subCategory, archivedAt: timestamp, updatedAt: timestamp }
             : subCategory,
         ),
+        lastDeletion: {
+          kind: 'category' as const,
+          id,
+          label: current.name,
+          subCategoryIds,
+          deletedAt: timestamp,
+        },
       };
     }),
 
@@ -949,6 +997,12 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
             ? { ...subCategory, archivedAt: timestamp, updatedAt: timestamp }
             : subCategory,
         ),
+        lastDeletion: {
+          kind: 'subCategory' as const,
+          id,
+          label: current.name,
+          deletedAt: timestamp,
+        },
       };
     }),
 
@@ -1092,10 +1146,12 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
 
   deleteRecurrenceRule: (id) =>
     set((s) => {
+      const rule = s.recurrenceRules.find((item) => item.id === id);
+      if (rule === undefined) return s;
       const timestamp = nowIso();
       const todayKey = toDateKey(new Date());
       return {
-        recurrenceRules: s.recurrenceRules.filter((rule) => rule.id !== id),
+        recurrenceRules: s.recurrenceRules.filter((item) => item.id !== id),
         tasks: s.tasks.map((task) =>
           task.recurrenceId === id &&
           task.status !== 'completed' &&
@@ -1105,8 +1161,111 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
             ? { ...task, archivedAt: timestamp, archiveReason: 'rule' as const, updatedAt: timestamp }
             : task,
         ),
+        lastDeletion: {
+          kind: 'recurrenceRule' as const,
+          id,
+          label: rule.title,
+          rule,
+          deletedAt: timestamp,
+        },
       };
     }),
+
+  undoLastDeletion: () =>
+    set((s) => {
+      const pending = s.lastDeletion;
+      if (pending === null) return s;
+      const timestamp = nowIso();
+      switch (pending.kind) {
+        case 'task':
+          return {
+            tasks: s.tasks.map((task) =>
+              task.id === pending.id && task.archivedAt !== undefined
+                ? {
+                    ...task,
+                    archivedAt: undefined,
+                    archiveReason: undefined,
+                    updatedAt: timestamp,
+                  }
+                : task,
+            ),
+            lastDeletion: null,
+          };
+        case 'category': {
+          // 削除後に同名カテゴリーが作られていたら、有効名の重複を避けて復元しない
+          if (
+            s.categories.some(
+              (category) =>
+                category.id !== pending.id &&
+                category.archivedAt === undefined &&
+                category.name === pending.label,
+            )
+          ) {
+            return { lastDeletion: null };
+          }
+          const subCategoryIds = new Set(pending.subCategoryIds);
+          return {
+            categories: s.categories.map((category) =>
+              category.id === pending.id && category.archivedAt !== undefined
+                ? { ...category, archivedAt: undefined, updatedAt: timestamp }
+                : category,
+            ),
+            subCategories: s.subCategories.map((subCategory) =>
+              subCategoryIds.has(subCategory.id) && subCategory.archivedAt !== undefined
+                ? { ...subCategory, archivedAt: undefined, updatedAt: timestamp }
+                : subCategory,
+            ),
+            lastDeletion: null,
+          };
+        }
+        case 'subCategory': {
+          const target = s.subCategories.find((subCategory) => subCategory.id === pending.id);
+          if (target === undefined) return { lastDeletion: null };
+          if (
+            s.subCategories.some(
+              (subCategory) =>
+                subCategory.id !== pending.id &&
+                subCategory.categoryId === target.categoryId &&
+                subCategory.archivedAt === undefined &&
+                subCategory.name === pending.label,
+            )
+          ) {
+            return { lastDeletion: null };
+          }
+          return {
+            subCategories: s.subCategories.map((subCategory) =>
+              subCategory.id === pending.id && subCategory.archivedAt !== undefined
+                ? { ...subCategory, archivedAt: undefined, updatedAt: timestamp }
+                : subCategory,
+            ),
+            lastDeletion: null,
+          };
+        }
+        case 'recurrenceRule': {
+          if (s.recurrenceRules.some((rule) => rule.id === pending.id)) {
+            return { lastDeletion: null };
+          }
+          return {
+            recurrenceRules: [...s.recurrenceRules, pending.rule],
+            tasks: s.tasks.map((task) =>
+              task.recurrenceId === pending.id &&
+              task.archiveReason === 'rule' &&
+              task.archivedAt === pending.deletedAt
+                ? {
+                    ...task,
+                    archivedAt: undefined,
+                    archiveReason: undefined,
+                    updatedAt: timestamp,
+                  }
+                : task,
+            ),
+            lastDeletion: null,
+          };
+        }
+      }
+    }),
+
+  dismissLastDeletion: () => set({ lastDeletion: null }),
 
   ensureRecurringOccurrencesForWeek: (weekStart) =>
     set((s) => {
@@ -1545,6 +1704,7 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
       ...result.state,
       hasHydrated: true,
       storageError: null,
+      lastDeletion: null,
     });
     return result;
   },
@@ -1554,7 +1714,7 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
     set((s) => ({ settings: { ...s.settings, lastBackupAt: exportedAt } }));
   },
 
-  resetAll: () => set({ ...initialAppState() }),
+  resetAll: () => set({ ...initialAppState(), lastDeletion: null }),
   }));
 
   if (storage !== null) {
