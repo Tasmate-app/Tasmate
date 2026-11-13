@@ -29,3 +29,4 @@ export * from './rewards/dropRateTable';
 export * from './rewards/dropTable';
 export * from './rewards/rewardCalculator';
 export * from './rewards/rewardProcessor';
+export * from './legal/privacyPolicy';
