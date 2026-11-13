@@ -37,6 +37,7 @@ import {
 import { normalizeItemInventoryWithLegacy } from './inventory/materialStorage';
 import { applyExperienceToCharacter } from './progression/levelSystem';
 import { normalizeAscensionStage } from './progression/progressionConfig';
+import { createDefaultNavigationItems, normalizeNavigationItems } from './navigation';
 
 /**
  * 永続化されるアプリ全体の状態。
@@ -123,6 +124,7 @@ export function initialAppState(): AppState {
     supportEvents: [],
     settings: {
       lastBackupAt: null,
+      navigationItems: createDefaultNavigationItems(),
     },
   };
 }
@@ -417,6 +419,10 @@ export function isValidAppState(value: unknown): value is AppState {
     ) {
       return false;
     }
+    const navigationItems = value['settings']['navigationItems'];
+    if (navigationItems !== undefined && !Array.isArray(navigationItems)) {
+      return false;
+    }
   }
 
   return true;
@@ -497,13 +503,19 @@ function normalizeSupportEvent(value: unknown): SupportEvent | null {
 }
 
 function normalizeSettings(value: unknown): AppSettings {
-  if (!isRecord(value)) return { lastBackupAt: null };
+  if (!isRecord(value)) {
+    return {
+      lastBackupAt: null,
+      navigationItems: createDefaultNavigationItems(),
+    };
+  }
   const lastBackupAt = value['lastBackupAt'];
   return {
     lastBackupAt:
       typeof lastBackupAt === 'string' && !Number.isNaN(Date.parse(lastBackupAt))
         ? lastBackupAt
         : null,
+    navigationItems: normalizeNavigationItems(value['navigationItems']),
   };
 }
 

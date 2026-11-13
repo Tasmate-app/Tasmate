@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { createDefaultNavigationItems } from '@tasmate/core';
 import { toDateKey } from '../src/domain/weekly';
 import {
   isValidAppState,
@@ -203,14 +204,20 @@ describe('不足フィールドの補完', () => {
 
   it('settings の欠落を未バックアップとして補完する', () => {
     const normalized = normalizeAppState(makeLegacy());
-    expect(normalized.settings).toEqual({ lastBackupAt: null });
+    expect(normalized.settings).toEqual({
+      lastBackupAt: null,
+      navigationItems: createDefaultNavigationItems(),
+    });
   });
 
   it('不正な lastBackupAt を null に補完する', () => {
     const normalized = normalizeAppState(
       makeLegacy({ settings: { lastBackupAt: 'not-a-date' } }),
     );
-    expect(normalized.settings).toEqual({ lastBackupAt: null });
+    expect(normalized.settings).toEqual({
+      lastBackupAt: null,
+      navigationItems: createDefaultNavigationItems(),
+    });
   });
 
   it('正しい lastBackupAt を維持する', () => {

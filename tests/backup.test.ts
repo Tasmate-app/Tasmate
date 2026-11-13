@@ -5,6 +5,7 @@ import {
   MAX_BACKUP_FILE_BYTES,
   backupFileName,
   createBackup,
+  createDefaultNavigationItems,
   initialAppState,
   parseBackup,
   serializeBackup,
@@ -44,7 +45,10 @@ function makeState(): AppState {
     plannedMinutes: 5,
     state: 'active',
   };
-  state.settings = { lastBackupAt: '2026-01-01T00:00:00.000Z' };
+  state.settings = {
+    lastBackupAt: '2026-01-01T00:00:00.000Z',
+    navigationItems: createDefaultNavigationItems(),
+  };
   return state;
 }
 

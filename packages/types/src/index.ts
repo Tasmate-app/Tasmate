@@ -24,10 +24,21 @@ export type WorkSessionState = 'idle' | 'running' | 'paused';
  */
 export type TimerMode = 'estimate' | 'stopwatch';
 
+/** モバイル版サイドバーに表示できる項目 */
+export type MobileNavItemId = 'sortie' | 'history' | 'base' | 'character' | 'inventory';
+
+/** モバイル版サイドバーの表示設定。順序がそのまま表示順になる */
+export interface MobileNavItemPreference {
+  id: MobileNavItemId;
+  visible: boolean;
+}
+
 /** アプリ全体のユーザー設定 */
 export interface AppSettings {
   /** 最後にバックアップを書き出した日時（ISO 8601）。未実施は null */
   lastBackupAt: string | null;
+  /** モバイル版サイドバーの表示項目。Web 版では使用しない */
+  navigationItems: MobileNavItemPreference[];
 }
 
 /** 報酬レコードの状態 */
