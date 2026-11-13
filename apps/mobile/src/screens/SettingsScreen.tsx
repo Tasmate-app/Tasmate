@@ -7,7 +7,6 @@ import { backupFileName, serializeBackup } from '@tasmate/core';
 import { useMobileAppStore } from '../stores/appStore';
 import { pickBackupFile, shareBackupFile } from '../services/backupFile';
 import {
-  Badge,
   FormField,
   GameButton,
   GameTextInput,
@@ -207,10 +206,14 @@ export function SettingsScreen() {
           </View>
           <View style={styles.ossRow}>
             <Text style={styles.infoLabel}>OSSライセンス</Text>
-            <Badge label="準備中" tone="warning" />
           </View>
+          <GameButton
+            label="OSSライセンス一覧を見る"
+            variant="secondary"
+            onPress={() => router.push('/licenses')}
+          />
           <Text style={styles.note}>
-            依存ライブラリのライセンス一覧は #23 で追加予定です。バックアップファイルは外部に送信されません。
+            使用している直接依存ライブラリのライセンスを確認できます。バックアップファイルは外部に送信されません。
           </Text>
         </Panel>
       </ScrollView>
