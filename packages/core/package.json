@@ -23,7 +23,8 @@
     "./appState": "./src/appState.ts",
     "./backup": "./src/backup.ts",
     "./storage": "./src/storage.ts",
-    "./store": "./src/store.ts"
+    "./store": "./src/store.ts",
+    "./licenses": "./src/licenses/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json"

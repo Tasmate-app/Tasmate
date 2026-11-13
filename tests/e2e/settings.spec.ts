@@ -8,7 +8,20 @@ test('HUD から設定画面を開き、バックアップとアプリ情報を�
   await expect(page.getByRole('heading', { name: '設定' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'データ管理' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'アプリ情報' })).toBeVisible();
-  await expect(page.getByText('準備中')).toBeVisible();
+  await expect(page.getByLabel('OSSライセンスの一覧を開く')).toBeVisible();
+});
+
+test('設定からOSSライセンス一覧を開き、全文を展開できる', async ({ page }) => {
+  await page.goto('/settings');
+  await page.getByLabel('OSSライセンスの一覧を開く').click();
+
+  await expect(page).toHaveURL(/\/settings\/licenses$/);
+  await expect(page.getByRole('heading', { name: 'OSSライセンス' })).toBeVisible();
+
+  const firstItem = page.locator('.license-item').first();
+  await expect(firstItem).toBeVisible();
+  await firstItem.getByText('ライセンス全文を表示').click();
+  await expect(firstItem.locator('pre')).toBeVisible();
 });
 
 test('バックアップを書き出すと最終バックアップが記録される', async ({ page }) => {

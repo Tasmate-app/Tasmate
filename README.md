@@ -76,6 +76,7 @@ adb install -r apps/mobile/android/app/build/outputs/apk/release/app-release.apk
 ```powershell
 npm run typecheck  # TypeScript 型チェック
 npm run test       # Vitest 単体テスト（ゲームロジック中心）
+npm run licenses:generate  # OSSライセンス一覧を再生成（依存関係の変更時）
 npm run build      # 型チェック + 本番ビルド
 npx playwright install chromium  # E2E 初回のみ
 npm run e2e        # Playwright スモークテスト（dev サーバーを自動起動）
@@ -99,7 +100,8 @@ npm run e2e        # Playwright スモークテスト（dev サーバーを自�
 - `/shop` ショップ：施設強化の購入（家具・コスチュームは準備中）
 - `/storage` 倉庫：報酬履歴の確認
 - `/settings` 設定：データのバックアップ書き出し・復元・リセット、アプリ情報、
-  OSSライセンスの導線（一覧は #23 で追加予定）
+  OSSライセンス一覧への導線
+- `/settings/licenses` OSSライセンス：直接・間接依存のライブラリとライセンス全文
 - `/house` は `/` へリダイレクト（旧URL互換）
 
 ## データ保存

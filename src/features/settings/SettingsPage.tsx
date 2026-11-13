@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   backupFileName,
   serializeBackup,
 } from '@tasmate/core';
 import packageInfo from '../../../package.json';
-import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Field, TextInput } from '../../components/ui/Field';
@@ -210,8 +209,13 @@ export function SettingsPage() {
             <div>
               <dt>OSSライセンス</dt>
               <dd>
-                <Badge tone="warning">準備中</Badge>
-                依存ライブラリのライセンス一覧は #23 で追加予定です。
+                <Link
+                  to="/settings/licenses"
+                  className="settings-license-link"
+                  aria-label="OSSライセンスの一覧を開く"
+                >
+                  一覧を見る
+                </Link>
               </dd>
             </div>
           </dl>

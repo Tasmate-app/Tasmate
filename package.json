@@ -13,6 +13,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
+    "licenses:generate": "node scripts/generate-licenses.mjs",
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",

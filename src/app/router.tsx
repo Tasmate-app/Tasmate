@@ -27,6 +27,13 @@ export const router = createBrowserRouter([
       { path: 'shop', element: <ShopPage /> },
       { path: 'storage', element: <StoragePage /> },
       { path: 'settings', element: <SettingsPage /> },
+      {
+        path: 'settings/licenses',
+        lazy: async () => {
+          const { LicensesPage } = await import('../features/settings/LicensesPage');
+          return { Component: LicensesPage };
+        },
+      },
       { path: 'privacy', element: <PrivacyPolicyPage /> },
       // 旧シェアハウスURLの互換用
       { path: 'house', element: <Navigate to="/" replace /> },
