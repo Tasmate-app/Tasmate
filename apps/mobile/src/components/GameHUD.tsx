@@ -25,7 +25,7 @@ const MATERIAL_META: Record<string, { glyph: string; color: string }> = {
   shard_star: { glyph: attributePalette.star.glyph, color: attributePalette.star.color },
 };
 
-export function GameHUD() {
+export function GameHUD({ onOpenNavigation }: { onOpenNavigation?: () => void }) {
   const router = useRouter();
   const inventory = useMobileAppStore((s) => s.inventory);
   const itemInventory = useMobileAppStore((s) => s.itemInventory);
@@ -44,6 +44,19 @@ export function GameHUD() {
     <SafeAreaView edges={['top']} style={styles.safeArea}>
       <View style={styles.bar}>
         <View style={styles.mainRow}>
+          {onOpenNavigation !== undefined && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="メニューを開く"
+              onPress={onOpenNavigation}
+              style={({ pressed }) => [
+                styles.menuButton,
+                pressed ? styles.settingsButtonPressed : null,
+              ]}
+            >
+              <Text style={styles.menuGlyph}>☰</Text>
+            </Pressable>
+          )}
           <View style={styles.brand}>
             <Image
               source={require('../../assets/icon.png')}
@@ -228,6 +241,22 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceMuted,
     borderWidth: 1,
     borderColor: colors.borderStrong,
+  },
+  menuButton: {
+    width: 34,
+    height: 34,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primarySoft,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+  },
+  menuGlyph: {
+    color: colors.primaryDark,
+    fontSize: 16,
+    fontWeight: '900',
+    lineHeight: 19,
   },
   settingsButtonPressed: {
     opacity: 0.7,

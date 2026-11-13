@@ -55,8 +55,14 @@ import { applyExperienceToCharacter, planLevelUp } from './progression/levelSyst
 import { planAscension } from './progression/ascensionSystem';
 import { evaluateTaskWithFallback, rollTaskReward } from './rewards/rewardCalculator';
 import { applyTaskRewardToState } from './rewards/rewardProcessor';
+import {
+  createDefaultNavigationItems,
+  moveNavigationItem as moveNavigationItemInList,
+  setNavigationItemVisible as setNavigationItemVisibleInList,
+} from './navigation';
 import type {
   Category,
+  MobileNavItemId,
   OwnedCharacter,
   RecurrenceRule,
   RestSession,
@@ -277,6 +283,13 @@ export interface AppActions {
   importAppState: (raw: string) => BackupParseResult;
   /** バックアップを書き出した日時を記録する */
   markBackupExported: (exportedAt: string) => void;
+
+  /** モバイル版サイドバーの項目を表示・非表示にする。出撃は常に表示 */
+  setNavigationItemVisible: (id: MobileNavItemId, visible: boolean) => void;
+  /** モバイル版サイドバーの項目を1つ上または下へ移動する */
+  moveNavigationItem: (id: MobileNavItemId, direction: 'up' | 'down') => void;
+  /** モバイル版サイドバーの並びを初期状態に戻す */
+  resetNavigationItems: () => void;
 
   /** 非同期ストレージから状態を復元する。復元済みなら何もしない */
   hydrate: () => Promise<void>;
@@ -1712,6 +1725,39 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
   markBackupExported: (exportedAt) => {
     if (Number.isNaN(Date.parse(exportedAt))) return;
     set((s) => ({ settings: { ...s.settings, lastBackupAt: exportedAt } }));
+  },
+
+  setNavigationItemVisible: (id, visible) => {
+    const current = get().settings.navigationItems;
+    const next = setNavigationItemVisibleInList(current, id, visible);
+    if (
+      next.length === current.length &&
+      next.every(
+        (item, index) =>
+          item.id === current[index]?.id && item.visible === current[index]?.visible,
+      )
+    ) {
+      return;
+    }
+    set((s) => ({ settings: { ...s.settings, navigationItems: next } }));
+  },
+
+  moveNavigationItem: (id, direction) => {
+    const current = get().settings.navigationItems;
+    const next = moveNavigationItemInList(current, id, direction);
+    if (
+      next.length === current.length &&
+      next.every((item, index) => item.id === current[index]?.id)
+    ) {
+      return;
+    }
+    set((s) => ({ settings: { ...s.settings, navigationItems: next } }));
+  },
+
+  resetNavigationItems: () => {
+    set((s) => ({
+      settings: { ...s.settings, navigationItems: createDefaultNavigationItems() },
+    }));
   },
 
   resetAll: () => set({ ...initialAppState(), lastDeletion: null }),
