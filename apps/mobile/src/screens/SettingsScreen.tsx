@@ -6,6 +6,7 @@ import Constants from 'expo-constants';
 import { backupFileName, serializeBackup } from '@tasmate/core';
 import { useMobileAppStore } from '../stores/appStore';
 import { pickBackupFile, shareBackupFile } from '../services/backupFile';
+import { SidebarSettingsPanel } from '../features/navigation/SidebarSettingsPanel';
 import {
   FormField,
   GameButton,
@@ -118,7 +119,7 @@ export function SettingsScreen() {
         <ScreenHeader
           eyebrow="SETTINGS / DATA"
           title="設定"
-          subtitle="バックアップとアプリ情報を管理します。データはこの端末内に保存されます。"
+          subtitle="サイドバーの表示とバックアップ・アプリ情報を管理します。データはこの端末内に保存されます。"
           right={
             <GameButton
               label="戻る"
@@ -136,6 +137,8 @@ export function SettingsScreen() {
             </Text>
           </View>
         )}
+
+        <SidebarSettingsPanel />
 
         <Panel title="データ管理" eyebrow="DATA" tone="primary">
           <View style={styles.infoRow}>
