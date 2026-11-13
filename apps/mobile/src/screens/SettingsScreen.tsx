@@ -212,6 +212,11 @@ export function SettingsScreen() {
           <Text style={styles.note}>
             依存ライブラリのライセンス一覧は #23 で追加予定です。バックアップファイルは外部に送信されません。
           </Text>
+          <GameButton
+            label="プライバシーポリシーを確認"
+            variant="secondary"
+            onPress={() => router.push('/privacy')}
+          />
         </Panel>
       </ScrollView>
 
