@@ -7,6 +7,7 @@ import { backupFileName, serializeBackup } from '@tasmate/core';
 import { useMobileAppStore } from '../stores/appStore';
 import { pickBackupFile, shareBackupFile } from '../services/backupFile';
 import { SidebarSettingsPanel } from '../features/navigation/SidebarSettingsPanel';
+import { TutorialSheet } from '../features/tutorial/TutorialSheet';
 import {
   FormField,
   GameButton,
@@ -46,6 +47,7 @@ export function SettingsScreen() {
   const [busy, setBusy] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [resetConfirmText, setResetConfirmText] = useState('');
+  const [tutorialOpen, setTutorialOpen] = useState(false);
 
   const clearFeedback = () => {
     setMessage('');
@@ -139,6 +141,17 @@ export function SettingsScreen() {
         )}
 
         <SidebarSettingsPanel />
+
+        <Panel title="遊び方" eyebrow="GUIDE" tone="accent">
+          <Text style={styles.note}>
+            初回起動時に表示されるガイドをいつでも見返せます。タスクの登録から報酬・育成までの流れを確認できます。
+          </Text>
+          <GameButton
+            label="チュートリアルを見る"
+            variant="secondary"
+            onPress={() => setTutorialOpen(true)}
+          />
+        </Panel>
 
         <Panel title="データ管理" eyebrow="DATA" tone="primary">
           <View style={styles.infoRow}>
@@ -250,6 +263,11 @@ export function SettingsScreen() {
         />
         <GameButton label="キャンセル" variant="secondary" onPress={closeReset} />
       </ModalSheet>
+
+      <TutorialSheet
+        visible={tutorialOpen}
+        onClose={() => setTutorialOpen(false)}
+      />
     </ScreenBackground>
   );
 }

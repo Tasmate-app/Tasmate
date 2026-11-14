@@ -7,6 +7,7 @@ import { GameRuntime } from '../src/components/GameRuntime';
 import { HydrationGate } from '../src/components/HydrationGate';
 import { SupportToast } from '../src/components/SupportToast';
 import { UndoToast } from '../src/components/UndoToast';
+import { TutorialGate } from '../src/features/tutorial/TutorialGate';
 import { useMobileAppStore } from '../src/stores/appStore';
 
 export default function RootLayout() {
@@ -27,6 +28,7 @@ export default function RootLayout() {
           <Stack screenOptions={{ headerShown: false }} />
           <SupportToast />
           <UndoToast />
+          <TutorialGate />
         </View>
       ) : (
         <HydrationGate error={storageError} />
