@@ -68,7 +68,7 @@ describe('ストップウォッチ即時タスク', () => {
   it('終了時にストップウォッチとして履歴へ記録する', () => {
     useAppStore.getState().startStopwatchTask(stopwatchInput, 'd-hills', ['c-hinata']);
 
-    const rewardId = useAppStore.getState().finishSession('completed');
+    const rewardId = useAppStore.getState().finishSession();
 
     const state = useAppStore.getState();
     expect(rewardId).not.toBeNull();

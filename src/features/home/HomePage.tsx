@@ -5,7 +5,7 @@ import { ATTRIBUTE_NAMES, MATERIAL_NAMES } from '../../domain/constants';
 import { CHARACTER_DEFINITIONS, FACILITY_DEFINITIONS } from '../../data/seed';
 import { formatElapsed } from '../../domain/session';
 import { useNow } from '../../hooks/useNow';
-import { sessionElapsedSeconds, useAppStore } from '../../stores/appStore';
+import { sessionTotalElapsedSeconds, useAppStore } from '../../stores/appStore';
 import { attributeClass, attributeGlyph } from '../companions/characterVisual';
 
 /** ホーム（ゲーム世界のメイン画面。選択時のみコンテキストパネルを開く） */
@@ -21,7 +21,7 @@ export function HomePage() {
 
   const working = activeSession !== null;
   const now = useNow(1000, working && activeSession.state === 'running');
-  const elapsed = sessionElapsedSeconds(activeSession, now);
+  const elapsed = sessionTotalElapsedSeconds(activeSession, now);
   const activeTask = tasks.find((t) => t.id === activeSession?.taskId);
 
   const selectedCharacter =

@@ -43,7 +43,7 @@
 | originalScheduledDate | 日付移動前のルール上の予定日（任意） |
 | archivedAt | 論理削除日時（任意） |
 | archiveReason | アーカイブ理由。user / rule（任意） |
-| status | planned / active / completed / cancelled など |
+| status | planned / active / interrupted / completed / cancelled など |
 | createdAt | 作成日時 |
 | updatedAt | 更新日時 |
 
@@ -80,8 +80,28 @@
 | activeSeconds | 実際に作業した時間の扱い（定義要） |
 | result | completed / interrupted など |
 | timerMode | estimate / stopwatch（開始時点のスナップショット） |
+| carriedSeconds | 中断から再開した場合の、過去セグメントの累計作業秒数（任意。表示専用） |
 | destinationId | 選択した戦闘先 ID |
 | assignedCharacterIds | 派遣キャラクター ID 一覧 |
+
+中断・再開では1回の再開を新しい `WorkSession` として記録する。報酬・作業時間の集計対象は各セグメントの実作業時間のみで、`carriedSeconds` は表示用の累計時間として扱う。
+
+### InterruptedQuest
+
+中断して保持しているクエスト。再開すると新しい `WorkSession` を開始し、`elapsedSeconds` を `carriedSeconds` として引き継ぐ。
+
+| フィールド案 | 意味 |
+|---|---|
+| id | 中断クエスト ID |
+| taskId | 対象タスク ID |
+| elapsedSeconds | これまでの累計作業秒数 |
+| timerMode | estimate / stopwatch |
+| destinationId | 中断時の戦闘先 ID |
+| assignedCharacterIds | 中断時の派遣キャラクター ID 一覧 |
+| taskTitleSnapshot など | 再開時の表示に使うスナップショット |
+| firstStartedAt | 最初に開始した日時 |
+| interruptedAt | 最後に中断した日時 |
+| lastSessionId | 最後に報酬を確定したセッション ID（任意） |
 
 ### RestSession
 
@@ -280,6 +300,7 @@
 | フィールド | 意味 |
 |---|---|
 | itemInventory | 全キャラクター共通のアイテム所持数 |
+| interruptedQuests | 中断して保持しているクエスト（複数可） |
 | itemHistory | アイテム増減履歴（上限500件） |
 | taskRewards | タスク完了報酬の抽選結果（上限500件） |
 | stardustCarry | 星屑の端数（分） |
@@ -303,6 +324,6 @@
 ```
 
 - 生の `AppState` JSON も復元入力として受け付ける。
-- バックアップと復元では `activeSession` / `restSession` を破棄する。復元は現在の状態を上書きし、形式付きバックアップの場合は `lastBackupAt` に `exportedAt` を記録する。生の `AppState` は保存されている設定を正規化して使う。
+- バックアップと復元では `activeSession` / `restSession` を破棄する。`interruptedQuests` は再開可能な進行状態として保持する。復元は現在の状態を上書きし、形式付きバックアップの場合は `lastBackupAt` に `exportedAt` を記録する。生の `AppState` は保存されている設定を正規化して使う。
 - ファイルサイズの上限は 5MB。形式・`version`・主要フィールドを検証し、不正なデータは状態へ反映しない。
 - データリセットは確認入力「リセット」を必要とし、`AppState` を初期状態へ戻す。

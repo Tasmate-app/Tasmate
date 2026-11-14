@@ -5,7 +5,7 @@ import {
   DESTINATIONS,
   MATERIAL_NAMES,
   formatElapsed,
-  sessionElapsedSeconds,
+  sessionTotalElapsedSeconds,
 } from '@tasmate/core';
 import { useNow } from '../../hooks/useNow';
 import { useMobileAppStore } from '../../stores/appStore';
@@ -23,11 +23,12 @@ export function ActiveSortiePanel({
   const pauseSession = useMobileAppStore((s) => s.pauseSession);
   const resumeSession = useMobileAppStore((s) => s.resumeSession);
   const finishSession = useMobileAppStore((s) => s.finishSession);
+  const interruptSession = useMobileAppStore((s) => s.interruptSession);
   const cancelSession = useMobileAppStore((s) => s.cancelSession);
 
   const now = useNow(500, activeSession?.state === 'running');
   const elapsed = useMemo(
-    () => sessionElapsedSeconds(activeSession, now),
+    () => sessionTotalElapsedSeconds(activeSession, now),
     [activeSession, now],
   );
 
@@ -37,14 +38,19 @@ export function ActiveSortiePanel({
   const destination = DESTINATIONS.find((item) => item.id === activeSession.destinationId);
   const stopwatch = activeSession.timerMode === 'stopwatch';
   const totalSeconds = (task?.estimatedMinutes ?? 25) * 60;
+  const remaining = Math.max(0, totalSeconds - elapsed);
   const progress = totalSeconds > 0 ? Math.min(100, (elapsed / totalSeconds) * 100) : 0;
   const runningFacilities = facilities.filter((facility) => facility.enabled).length;
   const dispatched = activeSession.assignedCharacterIds
     .map((id) => CHARACTER_DEFINITIONS.find((definition) => definition.id === id)?.name ?? id)
     .join('、');
 
-  const finish = (result: 'completed' | 'interrupted') => {
-    onFinished(finishSession(result));
+  const finish = () => {
+    onFinished(finishSession());
+  };
+
+  const interrupt = () => {
+    onFinished(interruptSession());
   };
 
   const confirmCancel = () => {
@@ -79,7 +85,7 @@ export function ActiveSortiePanel({
         <Text style={styles.timerSub}>
           {stopwatch
             ? 'ストップウォッチ（予定時間なし）'
-            : `予定 ${task?.estimatedMinutes ?? 25}分 ・ ${Math.round(progress)}%`}
+            : `予定 ${task?.estimatedMinutes ?? 25}分 ・ 残り ${formatElapsed(remaining)} ・ ${Math.round(progress)}%`}
         </Text>
         {!stopwatch && (
           <View style={styles.timerProgress}>
@@ -110,15 +116,15 @@ export function ActiveSortiePanel({
         <GameButton
           label="完了して終了"
           variant="success"
-          onPress={() => finish('completed')}
+          onPress={finish}
           style={styles.action}
         />
       </View>
       <View style={styles.actions}>
         <GameButton
-          label="中断して終了"
+          label="中断"
           variant="secondary"
-          onPress={() => finish('interrupted')}
+          onPress={interrupt}
           style={styles.action}
         />
         <GameButton

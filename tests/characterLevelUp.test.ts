@@ -38,7 +38,7 @@ describe('経験値による自動レベルアップ', () => {
           : { ...state.activeSession, accumulatedSeconds: 60 * 60 },
     }));
 
-    store.getState().finishSession('completed');
+    store.getState().finishSession();
 
     const character = findCharacter(store, 'c-hinata');
     expect(character?.level).toBe(3);

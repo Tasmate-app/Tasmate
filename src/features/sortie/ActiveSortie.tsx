@@ -6,7 +6,7 @@ import { MATERIAL_NAMES } from '../../domain/constants';
 import { formatElapsed } from '../../domain/session';
 import { useNow } from '../../hooks/useNow';
 import { CHARACTER_DEFINITIONS, DESTINATIONS } from '../../data/seed';
-import { sessionElapsedSeconds, useAppStore } from '../../stores/appStore';
+import { sessionTotalElapsedSeconds, useAppStore } from '../../stores/appStore';
 
 interface ActiveSortieProps {
   onFinished: (rewardId: string | null) => void;
@@ -20,11 +20,12 @@ export function ActiveSortie({ onFinished }: ActiveSortieProps) {
   const pauseSession = useAppStore((s) => s.pauseSession);
   const resumeSession = useAppStore((s) => s.resumeSession);
   const finishSession = useAppStore((s) => s.finishSession);
+  const interruptSession = useAppStore((s) => s.interruptSession);
   const cancelSession = useAppStore((s) => s.cancelSession);
 
   const now = useNow(500, activeSession !== null && activeSession.state === 'running');
   const elapsed = useMemo(
-    () => sessionElapsedSeconds(activeSession, now),
+    () => sessionTotalElapsedSeconds(activeSession, now),
     [activeSession, now],
   );
 
@@ -34,14 +35,20 @@ export function ActiveSortie({ onFinished }: ActiveSortieProps) {
   const destination = DESTINATIONS.find((d) => d.id === activeSession.destinationId);
   const stopwatch = activeSession.timerMode === 'stopwatch';
   const estimatedTotal = (task?.estimatedMinutes ?? 25) * 60;
+  const remaining = Math.max(0, estimatedTotal - elapsed);
   const progress = estimatedTotal > 0 ? Math.min(1, elapsed / estimatedTotal) : 0;
   const runningFacilities = facilities.filter((f) => f.enabled);
   const dispatchedNames = activeSession.assignedCharacterIds.map(
     (id) => CHARACTER_DEFINITIONS.find((d) => d.id === id)?.name ?? id,
   );
 
-  const handleFinish = (result: 'completed' | 'interrupted') => {
-    const rewardId = finishSession(result);
+  const handleFinish = () => {
+    const rewardId = finishSession();
+    onFinished(rewardId);
+  };
+
+  const handleInterrupt = () => {
+    const rewardId = interruptSession();
     onFinished(rewardId);
   };
 
@@ -66,6 +73,9 @@ export function ActiveSortie({ onFinished }: ActiveSortieProps) {
         <p className="timer-display" aria-live="polite">
           {formatElapsed(elapsed)}
         </p>
+        {!stopwatch && (
+          <p className="list-item__meta">残り {formatElapsed(remaining)}</p>
+        )}
         <div className="btn-row">
           {activeSession.state === 'running' ? (
             <Button variant="secondary" onClick={pauseSession}>
@@ -74,9 +84,9 @@ export function ActiveSortie({ onFinished }: ActiveSortieProps) {
           ) : (
             <Button onClick={resumeSession}>再開</Button>
           )}
-          <Button onClick={() => handleFinish('completed')}>完了</Button>
-          <Button variant="secondary" onClick={() => handleFinish('interrupted')}>
-            中断して終了
+          <Button onClick={handleFinish}>完了</Button>
+          <Button variant="secondary" onClick={handleInterrupt}>
+            中断
           </Button>
           <Button variant="danger" onClick={cancelSession}>
             取り消し（記録なし）
@@ -90,7 +100,7 @@ export function ActiveSortie({ onFinished }: ActiveSortieProps) {
         </p>
         {stopwatch ? (
           <p className="list-item__meta">
-            ストップウォッチで計測中 — 経過 {formatElapsed(elapsed)}（予定時間なし）
+            ストップウォッチで計測中 — 累計 {formatElapsed(elapsed)}（予定時間なし）
           </p>
         ) : (
           <>
@@ -109,7 +119,7 @@ export function ActiveSortie({ onFinished }: ActiveSortieProps) {
             </div>
             <p className="list-item__meta">
               予定 {task?.estimatedMinutes ?? 25} 分 に対して {Math.floor(elapsed / 60)} 分経過（
-              {Math.round(progress * 100)}%）
+              {Math.round(progress * 100)}%）／ 残り {formatElapsed(remaining)}
             </p>
           </>
         )}

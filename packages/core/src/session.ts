@@ -36,3 +36,20 @@ export function billableMinutes(elapsedSec: number, minimumBillableSeconds: numb
   if (!Number.isFinite(elapsedSec) || elapsedSec < minimumBillableSeconds) return 0;
   return elapsedSec / 60;
 }
+
+/** 中断から再開したセッションを含む、クエスト全体の累計作業秒数 */
+export function totalElapsedSeconds(
+  elapsedSec: number,
+  carriedSeconds: number | undefined,
+): number {
+  return Math.max(0, carriedSeconds ?? 0) + Math.max(0, elapsedSec);
+}
+
+/** 見積タイマーの残り秒数。下限は 0 にクランプする */
+export function remainingEstimateSeconds(
+  estimatedMinutes: number,
+  totalElapsedSec: number,
+): number {
+  const total = Math.max(0, estimatedMinutes) * 60;
+  return Math.max(0, total - Math.max(0, totalElapsedSec));
+}

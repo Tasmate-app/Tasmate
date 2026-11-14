@@ -52,7 +52,7 @@ describe('セッション開始のタスク検証', () => {
     useAppStore.getState().startSession('task-1', 'd-hills', ['c-hinata']);
     expect(useAppStore.getState().activeSession?.taskId).toBe('task-1');
 
-    useAppStore.getState().finishSession('completed');
+    useAppStore.getState().finishSession();
     expect(useAppStore.getState().tasks[0].status).toBe('completed');
 
     useAppStore.getState().startSession('task-1', 'd-hills', ['c-hinata']);

@@ -18,6 +18,7 @@ export function categoryColor(category: string): string {
 export const STATUS_LABELS: Record<TaskStatus, string> = {
   planned: '予定',
   active: '進行中',
+  interrupted: '中断中',
   completed: '完了',
   cancelled: '取消',
 };

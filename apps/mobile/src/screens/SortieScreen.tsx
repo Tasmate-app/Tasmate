@@ -14,6 +14,7 @@ import {
 import { useMobileAppStore } from '../stores/appStore';
 import { ActiveRestPanel } from '../features/sortie/ActiveRestPanel';
 import { ActiveSortiePanel } from '../features/sortie/ActiveSortiePanel';
+import { InterruptedQuestPanel } from '../features/sortie/InterruptedQuestPanel';
 import { RecurrenceEditorModal } from '../features/sortie/RecurrenceEditorModal';
 import { RewardResultPanel } from '../features/sortie/RewardResultPanel';
 import { SortieSetupModal } from '../features/sortie/SortieSetupModal';
@@ -224,7 +225,10 @@ export function SortieScreen() {
           </View>
 
           {activeSession !== null ? (
-            <ActiveSortiePanel onFinished={setLastRewardId} />
+            <>
+              <ActiveSortiePanel onFinished={setLastRewardId} />
+              <InterruptedQuestPanel />
+            </>
           ) : (
             <>
               {lastRewardId !== null ? (
@@ -235,6 +239,8 @@ export function SortieScreen() {
               ) : (
                 <ActiveRestPanel />
               )}
+
+              <InterruptedQuestPanel />
 
               {nextTask !== undefined && (
                 <View style={styles.nextMission}>

@@ -3,7 +3,7 @@ import { MATERIAL_NAMES } from '../../domain/constants';
 import { remainingRestSeconds } from '../../domain/rest';
 import { formatElapsed } from '../../domain/session';
 import { useNow } from '../../hooks/useNow';
-import { sessionElapsedSeconds, useAppStore } from '../../stores/appStore';
+import { sessionTotalElapsedSeconds, useAppStore } from '../../stores/appStore';
 import { GameIcon } from '../ui/GameIcon';
 
 interface MaterialGlyph {
@@ -29,7 +29,7 @@ export function GameHUD() {
   const isWorking = activeSession !== null;
   const isResting = restSession?.state === 'active';
   const now = useNow(1000, (isWorking && activeSession.state === 'running') || isResting);
-  const elapsed = sessionElapsedSeconds(activeSession, now);
+  const elapsed = sessionTotalElapsedSeconds(activeSession, now);
   const restRemaining = restSession !== null ? remainingRestSeconds(restSession, now) : 0;
   const activeTaskTitle = tasks.find((t) => t.id === activeSession?.taskId)?.title;
 

@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { billableMinutes, elapsedSeconds, formatElapsed } from '../src/domain/session';
+import {
+  billableMinutes,
+  elapsedSeconds,
+  formatElapsed,
+  remainingEstimateSeconds,
+  totalElapsedSeconds,
+} from '../src/domain/session';
 
 describe('elapsedSeconds', () => {
   it('開始時刻を基準に経過時間を算出する', () => {
@@ -40,5 +46,19 @@ describe('billableMinutes', () => {
   it('下限未満は0分になる', () => {
     expect(billableMinutes(30, 60)).toBe(0);
     expect(billableMinutes(90, 60)).toBeCloseTo(1.5, 5);
+  });
+});
+
+describe('中断再開の累計時間', () => {
+  it('引き継ぎ秒数と現在の区間を合算する', () => {
+    expect(totalElapsedSeconds(300, 600)).toBe(900);
+    expect(totalElapsedSeconds(300, undefined)).toBe(300);
+    expect(totalElapsedSeconds(-10, -10)).toBe(0);
+  });
+
+  it('見積タイマーの残り時間を0以上で返す', () => {
+    expect(remainingEstimateSeconds(25, 600)).toBe(900);
+    expect(remainingEstimateSeconds(25, 1500)).toBe(0);
+    expect(remainingEstimateSeconds(25, 1800)).toBe(0);
   });
 });

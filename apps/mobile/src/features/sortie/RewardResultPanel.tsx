@@ -36,6 +36,7 @@ export function RewardResultPanel({ rewardId, onClose }: RewardResultPanelProps)
         });
 
   const session = sessionHistory.find((item) => item.id === reward.workSessionId);
+  const interrupted = session?.result === 'interrupted';
   const endedAtMs =
     session?.endedAt !== undefined ? Date.parse(session.endedAt) : Date.now();
   const workMinutes =
@@ -43,16 +44,24 @@ export function RewardResultPanel({ rewardId, onClose }: RewardResultPanelProps)
   const recommendedMinutes = recommendedRestMinutes(workMinutes);
 
   return (
-    <Panel title="クエスト完了" eyebrow="QUEST RESULT" tone="success">
-      <View style={styles.banner}>
+    <Panel
+      title={interrupted ? 'クエスト中断' : 'クエスト完了'}
+      eyebrow={interrupted ? 'PAUSED QUEST' : 'QUEST RESULT'}
+      tone={interrupted ? 'primary' : 'success'}
+    >
+      <View style={[styles.banner, interrupted ? styles.bannerPaused : null]}>
         <View pointerEvents="none" style={styles.bannerGlow} />
         <View style={styles.bannerHead}>
-          <View style={styles.bannerIcon}>
-            <Text style={styles.bannerIconText}>✓</Text>
+          <View style={[styles.bannerIcon, interrupted ? styles.bannerIconPaused : null]}>
+            <Text style={styles.bannerIconText}>{interrupted ? 'Ⅱ' : '✓'}</Text>
           </View>
           <View style={styles.bannerTitleBlock}>
-            <Text style={styles.bannerEyebrow}>MISSION COMPLETE</Text>
-            <Text style={styles.bannerTitle}>報酬を獲得しました</Text>
+            <Text style={styles.bannerEyebrow}>
+              {interrupted ? 'MISSION PAUSED' : 'MISSION COMPLETE'}
+            </Text>
+            <Text style={styles.bannerTitle}>
+              {interrupted ? 'ここまでの報酬を確定しました' : '報酬を獲得しました'}
+            </Text>
           </View>
         </View>
         <View style={styles.rewardRow}>
@@ -97,13 +106,23 @@ export function RewardResultPanel({ rewardId, onClose }: RewardResultPanelProps)
         )}
       </View>
 
-      <RestSection
-        workMinutes={workMinutes}
-        recommendedMinutes={recommendedMinutes}
-        sourceSessionId={reward.workSessionId}
-      />
+      {interrupted ? (
+        <Text style={styles.meta}>
+          クエストは中断中として保持されています。いつでも再開できます。
+        </Text>
+      ) : (
+        <RestSection
+          workMinutes={workMinutes}
+          recommendedMinutes={recommendedMinutes}
+          sourceSessionId={reward.workSessionId}
+        />
+      )}
 
-      <GameButton label="クエスト一覧に戻る" variant="secondary" onPress={onClose} />
+      <GameButton
+        label={interrupted ? '中断中のクエスト一覧へ' : 'クエスト一覧に戻る'}
+        variant="secondary"
+        onPress={onClose}
+      />
     </Panel>
   );
 }
@@ -210,6 +229,10 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...shadows.soft,
   },
+  bannerPaused: {
+    backgroundColor: colors.primaryPale,
+    borderColor: colors.border,
+  },
   bannerGlow: {
     position: 'absolute',
     width: 150,
@@ -231,6 +254,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.success,
+  },
+  bannerIconPaused: {
+    backgroundColor: colors.primary,
   },
   bannerIconText: {
     color: colors.white,

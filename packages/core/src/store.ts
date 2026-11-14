@@ -1,5 +1,5 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand';
-import { elapsedSeconds } from './session';
+import { elapsedSeconds, totalElapsedSeconds } from './session';
 import { facilityUpgradeCost } from './facility';
 import {
   applyWeeklyStatus,
@@ -62,6 +62,7 @@ import {
 } from './navigation';
 import type {
   Category,
+  InterruptedQuest,
   MobileNavItemId,
   OwnedCharacter,
   RecurrenceRule,
@@ -251,8 +252,17 @@ export interface AppActions {
   startSession: (taskId: string, destinationId: string, characterIds: string[]) => void;
   pauseSession: () => void;
   resumeSession: () => void;
-  /** セッションを終了し報酬を確定する。戻り値は確定した報酬レコードの ID（報酬なしの場合 null） */
-  finishSession: (result: SessionResult) => string | null;
+  /** セッションを完了し報酬を確定する。戻り値は確定した報酬レコードの ID（報酬なしの場合 null） */
+  finishSession: () => string | null;
+  /**
+   * 現在の作業分の報酬を確定し、残り時間を保持したままクエストを中断する。
+   * 戻り値は確定した報酬レコードの ID（報酬なしの場合 null）
+   */
+  interruptSession: () => string | null;
+  /** 中断中のクエストを再開する。進行中のセッションがある場合は何もしない */
+  resumeInterruptedQuest: (id: string) => void;
+  /** 中断中のクエストを破棄し、タスクを予定に戻す。追加報酬は付与しない */
+  discardInterruptedQuest: (id: string) => void;
   cancelSession: () => void;
 
   /** 休憩を開始する。時間は有効範囲に丸められる */
@@ -317,6 +327,12 @@ export function sessionElapsedSeconds(session: WorkSession | null, nowMs: number
     session.pausedAt !== undefined ? Date.parse(session.pausedAt) : undefined,
     nowMs,
   );
+}
+
+/** 中断から再開した分を含む、クエスト全体の累計作業秒数 */
+export function sessionTotalElapsedSeconds(session: WorkSession | null, nowMs: number): number {
+  if (session === null) return 0;
+  return totalElapsedSeconds(sessionElapsedSeconds(session, nowMs), session.carriedSeconds);
 }
 
 /** 現在の連続達成週数に対応する報酬倍率 */
@@ -511,6 +527,91 @@ export interface CreateAppStoreOptions {
    * 省略時は同期初期状態があるか、保存先が未設定なら true。
    */
   canPersist?: boolean;
+}
+
+interface SessionSettlement {
+  elapsed: number;
+  endedAt: string;
+  finished: WorkSession;
+  record: ReturnType<typeof computeSessionReward>;
+  taskRewardResult: ReturnType<typeof rollTaskReward>;
+}
+
+type SettlementState = Pick<
+  AppStore,
+  | 'tasks'
+  | 'characters'
+  | 'facilities'
+  | 'taskRewards'
+  | 'stardustCarry'
+  | 'weeklyProgress'
+  | 'appliedRewardSessionIds'
+>;
+
+/**
+ * セッション1区間分の報酬を確定する。
+ * 中断からの再開では区間ごとに報酬を確定するため、累計時間ではなく区間の経過秒数だけを使う。
+ */
+function settleSession(
+  state: SettlementState,
+  session: WorkSession,
+  result: SessionResult,
+  nowMs: number,
+): SessionSettlement | null {
+  if (state.appliedRewardSessionIds.includes(session.id)) return null;
+  const elapsed = sessionElapsedSeconds(session, nowMs);
+  const endedAt = new Date(nowMs).toISOString();
+  const finished: WorkSession = { ...session, state: 'idle', result, endedAt };
+  const task = state.tasks.find((t) => t.id === session.taskId);
+  const record = computeSessionReward({
+    session: finished,
+    task,
+    characters: state.characters,
+    facilities: state.facilities,
+    elapsedSec: elapsed,
+    nowIso: endedAt,
+    rewardMultiplier: currentWeeklyMultiplier(state),
+  });
+  const actualMinutes = billableMinutes(elapsed, BALANCE.minimumBillableSeconds);
+  const alreadyRewarded = state.taskRewards.some((reward) => reward.taskId === session.taskId);
+  const taskRewardResult = rollTaskReward({
+    taskId: session.taskId,
+    workSessionId: session.id,
+    rewardRecordId: record.id,
+    task,
+    actualMinutes,
+    coins: record.finalReward.currency,
+    completed: result === 'completed',
+    evaluation: evaluateTaskWithFallback({ task, actualMinutes }),
+    targetCharacterId: session.assignedCharacterIds[0] ?? null,
+    previousStardustCarry: state.stardustCarry,
+    nowIso: endedAt,
+    suppressDrops: alreadyRewarded,
+  });
+  return { elapsed, endedAt, finished, record, taskRewardResult };
+}
+
+function buildInterruptedQuest(
+  session: WorkSession,
+  elapsed: number,
+  endedAt: string,
+): InterruptedQuest {
+  return {
+    id: newId('interrupt'),
+    taskId: session.taskId,
+    elapsedSeconds: totalElapsedSeconds(elapsed, session.carriedSeconds),
+    timerMode: session.timerMode,
+    destinationId: session.destinationId,
+    assignedCharacterIds: session.assignedCharacterIds,
+    taskTitleSnapshot: session.taskTitleSnapshot,
+    categoryIdSnapshot: session.categoryIdSnapshot,
+    categoryNameSnapshot: session.categoryNameSnapshot,
+    subCategoryIdSnapshot: session.subCategoryIdSnapshot,
+    subCategoryNameSnapshot: session.subCategoryNameSnapshot,
+    firstStartedAt: session.firstStartedAt ?? session.startedAt,
+    interruptedAt: endedAt,
+    lastSessionId: session.id,
+  };
 }
 
 export function createAppStore(options: CreateAppStoreOptions = {}) {
@@ -791,8 +892,9 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
 
   deleteTask: (id) =>
     set((s) => {
-      // 進行中セッションのタスクは削除不可
+      // 進行中・中断中のタスクは削除不可
       if (s.activeSession?.taskId === id) return s;
+      if (s.interruptedQuests.some((quest) => quest.taskId === id)) return s;
       const target = s.tasks.find((task) => task.id === id);
       if (target === undefined || target.archivedAt !== undefined) return s;
       const timestamp = nowIso();
@@ -1168,6 +1270,8 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
         tasks: s.tasks.map((task) =>
           task.recurrenceId === id &&
           task.status !== 'completed' &&
+          task.status !== 'interrupted' &&
+          !s.interruptedQuests.some((quest) => quest.taskId === task.id) &&
           task.archivedAt === undefined &&
           task.scheduledDate !== undefined &&
           task.scheduledDate >= todayKey
@@ -1367,55 +1471,16 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
     });
   },
 
-  finishSession: (result) => {
+  finishSession: () => {
     const s = get();
     const { activeSession } = s;
     if (activeSession === null) return null;
-    // 二重完了防止：同一セッションへの再確定を防ぐ
-    if (s.appliedRewardSessionIds.includes(activeSession.id)) {
+    const settlement = settleSession(s, activeSession, 'completed', Date.now());
+    if (settlement === null) {
       set({ activeSession: null });
       return null;
     }
-    const nowMs = Date.now();
-    const elapsed = sessionElapsedSeconds(activeSession, nowMs);
-    const endedAt = new Date(nowMs).toISOString();
-    const finished: WorkSession = {
-      ...activeSession,
-      state: 'idle',
-      result,
-      endedAt,
-    };
-    const task = s.tasks.find((t) => t.id === activeSession.taskId);
-    const record = computeSessionReward({
-      session: finished,
-      task,
-      characters: s.characters,
-      facilities: s.facilities,
-      elapsedSec: elapsed,
-      nowIso: endedAt,
-      rewardMultiplier: currentWeeklyMultiplier(s),
-    });
-
-    const actualMinutes = billableMinutes(elapsed, BALANCE.minimumBillableSeconds);
-    const alreadyRewarded = s.taskRewards.some(
-      (reward) => reward.taskId === activeSession.taskId,
-    );
-    const taskRewardResult = rollTaskReward({
-      taskId: activeSession.taskId,
-      workSessionId: activeSession.id,
-      rewardRecordId: record.id,
-      task,
-      actualMinutes,
-      coins: record.finalReward.currency,
-      completed: result === 'completed',
-      evaluation: evaluateTaskWithFallback({ task, actualMinutes }),
-      targetCharacterId: activeSession.assignedCharacterIds[0] ?? null,
-      previousStardustCarry: s.stardustCarry,
-      nowIso: endedAt,
-      suppressDrops: alreadyRewarded,
-    });
-
-    // 報酬付与：通貨・素材・経験値。旧 Inventory と新インベントリを同時に更新する
+    const { record, taskRewardResult, finished, endedAt } = settlement;
     const gainedExp = record.finalReward.experience;
     const dispatched = new Set(activeSession.assignedCharacterIds);
     set((prev) => {
@@ -1427,13 +1492,12 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
       return {
         activeSession: null,
         sessionHistory: [finished, ...prev.sessionHistory],
+        interruptedQuests: prev.interruptedQuests.filter(
+          (quest) => quest.taskId !== activeSession.taskId,
+        ),
         tasks: prev.tasks.map((t) =>
           t.id === activeSession.taskId
-            ? {
-                ...t,
-                status: result === 'completed' ? ('completed' as const) : ('planned' as const),
-                updatedAt: endedAt,
-              }
+            ? { ...t, status: 'completed' as const, updatedAt: endedAt }
             : t,
         ),
         inventory: applied.inventory,
@@ -1449,6 +1513,120 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
       };
     });
     return record.id;
+  },
+
+  interruptSession: () => {
+    const s = get();
+    const { activeSession } = s;
+    if (activeSession === null) return null;
+    const nowMs = Date.now();
+    const settlement = settleSession(s, activeSession, 'interrupted', nowMs);
+    if (settlement === null) {
+      const endedAt = new Date(nowMs).toISOString();
+      const elapsed = sessionElapsedSeconds(activeSession, nowMs);
+      const quest = buildInterruptedQuest(activeSession, elapsed, endedAt);
+      set((prev) => ({
+        activeSession: null,
+        interruptedQuests: [
+          ...prev.interruptedQuests.filter((q) => q.taskId !== activeSession.taskId),
+          quest,
+        ],
+        tasks: prev.tasks.map((t) =>
+          t.id === activeSession.taskId
+            ? { ...t, status: 'interrupted' as const, updatedAt: endedAt }
+            : t,
+        ),
+      }));
+      return null;
+    }
+    const { record, taskRewardResult, finished, endedAt, elapsed } = settlement;
+    const quest = buildInterruptedQuest(activeSession, elapsed, endedAt);
+    const gainedExp = record.finalReward.experience;
+    const dispatched = new Set(activeSession.assignedCharacterIds);
+    set((prev) => {
+      const applied = applyTaskRewardToState(
+        prev,
+        taskRewardResult.reward,
+        record.finalReward.materials,
+      );
+      return {
+        activeSession: null,
+        sessionHistory: [finished, ...prev.sessionHistory],
+        interruptedQuests: [
+          ...prev.interruptedQuests.filter((q) => q.taskId !== activeSession.taskId),
+          quest,
+        ],
+        tasks: prev.tasks.map((t) =>
+          t.id === activeSession.taskId
+            ? { ...t, status: 'interrupted' as const, updatedAt: endedAt }
+            : t,
+        ),
+        inventory: applied.inventory,
+        itemInventory: applied.itemInventory,
+        itemHistory: applied.itemHistory.slice(0, BALANCE.maxItemHistory),
+        taskRewards: [applied.reward, ...prev.taskRewards].slice(0, BALANCE.maxTaskRewards),
+        stardustCarry: taskRewardResult.stardustCarry,
+        characters: prev.characters.map((c) =>
+          dispatched.has(c.definitionId) ? applyExperienceToCharacter(c, gainedExp) : c,
+        ),
+        rewards: [record, ...prev.rewards],
+        appliedRewardSessionIds: [...prev.appliedRewardSessionIds, activeSession.id],
+      };
+    });
+    return record.id;
+  },
+
+  resumeInterruptedQuest: (id) => {
+    const s = get();
+    if (s.activeSession !== null) return;
+    const quest = s.interruptedQuests.find((q) => q.id === id);
+    if (quest === undefined) return;
+    const task = s.tasks.find(
+      (t) => t.id === quest.taskId && t.archivedAt === undefined && t.status === 'interrupted',
+    );
+    if (task === undefined) return;
+    const startedAt = nowIso();
+    const session: WorkSession = {
+      id: newId('session'),
+      taskId: quest.taskId,
+      startedAt,
+      firstStartedAt: quest.firstStartedAt,
+      accumulatedSeconds: 0,
+      carriedSeconds: quest.elapsedSeconds,
+      pausedAt: undefined,
+      state: 'running',
+      timerMode: quest.timerMode,
+      destinationId: quest.destinationId,
+      assignedCharacterIds: quest.assignedCharacterIds,
+      taskTitleSnapshot: quest.taskTitleSnapshot ?? task.title,
+      categoryIdSnapshot: quest.categoryIdSnapshot ?? task.categoryId,
+      categoryNameSnapshot: quest.categoryNameSnapshot ?? task.category,
+      subCategoryIdSnapshot: quest.subCategoryIdSnapshot ?? task.subCategoryId,
+      subCategoryNameSnapshot: quest.subCategoryNameSnapshot ?? task.subCategoryName ?? task.subject,
+    };
+    set((prev) => ({
+      activeSession: session,
+      interruptedQuests: prev.interruptedQuests.filter((q) => q.id !== id),
+      tasks: prev.tasks.map((t) =>
+        t.id === quest.taskId ? { ...t, status: 'active' as const, updatedAt: startedAt } : t,
+      ),
+      restSession: prev.restSession?.state === 'active' ? null : prev.restSession,
+    }));
+  },
+
+  discardInterruptedQuest: (id) => {
+    const s = get();
+    const quest = s.interruptedQuests.find((q) => q.id === id);
+    if (quest === undefined) return;
+    const timestamp = nowIso();
+    set((prev) => ({
+      interruptedQuests: prev.interruptedQuests.filter((q) => q.id !== id),
+      tasks: prev.tasks.map((t) =>
+        t.id === quest.taskId && t.status === 'interrupted'
+          ? { ...t, status: 'planned' as const, updatedAt: timestamp }
+          : t,
+      ),
+    }));
   },
 
   cancelSession: () => {

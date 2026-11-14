@@ -4,6 +4,7 @@ import type {
   Inventory,
   ItemInventory,
   ItemTransaction,
+  InterruptedQuest,
   MaterialId,
   OwnedCharacter,
   OwnedFacility,
@@ -50,6 +51,8 @@ export interface AppState {
   /** 進行中・一時停止中のセッション（同時に1件まで・仮仕様） */
   activeSession: WorkSession | null;
   sessionHistory: WorkSession[];
+  /** 中断して保持しているクエスト（複数保持可能） */
+  interruptedQuests: InterruptedQuest[];
   inventory: Inventory;
   /** 新しい共通インベントリ。既存 Inventory と通貨・旧素材を同期する */
   itemInventory: ItemInventory;
@@ -95,6 +98,7 @@ export function initialAppState(): AppState {
     tasks: [],
     activeSession: null,
     sessionHistory: [],
+    interruptedQuests: [],
     inventory: {
       currency: 100,
       materials: { shard_sun: 0, shard_moon: 0, shard_star: 0 },
@@ -132,7 +136,7 @@ export function initialAppState(): AppState {
 type UnknownRecord = Record<string, unknown>;
 
 const MATERIAL_IDS: readonly MaterialId[] = ['shard_sun', 'shard_moon', 'shard_star'];
-const TASK_STATUSES = new Set(['planned', 'active', 'completed', 'cancelled']);
+const TASK_STATUSES = new Set(['planned', 'active', 'interrupted', 'completed', 'cancelled']);
 const SESSION_STATES = new Set<WorkSessionState>(['idle', 'running', 'paused']);
 const SESSION_RESULTS = new Set(['completed', 'interrupted']);
 const WEEKLY_STATUSES = new Set<WeeklyEvaluationStatus>([
@@ -374,6 +378,12 @@ export function isValidAppState(value: unknown): value is AppState {
   ) {
     return false;
   }
+  if (
+    value['interruptedQuests'] !== undefined &&
+    !Array.isArray(value['interruptedQuests'])
+  ) {
+    return false;
+  }
 
   if (
     value['weeklyProgress'] !== undefined &&
@@ -446,7 +456,53 @@ function normalizeTask(task: Task): Task {
 
 function normalizeWorkSession(session: WorkSession): WorkSession {
   const timerMode = normalizeTimerMode(session.timerMode);
-  return timerMode === session.timerMode ? session : { ...session, timerMode };
+  const carriedSeconds =
+    session.carriedSeconds !== undefined && isFiniteNumber(session.carriedSeconds)
+      ? Math.max(0, session.carriedSeconds)
+      : undefined;
+  if (timerMode === session.timerMode && carriedSeconds === session.carriedSeconds) {
+    return session;
+  }
+  return { ...session, timerMode, carriedSeconds };
+}
+
+function normalizeInterruptedQuest(value: unknown): InterruptedQuest | null {
+  if (!isRecord(value)) return null;
+  if (
+    typeof value['id'] !== 'string' ||
+    typeof value['taskId'] !== 'string' ||
+    !isFiniteNumber(value['elapsedSeconds']) ||
+    typeof value['destinationId'] !== 'string' ||
+    !isStringArray(value['assignedCharacterIds']) ||
+    typeof value['firstStartedAt'] !== 'string' ||
+    typeof value['interruptedAt'] !== 'string'
+  ) {
+    return null;
+  }
+  const taskTitleSnapshot = value['taskTitleSnapshot'];
+  const categoryIdSnapshot = value['categoryIdSnapshot'];
+  const categoryNameSnapshot = value['categoryNameSnapshot'];
+  const subCategoryIdSnapshot = value['subCategoryIdSnapshot'];
+  const subCategoryNameSnapshot = value['subCategoryNameSnapshot'];
+  const lastSessionId = value['lastSessionId'];
+  return {
+    id: value['id'],
+    taskId: value['taskId'],
+    elapsedSeconds: Math.max(0, value['elapsedSeconds']),
+    timerMode: normalizeTimerMode(value['timerMode']),
+    destinationId: value['destinationId'],
+    assignedCharacterIds: value['assignedCharacterIds'],
+    taskTitleSnapshot: typeof taskTitleSnapshot === 'string' ? taskTitleSnapshot : undefined,
+    categoryIdSnapshot: typeof categoryIdSnapshot === 'string' ? categoryIdSnapshot : undefined,
+    categoryNameSnapshot: typeof categoryNameSnapshot === 'string' ? categoryNameSnapshot : undefined,
+    subCategoryIdSnapshot:
+      typeof subCategoryIdSnapshot === 'string' ? subCategoryIdSnapshot : undefined,
+    subCategoryNameSnapshot:
+      typeof subCategoryNameSnapshot === 'string' ? subCategoryNameSnapshot : undefined,
+    firstStartedAt: value['firstStartedAt'],
+    interruptedAt: value['interruptedAt'],
+    lastSessionId: typeof lastSessionId === 'string' ? lastSessionId : undefined,
+  };
 }
 
 function normalizeReward(reward: RewardRecord): RewardRecord {
@@ -539,6 +595,11 @@ export function normalizeAppState(state: AppState, now: Date = new Date()): AppS
     rawActiveSession !== undefined && rawActiveSession !== null && isWorkSession(rawActiveSession)
       ? normalizeWorkSession(rawActiveSession)
       : null;
+  const interruptedQuests = (
+    Array.isArray(source['interruptedQuests']) ? source['interruptedQuests'] : []
+  )
+    .map(normalizeInterruptedQuest)
+    .filter((quest): quest is InterruptedQuest => quest !== null);
   const characters = (Array.isArray(source['characters']) ? source['characters'] : [])
     .filter(isOwnedCharacter)
     .map(normalizeOwnedCharacter);
@@ -665,6 +726,7 @@ export function normalizeAppState(state: AppState, now: Date = new Date()): AppS
     tasks,
     activeSession,
     sessionHistory,
+    interruptedQuests,
     inventory,
     itemInventory,
     itemHistory,
@@ -697,6 +759,7 @@ export function toAppStateSnapshot(state: AppState): AppState {
     tasks: state.tasks,
     activeSession: state.activeSession,
     sessionHistory: state.sessionHistory,
+    interruptedQuests: state.interruptedQuests,
     inventory: state.inventory,
     itemInventory: state.itemInventory,
     itemHistory: state.itemHistory,

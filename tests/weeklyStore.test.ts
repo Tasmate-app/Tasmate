@@ -142,7 +142,7 @@ describe('週次判定のストア統合', () => {
       },
     });
 
-    const rewardId = useAppStore.getState().finishSession('completed');
+    const rewardId = useAppStore.getState().finishSession();
     const record = useAppStore.getState().rewards.find((reward) => reward.id === rewardId);
     expect(record).toBeDefined();
     expect(record?.rewardMultiplier).toBe(1.1);

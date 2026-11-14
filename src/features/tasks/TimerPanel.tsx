@@ -7,7 +7,7 @@ import { MATERIAL_NAMES } from '../../domain/constants';
 import { formatElapsed } from '../../domain/session';
 import { useNow } from '../../hooks/useNow';
 import { CHARACTER_DEFINITIONS, DESTINATIONS } from '../../data/seed';
-import { sessionElapsedSeconds, useAppStore } from '../../stores/appStore';
+import { sessionTotalElapsedSeconds, useAppStore } from '../../stores/appStore';
 
 /** タイマー（作業セッション開始・一時停止・再開・終了） */
 export function TimerPanel() {
@@ -19,6 +19,7 @@ export function TimerPanel() {
   const pauseSession = useAppStore((s) => s.pauseSession);
   const resumeSession = useAppStore((s) => s.resumeSession);
   const finishSession = useAppStore((s) => s.finishSession);
+  const interruptSession = useAppStore((s) => s.interruptSession);
   const cancelSession = useAppStore((s) => s.cancelSession);
 
   const [taskId, setTaskId] = useState('');
@@ -29,7 +30,7 @@ export function TimerPanel() {
   // 表示専用の現在時刻（経過時間の算出は開始時刻基準で行う）
   const now = useNow(500, activeSession !== null && activeSession.state === 'running');
   const elapsed = useMemo(
-    () => sessionElapsedSeconds(activeSession, now),
+    () => sessionTotalElapsedSeconds(activeSession, now),
     [activeSession, now],
   );
 
@@ -52,9 +53,14 @@ export function TimerPanel() {
     setCharacterIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
   };
 
-  const handleFinish = (result: 'completed' | 'interrupted') => {
+  const handleFinish = () => {
     // 確認なしで確定する（MVP の仮仕様。二重付与はストア側で防止）
-    const rewardId = finishSession(result);
+    const rewardId = finishSession();
+    setLastRewardId(rewardId);
+  };
+
+  const handleInterrupt = () => {
+    const rewardId = interruptSession();
     setLastRewardId(rewardId);
   };
 
@@ -148,6 +154,8 @@ export function TimerPanel() {
 
   const task = tasks.find((t) => t.id === activeSession.taskId);
   const destination = DESTINATIONS.find((d) => d.id === activeSession.destinationId);
+  const estimatedTotal = (task?.estimatedMinutes ?? 25) * 60;
+  const remaining = Math.max(0, estimatedTotal - elapsed);
 
   return (
     <Card title="作業中">
@@ -166,6 +174,9 @@ export function TimerPanel() {
       <p className="timer-display" aria-live="polite">
         {formatElapsed(elapsed)}
       </p>
+      {activeSession.timerMode !== 'stopwatch' && (
+        <p className="list-item__meta">残り {formatElapsed(remaining)}</p>
+      )}
       <div className="btn-row">
         {activeSession.state === 'running' ? (
           <Button variant="secondary" onClick={pauseSession}>
@@ -174,9 +185,9 @@ export function TimerPanel() {
         ) : (
           <Button onClick={resumeSession}>再開</Button>
         )}
-        <Button onClick={() => handleFinish('completed')}>完了</Button>
-        <Button variant="secondary" onClick={() => handleFinish('interrupted')}>
-          中断して終了
+        <Button onClick={handleFinish}>完了</Button>
+        <Button variant="secondary" onClick={handleInterrupt}>
+          中断
         </Button>
         <Button variant="danger" onClick={cancelSession}>
           取り消し（記録なし）

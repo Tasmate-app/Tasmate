@@ -35,6 +35,7 @@ const CATEGORY_CLASS: Record<string, string> = {
 const STATUS_LABEL: Record<Task['status'], string> = {
   planned: '予定',
   active: '進行中',
+  interrupted: '中断中',
   completed: '完了',
   cancelled: '取消',
 };
