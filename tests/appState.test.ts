@@ -154,6 +154,12 @@ describe('保存データの検証', () => {
   it('lastBackupAt が文字列でない settings を不正として扱う', () => {
     expect(isValidAppState({ ...base, settings: { lastBackupAt: 123 } })).toBe(false);
   });
+
+  it('tutorialCompletedAt が文字列でない settings を不正として扱う', () => {
+    expect(
+      isValidAppState({ ...base, settings: { tutorialCompletedAt: 123 } }),
+    ).toBe(false);
+  });
 });
 
 describe('不足フィールドの補完', () => {
@@ -202,10 +208,11 @@ describe('不足フィールドの補完', () => {
     expect(normalized.weeklyProgress.trackingStartedWeek).toBe('2026-10-19');
   });
 
-  it('settings の欠落を未バックアップとして補完する', () => {
+  it('settings の欠落を未バックアップ・未チュートリアルとして補完する', () => {
     const normalized = normalizeAppState(makeLegacy());
     expect(normalized.settings).toEqual({
       lastBackupAt: null,
+      tutorialCompletedAt: null,
       navigationItems: createDefaultNavigationItems(),
     });
   });
@@ -216,6 +223,7 @@ describe('不足フィールドの補完', () => {
     );
     expect(normalized.settings).toEqual({
       lastBackupAt: null,
+      tutorialCompletedAt: null,
       navigationItems: createDefaultNavigationItems(),
     });
   });
@@ -225,5 +233,21 @@ describe('不足フィールドの補完', () => {
       makeLegacy({ settings: { lastBackupAt: '2026-11-12T09:30:00.000Z' } }),
     );
     expect(normalized.settings.lastBackupAt).toBe('2026-11-12T09:30:00.000Z');
+  });
+
+  it('不正な tutorialCompletedAt を null に補完する', () => {
+    const normalized = normalizeAppState(
+      makeLegacy({ settings: { tutorialCompletedAt: 'not-a-date' } }),
+    );
+    expect(normalized.settings.tutorialCompletedAt).toBeNull();
+  });
+
+  it('正しい tutorialCompletedAt を維持する', () => {
+    const normalized = normalizeAppState(
+      makeLegacy({ settings: { tutorialCompletedAt: '2026-11-13T09:30:00.000Z' } }),
+    );
+    expect(normalized.settings.tutorialCompletedAt).toBe(
+      '2026-11-13T09:30:00.000Z',
+    );
   });
 });

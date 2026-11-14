@@ -47,6 +47,7 @@ function makeState(): AppState {
   };
   state.settings = {
     lastBackupAt: '2026-01-01T00:00:00.000Z',
+    tutorialCompletedAt: '2026-01-02T00:00:00.000Z',
     navigationItems: createDefaultNavigationItems(),
   };
   return state;
@@ -64,6 +65,9 @@ describe('createBackup', () => {
     expect(backup.state.activeSession).toBeNull();
     expect(backup.state.restSession).toBeNull();
     expect(backup.state.settings.lastBackupAt).toBe(NOW.toISOString());
+    expect(backup.state.settings.tutorialCompletedAt).toBe(
+      '2026-01-02T00:00:00.000Z',
+    );
     expect(backup.state.tasks).toHaveLength(1);
   });
 
@@ -91,6 +95,9 @@ describe('parseBackup', () => {
     expect(result.state.restSession).toBeNull();
     expect(result.state.tasks[0]?.title).toBe('バックアップ対象のタスク');
     expect(result.state.settings.lastBackupAt).toBe(NOW.toISOString());
+    expect(result.state.settings.tutorialCompletedAt).toBe(
+      '2026-01-02T00:00:00.000Z',
+    );
   });
 
   it('旧形式の AppState を読み込み、進行中セッションを破棄する', () => {
