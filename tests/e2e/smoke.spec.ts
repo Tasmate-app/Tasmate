@@ -1,4 +1,9 @@
 import { expect, test } from '@playwright/test';
+import { seedCompletedTutorial } from './helpers';
+
+test.beforeEach(async ({ page }) => {
+  await seedCompletedTutorial(page);
+});
 
 /**
  * スモークテスト：ゲーム一体型UIの基本画面が表示できること。

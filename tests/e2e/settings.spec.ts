@@ -1,4 +1,9 @@
 import { expect, test } from '@playwright/test';
+import { seedCompletedTutorial } from './helpers';
+
+test.beforeEach(async ({ page }) => {
+  await seedCompletedTutorial(page);
+});
 
 test('HUD から設定画面を開き、バックアップとアプリ情報を表示できる', async ({ page }) => {
   await page.goto('/');

@@ -1,4 +1,9 @@
 import { expect, test } from '@playwright/test';
+import { seedCompletedTutorial } from './helpers';
+
+test.beforeEach(async ({ page }) => {
+  await seedCompletedTutorial(page);
+});
 
 test('設定画面からプライバシーポリシーを開ける', async ({ page }) => {
   await page.goto('/settings');

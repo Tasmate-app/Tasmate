@@ -1,4 +1,5 @@
 import { Outlet } from 'react-router-dom';
+import { TutorialGate } from '../../features/tutorial/TutorialGate';
 import { GameHUD } from './GameHUD';
 import { GameNavigation } from './GameNavigation';
 import { SupportEventLayer } from './SupportEventLayer';
@@ -13,6 +14,7 @@ export function GameShell() {
       </header>
       <SupportEventLayer />
       <UndoToast />
+      <TutorialGate />
       <main className="game-main">
         <Outlet />
       </main>
