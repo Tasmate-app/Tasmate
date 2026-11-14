@@ -157,7 +157,7 @@ Webでは起動時にCSS変数へ適用する。
 | `eas-app-stores`<br>`eas-hosting`<br>`eas-observe`<br>`eas-simulator`<br>`eas-update`<br>`eas-update-insights`<br>`eas-workflows`<br>`expo-animation`<br>`expo-app-clip`<br>`expo-brownfield`<br>`expo-data-fetching`<br>`expo-design-system`<br>`expo-dev-client`<br>`expo-dom`<br>`expo-examples`<br>`expo-migrate-module`<br>`expo-module`<br>`expo-native-ui`<br>`expo-overview`<br>`expo-project-structure`<br>`expo-router`<br>`expo-skill-eval`<br>`expo-ui`<br>`expo-upgrade`<br>`expo-web-to-native` | [expo/skills](https://github.com/expo/skills) | MIT |
 | `vercel-optimize`<br>`vercel-react-best-practices`<br>`vercel-react-native-skills` | [vercel-labs/agent-skills](https://github.com/vercel-labs/agent-skills) | MIT |
 | `frontend-design` | 外部（[`LICENSE.txt`](.agents/skills/frontend-design/LICENSE.txt) 同梱） | Apache-2.0 |
-| `ai-integration`<br>`data-security`<br>`game-domain`<br>`game-ui-design`<br>`task-timer`<br>`testing-quality`<br>`threejs-development` | 本リポジトリで作成 | 未定（リポジトリのライセンスに従う。issue #62 で決定予定） |
+| `ai-integration`<br>`data-security`<br>`game-domain`<br>`game-ui-design`<br>`task-timer`<br>`testing-quality`<br>`threejs-development` | 本リポジトリで作成 | MIT（[`LICENSE`](LICENSE)） |
 
 補足:
 
@@ -179,3 +179,11 @@ GLB は 1 unit = 1 ボクセルで出力している。three.js 側では用途�
 `scale`（例：身長 1.6m 相当なら `1.6 / 24 ≈ 0.067`）を設定する。
 
 数値、報酬式、属性倍率、施設生産量などは未確定。実装時に推測で固定せず、仕様決定後に更新する。
+
+## ライセンス
+
+本リポジトリで作成したソースコードは [MIT License](LICENSE) の下で公開する。
+Copyright (c) 2026 Tasmate-app contributors.
+
+外部から取得した Skill や第三者提供の素材は、それぞれのライセンスに従う
+（Skill については「[Skills とライセンス](#skills-とライセンス)」を参照）。
