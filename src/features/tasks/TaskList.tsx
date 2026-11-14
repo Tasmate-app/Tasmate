@@ -22,6 +22,8 @@ export function TaskList() {
     switch (status) {
       case 'active':
         return '進行中';
+      case 'interrupted':
+        return '中断中';
       case 'completed':
         return '完了済み';
       case 'cancelled':
@@ -38,7 +40,15 @@ export function TaskList() {
           <li key={t.id} className="list-item">
             <div className="list-item__title">{t.title}</div>
             <div className="list-item__meta">
-              <Badge tone={t.status === 'active' ? 'running' : undefined}>
+              <Badge
+                tone={
+                  t.status === 'active'
+                    ? 'running'
+                    : t.status === 'interrupted'
+                      ? 'paused'
+                      : undefined
+                }
+              >
                 {statusLabel(t.status)}
               </Badge>{' '}
               {t.category}
@@ -51,7 +61,7 @@ export function TaskList() {
             <div className="btn-row">
               <Button
                 variant="danger"
-                disabled={activeSession?.taskId === t.id}
+                disabled={activeSession?.taskId === t.id || t.status === 'interrupted'}
                 onClick={() => deleteTask(t.id)}
               >
                 削除

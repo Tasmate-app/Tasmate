@@ -98,7 +98,7 @@ describe('タスク完了報酬', () => {
           : { ...state.activeSession, accumulatedSeconds: 25 * 60 },
     }));
 
-    const rewardId = store.getState().finishSession('completed');
+    const rewardId = store.getState().finishSession();
     const state = store.getState();
     expect(rewardId).not.toBeNull();
     expect(state.taskRewards).toHaveLength(1);
@@ -126,20 +126,22 @@ describe('タスク完了報酬', () => {
             ? null
             : { ...state.activeSession, accumulatedSeconds: 25 * 60 },
       }));
-      store.getState().finishSession('interrupted');
+      store.getState().interruptSession();
       const first = store.getState();
       const coinAfterFirst = first.itemInventory['coin'] ?? 0;
+      expect(first.tasks[0].status).toBe('interrupted');
+      expect(first.interruptedQuests).toHaveLength(1);
       expect(first.taskRewards[0].crystals).toHaveLength(1);
       expect(first.taskRewards[0].materials).toHaveLength(1);
 
-      store.getState().startSession(TASK.id, 'd-hills', ['c-hinata']);
+      store.getState().resumeInterruptedQuest(first.interruptedQuests[0].id);
       store.setState((state) => ({
         activeSession:
           state.activeSession === null
             ? null
             : { ...state.activeSession, accumulatedSeconds: 25 * 60 },
       }));
-      store.getState().finishSession('completed');
+      store.getState().finishSession();
       const second = store.getState();
 
       expect(second.taskRewards).toHaveLength(2);

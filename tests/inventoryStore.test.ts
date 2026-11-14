@@ -36,7 +36,7 @@ describe('所持素材が欠けた保存データ', () => {
     useAppStore.setState({
       activeSession: { ...session!, accumulatedSeconds: 25 * 60 },
     });
-    useAppStore.getState().finishSession('completed');
+    useAppStore.getState().finishSession();
 
     const inventory = useAppStore.getState().inventory;
     expect(Number.isFinite(inventory.currency)).toBe(true);

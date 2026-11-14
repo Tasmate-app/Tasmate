@@ -35,6 +35,7 @@ export {
   createAppStore,
   currentWeeklyMultiplier,
   sessionElapsedSeconds,
+  sessionTotalElapsedSeconds,
   summarizeCurrentWeek,
 } from '@tasmate/core';
 export type {

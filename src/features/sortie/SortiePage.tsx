@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ActiveSortie } from './ActiveSortie';
+import { InterruptedQuestList } from './InterruptedQuestList';
 import { QuestBoard } from './QuestBoard';
 import { SortieResult } from './SortieResult';
 import { useAppStore } from '../../stores/appStore';
@@ -22,9 +23,11 @@ export function SortiePage() {
           {lastRewardId !== null && (
             <SortieResult rewardId={lastRewardId} onClose={() => setLastRewardId(null)} />
           )}
+          <InterruptedQuestList />
           <QuestBoard />
         </>
       )}
+      {activeSession !== null && <InterruptedQuestList />}
     </div>
   );
 }

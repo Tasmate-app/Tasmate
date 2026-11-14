@@ -14,8 +14,11 @@ interface SortieResultProps {
 export function SortieResult({ rewardId, onClose }: SortieResultProps) {
   const rewards = useAppStore((s) => s.rewards);
   const taskRewards = useAppStore((s) => s.taskRewards);
+  const sessionHistory = useAppStore((s) => s.sessionHistory);
   const reward = rewards.find((r) => r.id === rewardId);
   const taskReward = taskRewards.find((r) => r.rewardRecordId === rewardId);
+  const session = sessionHistory.find((s) => s.id === reward?.workSessionId);
+  const interrupted = session?.result === 'interrupted';
 
   if (reward === undefined) return null;
 
@@ -28,8 +31,13 @@ export function SortieResult({ rewardId, onClose }: SortieResultProps) {
         });
 
   return (
-    <Card title="クエスト完了！">
+    <Card title={interrupted ? 'クエストを中断しました' : 'クエスト完了！'}>
       <div className="result-banner" role="status">
+        {interrupted && (
+          <p className="list-item__meta">
+            ここまでの報酬を確定しました。クエストは中断中として保持され、いつでも再開できます。
+          </p>
+        )}
         <p className="result-banner__title">
           通貨 +{reward.finalReward.currency} ／ 経験値 +{reward.finalReward.experience}
           {Object.entries(reward.finalReward.materials).map(([id, qty]) => (
@@ -71,10 +79,10 @@ export function SortieResult({ rewardId, onClose }: SortieResultProps) {
         <p className="list-item__meta">{reward.inputSummary}</p>
         <p className="list-item__meta">{reward.reason}</p>
       </div>
-      <RestPrompt rewardId={rewardId} />
+      {!interrupted && <RestPrompt rewardId={rewardId} />}
       <div className="btn-row">
         <Button variant="secondary" onClick={onClose}>
-          クエスト一覧に戻る
+          {interrupted ? '中断中のクエスト一覧へ' : 'クエスト一覧に戻る'}
         </Button>
       </div>
     </Card>

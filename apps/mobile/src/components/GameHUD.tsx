@@ -5,7 +5,7 @@ import {
   MATERIAL_NAMES,
   formatElapsed,
   remainingRestSeconds,
-  sessionElapsedSeconds,
+  sessionTotalElapsedSeconds,
 } from '@tasmate/core';
 import { useNow } from '../hooks/useNow';
 import { useMobileAppStore } from '../stores/appStore';
@@ -36,7 +36,7 @@ export function GameHUD({ onOpenNavigation }: { onOpenNavigation?: () => void })
   const isWorking = activeSession !== null;
   const isResting = restSession?.state === 'active';
   const now = useNow(1000, (isWorking && activeSession.state === 'running') || isResting);
-  const elapsed = sessionElapsedSeconds(activeSession, now);
+  const elapsed = sessionTotalElapsedSeconds(activeSession, now);
   const restRemaining = restSession !== null ? remainingRestSeconds(restSession, now) : 0;
   const activeTaskTitle = tasks.find((t) => t.id === activeSession?.taskId)?.title;
 

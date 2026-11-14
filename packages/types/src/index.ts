@@ -5,7 +5,7 @@
  */
 
 /** タスクの状態 */
-export type TaskStatus = 'planned' | 'active' | 'completed' | 'cancelled';
+export type TaskStatus = 'planned' | 'active' | 'interrupted' | 'completed' | 'cancelled';
 
 /** タスクのアーカイブ理由。繰り返しルール変更によるものは再追加時に復元する */
 export type TaskArchiveReason = 'user' | 'rule';
@@ -171,6 +171,11 @@ export interface WorkSession {
   endedAt?: string;
   /** 一時停止中に蓄積された作業秒数（一時停止→再開で加算） */
   accumulatedSeconds: number;
+  /**
+   * 中断から再開した場合の、過去セグメントの累計作業秒数。
+   * 表示上の合計時間にのみ使い、履歴の作業時間には加算しない。
+   */
+  carriedSeconds?: number;
   /** 一時停止した時刻（running 中は undefined） */
   pausedAt?: string;
   state: WorkSessionState;
@@ -186,6 +191,31 @@ export interface WorkSession {
   categoryNameSnapshot?: string;
   subCategoryIdSnapshot?: string;
   subCategoryNameSnapshot?: string;
+}
+
+/**
+ * 中断して保持しているクエスト。
+ * 再開すると新しい WorkSession を開始し、elapsedSeconds を carriedSeconds として引き継ぐ。
+ */
+export interface InterruptedQuest {
+  id: string;
+  taskId: string;
+  /** このクエストでこれまでに作業した累計秒数（中断済みセグメントを含む） */
+  elapsedSeconds: number;
+  timerMode?: TimerMode;
+  destinationId: string;
+  assignedCharacterIds: string[];
+  taskTitleSnapshot?: string;
+  categoryIdSnapshot?: string;
+  categoryNameSnapshot?: string;
+  subCategoryIdSnapshot?: string;
+  subCategoryNameSnapshot?: string;
+  /** クエストを最初に開始した時刻（ISO 8601） */
+  firstStartedAt: string;
+  /** 最後に中断した時刻（ISO 8601） */
+  interruptedAt: string;
+  /** 最後に報酬を確定したセグメントのセッション ID */
+  lastSessionId?: string;
 }
 
 /** 休憩セッションの状態 */

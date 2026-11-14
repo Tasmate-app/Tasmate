@@ -1,3 +1,4 @@
+import { InterruptedQuestList } from '../sortie/InterruptedQuestList';
 import { TaskForm } from './TaskForm';
 import { TaskList } from './TaskList';
 import { TimerPanel } from './TimerPanel';
@@ -13,6 +14,7 @@ export function TasksPage() {
       <div className="page-grid page-grid--two">
         <div className="page-grid">
           <TimerPanel />
+          <InterruptedQuestList />
           <TaskForm />
         </div>
         <div className="page-grid">

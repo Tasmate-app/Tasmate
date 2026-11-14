@@ -36,6 +36,7 @@ interface WeeklyPlannerSectionProps {
 const STATUS_TONES = {
   planned: 'neutral',
   active: 'running',
+  interrupted: 'paused',
   completed: 'success',
   cancelled: 'danger',
 } as const;
