@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import type { Category, SubCategory } from '@tasmate/types';
 import {
@@ -260,6 +261,7 @@ function CategoryPanel({ category, categories, subCategories }: CategoryPanelPro
 
 export function CategoriesScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const categories = useMobileAppStore((s) => s.categories);
   const subCategories = useMobileAppStore((s) => s.subCategories);
   const addCategory = useMobileAppStore((s) => s.addCategory);
@@ -284,7 +286,13 @@ export function CategoriesScreen() {
     <ScreenBackground>
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          {
+            paddingTop: spacing.md + insets.top,
+            paddingBottom: spacing.xxl + insets.bottom,
+          },
+        ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
@@ -365,9 +373,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   content: {
-    padding: spacing.lg,
-    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
     paddingBottom: spacing.xxl,
+    gap: spacing.md,
   },
   headerActions: {
     flexDirection: 'row',
