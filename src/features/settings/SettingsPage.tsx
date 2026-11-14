@@ -10,6 +10,7 @@ import { Card } from '../../components/ui/Card';
 import { Field, TextInput } from '../../components/ui/Field';
 import { downloadTextFile, readTextFile } from '../../services/backupFile';
 import { useAppStore } from '../../stores/appStore';
+import { TutorialModal } from '../tutorial/TutorialModal';
 
 function formatBackupDate(value: string | null): string {
   if (value === null) return '未実施';
@@ -39,6 +40,7 @@ export function SettingsPage() {
   const [busy, setBusy] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [resetConfirmText, setResetConfirmText] = useState('');
+  const [tutorialOpen, setTutorialOpen] = useState(false);
 
   useEffect(() => {
     if (!resetOpen) return;
@@ -122,6 +124,17 @@ export function SettingsPage() {
           保存データを読み込めなかったため、この起動ではデータを保存できません。復元・リセットは利用できません。
         </div>
       )}
+
+      <Card title="遊び方">
+        <p className="settings-note">
+          初回起動時に表示されるガイドをいつでも見返せます。タスクの登録から報酬・育成までの流れを確認できます。
+        </p>
+        <div className="settings-actions">
+          <Button variant="secondary" onClick={() => setTutorialOpen(true)}>
+            チュートリアルを見る
+          </Button>
+        </div>
+      </Card>
 
       <div className="page-grid page-grid--two">
         <Card title="データ管理">
@@ -280,6 +293,11 @@ export function SettingsPage() {
           </section>
         </div>
       )}
+
+      <TutorialModal
+        open={tutorialOpen}
+        onClose={() => setTutorialOpen(false)}
+      />
     </div>
   );
 }

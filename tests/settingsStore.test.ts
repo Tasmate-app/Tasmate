@@ -33,6 +33,7 @@ describe('設定ストア', () => {
     source.tasks = [makeTask()];
     source.settings = {
       lastBackupAt: '2026-01-01T00:00:00.000Z',
+      tutorialCompletedAt: '2026-01-02T00:00:00.000Z',
       navigationItems: createDefaultNavigationItems(),
     };
 
@@ -45,6 +46,7 @@ describe('設定ストア', () => {
     expect(state.tasks[0]?.title).toBe('設定画面の確認');
     expect(state.activeSession).toBeNull();
     expect(state.settings.lastBackupAt).toBe(NOW.toISOString());
+    expect(state.settings.tutorialCompletedAt).toBe('2026-01-02T00:00:00.000Z');
   });
 
   it('不正なバックアップでは状態を変更しない', () => {
@@ -65,7 +67,11 @@ describe('設定ストア', () => {
       { id: 'base', visible: true },
       { id: 'inventory', visible: true },
     ];
-    source.settings = { lastBackupAt: null, navigationItems: customNavigation };
+    source.settings = {
+      lastBackupAt: null,
+      tutorialCompletedAt: null,
+      navigationItems: customNavigation,
+    };
 
     const result = useAppStore
       .getState()
@@ -83,11 +89,24 @@ describe('設定ストア', () => {
     expect(useAppStore.getState().settings.lastBackupAt).toBe(NOW.toISOString());
   });
 
+  it('チュートリアル完了日時を記録し、不正な日時は無視する', () => {
+    useAppStore.getState().markTutorialCompleted(NOW.toISOString());
+    expect(useAppStore.getState().settings.tutorialCompletedAt).toBe(
+      NOW.toISOString(),
+    );
+
+    useAppStore.getState().markTutorialCompleted('invalid');
+    expect(useAppStore.getState().settings.tutorialCompletedAt).toBe(
+      NOW.toISOString(),
+    );
+  });
+
   it('リセットで設定も初期状態に戻す', () => {
     useAppStore.setState({
       tasks: [makeTask()],
       settings: {
         lastBackupAt: NOW.toISOString(),
+        tutorialCompletedAt: NOW.toISOString(),
         navigationItems: createDefaultNavigationItems(),
       },
     });
@@ -97,6 +116,7 @@ describe('設定ストア', () => {
     expect(useAppStore.getState().tasks).toEqual([]);
     expect(useAppStore.getState().settings).toEqual({
       lastBackupAt: null,
+      tutorialCompletedAt: null,
       navigationItems: createDefaultNavigationItems(),
     });
   });

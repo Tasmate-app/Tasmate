@@ -16,6 +16,7 @@ export * from './seed';
 export * from './rewardService';
 export * from './appState';
 export * from './navigation';
+export * from './tutorial';
 export * from './backup';
 export * from './storage';
 export * from './store';

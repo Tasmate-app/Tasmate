@@ -37,6 +37,8 @@ export interface MobileNavItemPreference {
 export interface AppSettings {
   /** 最後にバックアップを書き出した日時（ISO 8601）。未実施は null */
   lastBackupAt: string | null;
+  /** 初回チュートリアルを完了した日時（ISO 8601）。未完了は null */
+  tutorialCompletedAt: string | null;
   /** モバイル版サイドバーの表示項目。Web 版では使用しない */
   navigationItems: MobileNavItemPreference[];
 }

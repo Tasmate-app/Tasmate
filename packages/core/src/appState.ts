@@ -128,6 +128,7 @@ export function initialAppState(): AppState {
     supportEvents: [],
     settings: {
       lastBackupAt: null,
+      tutorialCompletedAt: null,
       navigationItems: createDefaultNavigationItems(),
     },
   };
@@ -429,6 +430,14 @@ export function isValidAppState(value: unknown): value is AppState {
     ) {
       return false;
     }
+    const tutorialCompletedAt = value['settings']['tutorialCompletedAt'];
+    if (
+      tutorialCompletedAt !== undefined &&
+      tutorialCompletedAt !== null &&
+      typeof tutorialCompletedAt !== 'string'
+    ) {
+      return false;
+    }
     const navigationItems = value['settings']['navigationItems'];
     if (navigationItems !== undefined && !Array.isArray(navigationItems)) {
       return false;
@@ -562,14 +571,21 @@ function normalizeSettings(value: unknown): AppSettings {
   if (!isRecord(value)) {
     return {
       lastBackupAt: null,
+      tutorialCompletedAt: null,
       navigationItems: createDefaultNavigationItems(),
     };
   }
   const lastBackupAt = value['lastBackupAt'];
+  const tutorialCompletedAt = value['tutorialCompletedAt'];
   return {
     lastBackupAt:
       typeof lastBackupAt === 'string' && !Number.isNaN(Date.parse(lastBackupAt))
         ? lastBackupAt
+        : null,
+    tutorialCompletedAt:
+      typeof tutorialCompletedAt === 'string' &&
+      !Number.isNaN(Date.parse(tutorialCompletedAt))
+        ? tutorialCompletedAt
         : null,
     navigationItems: normalizeNavigationItems(value['navigationItems']),
   };

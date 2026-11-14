@@ -132,11 +132,12 @@
 
 ### AppSettings
 
-アプリ全体のユーザー設定。現状はバックアップ状態のみを持つ。
+アプリ全体のユーザー設定。バックアップ状態と初回チュートリアルの完了状態を持つ。
 
 | フィールド案 | 意味 |
 |---|---|
 | lastBackupAt | 最後にバックアップを書き出した日時（ISO 8601）。未実施は null |
+| tutorialCompletedAt | 初回チュートリアルを完了した日時（ISO 8601）。未完了は null |
 
 ### RewardRecord
 
@@ -305,9 +306,9 @@
 | taskRewards | タスク完了報酬の抽選結果（上限500件） |
 | stardustCarry | 星屑の端数（分） |
 | OwnedCharacter.ascensionStage | レベル上限解放の段階（0〜5） |
-| settings | アプリ設定（`lastBackupAt`） |
+| settings | アプリ設定（`lastBackupAt` / `tutorialCompletedAt`） |
 
-既存の `Inventory`（currency / shard_*）は互換維持のため残し、`itemInventory` の通貨・旧素材と同期する。旧保存データは `inventory` から `itemInventory` を補完する。`settings` がない旧データは `{ lastBackupAt: null }` を補完する。
+既存の `Inventory`（currency / shard_*）は互換維持のため残し、`itemInventory` の通貨・旧素材と同期する。旧保存データは `inventory` から `itemInventory` を補完する。`settings` がない旧データは `{ lastBackupAt: null, tutorialCompletedAt: null }` を補完する。
 
 ## 6. ローカル保存とバックアップ
 

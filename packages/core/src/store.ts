@@ -293,6 +293,8 @@ export interface AppActions {
   importAppState: (raw: string) => BackupParseResult;
   /** バックアップを書き出した日時を記録する */
   markBackupExported: (exportedAt: string) => void;
+  /** 初回チュートリアルを完了した日時を記録する */
+  markTutorialCompleted: (completedAt: string) => void;
 
   /** モバイル版サイドバーの項目を表示・非表示にする。出撃は常に表示 */
   setNavigationItemVisible: (id: MobileNavItemId, visible: boolean) => void;
@@ -1903,6 +1905,13 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
   markBackupExported: (exportedAt) => {
     if (Number.isNaN(Date.parse(exportedAt))) return;
     set((s) => ({ settings: { ...s.settings, lastBackupAt: exportedAt } }));
+  },
+
+  markTutorialCompleted: (completedAt) => {
+    if (Number.isNaN(Date.parse(completedAt))) return;
+    set((s) => ({
+      settings: { ...s.settings, tutorialCompletedAt: completedAt },
+    }));
   },
 
   setNavigationItemVisible: (id, visible) => {

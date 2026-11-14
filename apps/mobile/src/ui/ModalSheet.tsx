@@ -16,11 +16,19 @@ interface ModalSheetProps {
   visible: boolean;
   title: string;
   subtitle?: string;
+  eyebrow?: string;
   onClose: () => void;
   children: ReactNode;
 }
 
-export function ModalSheet({ visible, title, subtitle, onClose, children }: ModalSheetProps) {
+export function ModalSheet({
+  visible,
+  title,
+  subtitle,
+  eyebrow = 'COMMAND',
+  onClose,
+  children,
+}: ModalSheetProps) {
   const insets = useSafeAreaInsets();
   return (
     <Modal
@@ -47,7 +55,7 @@ export function ModalSheet({ visible, title, subtitle, onClose, children }: Moda
             <View style={styles.headerText}>
               <View style={styles.eyebrowRow}>
                 <View style={styles.eyebrowDot} />
-                <Text style={styles.eyebrow}>COMMAND</Text>
+                <Text style={styles.eyebrow}>{eyebrow}</Text>
               </View>
               <Text style={styles.title}>{title}</Text>
               {subtitle !== undefined && <Text style={styles.subtitle}>{subtitle}</Text>}
