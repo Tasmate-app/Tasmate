@@ -9,15 +9,14 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
-  BALANCE,
   CHARACTER_DEFINITIONS,
   FACILITY_DEFINITIONS,
-  MATERIAL_NAMES,
   experienceToNextLevel,
+  facilityLevelFactor,
   facilityUpgradeCost,
+  formatFacilityProduction,
   planLevelUp,
 } from '@tasmate/core';
-import type { FacilityDefinition } from '@tasmate/types';
 import { RoomScene } from '../game3d/RoomScene';
 import { useMobileAppStore } from '../stores/appStore';
 import {
@@ -42,13 +41,6 @@ import {
 } from '../theme/tokens';
 
 type ModelState = 'loading' | 'ready' | 'error';
-
-function facilityProduction(definition: FacilityDefinition): string {
-  if (definition.type === 'currency') {
-    return `通貨 ${definition.baseProductionPerMinute}/分`;
-  }
-  return `${MATERIAL_NAMES[definition.materialId ?? ''] ?? '素材'} ${definition.baseProductionPerMinute}/分`;
-}
 
 export function BaseScreen() {
   const router = useRouter();
@@ -360,29 +352,23 @@ export function BaseScreen() {
                   <Badge label={`Lv.${selectedFacility.level}`} tone="primary" />
                 </View>
                 <Text style={styles.note}>{selectedFacilityDefinition.description}</Text>
-                <Text style={styles.facilityRate}>
-                  {selectedFacilityDefinition.type === 'currency' ? 'コイン生産' : '素材生産'} /{' '}
-                  {facilityProduction(selectedFacilityDefinition)}
-                </Text>
               </View>
             </View>
-            <View style={styles.stats}>
-              <StatTile
-                label="生産"
-                value={facilityProduction(selectedFacilityDefinition)}
-                glyph="◈"
-                tone={colors.secondary}
+            <View style={styles.facilityDetails}>
+              <FacilityDetailRow
+                label="現在の生産量"
+                value={formatFacilityProduction(
+                  selectedFacilityDefinition,
+                  selectedFacility.level,
+                )}
               />
-              <StatTile
+              <FacilityDetailRow
                 label="レベル補正"
-                value={`×${(1 + Math.max(0, selectedFacility.level - 1) * BALANCE.facilityPerLevel).toFixed(1)}`}
-                glyph="↑"
+                value={`×${facilityLevelFactor(selectedFacility.level).toFixed(1)}`}
               />
-              <StatTile
+              <FacilityDetailRow
                 label="強化費用"
-                value={`${facilityUpgradeCost(selectedFacility.level)}`}
-                glyph="◆"
-                tone={colors.warning}
+                value={`通貨 ${facilityUpgradeCost(selectedFacility.level)}`}
               />
             </View>
             <View style={styles.actions}>
@@ -559,6 +545,15 @@ function QuickStat({
           <Text style={styles.quickUnit}>{unit}</Text>
         </Text>
       </View>
+    </View>
+  );
+}
+
+function FacilityDetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.facilityDetailRow}>
+      <Text style={styles.facilityDetailLabel}>{label}</Text>
+      <Text style={styles.facilityDetailValue}>{value}</Text>
     </View>
   );
 }
@@ -856,10 +851,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.xs,
   },
-  facilityRate: {
-    color: colors.secondary,
-    fontSize: fontSize.xs,
+  facilityDetails: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: spacing.sm,
+  },
+  facilityDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.surfaceAlt,
+  },
+  facilityDetailLabel: {
+    color: colors.textMuted,
+    fontSize: fontSize.sm,
+  },
+  facilityDetailValue: {
+    flexShrink: 1,
+    color: colors.text,
+    fontSize: fontSize.sm,
     fontWeight: '800',
+    fontVariant: ['tabular-nums'],
+    textAlign: 'right',
   },
   rail: {
     gap: spacing.sm,
