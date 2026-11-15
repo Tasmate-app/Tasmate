@@ -49,8 +49,14 @@ import {
 import { computeSessionReward } from './rewardService';
 import { CHARACTER_DEFINITIONS } from './seed';
 import { billableMinutes } from './session';
-import { createItemTransaction, consumeItems, COIN_ITEM_ID } from './inventory/inventoryManager';
+import {
+  addItem,
+  createItemTransaction,
+  consumeItems,
+  COIN_ITEM_ID,
+} from './inventory/inventoryManager';
 import { legacyInventoryFromItems } from './inventory/materialStorage';
+import { planCrystalSynthesis } from './inventory/crystalSynthesis';
 import { applyExperienceToCharacter, planLevelUp } from './progression/levelSystem';
 import { planAscension } from './progression/ascensionSystem';
 import { evaluateTaskWithFallback, rollTaskReward } from './rewards/rewardCalculator';
@@ -62,7 +68,9 @@ import {
 } from './navigation';
 import type {
   Category,
+  CrystalType,
   InterruptedQuest,
+  ItemRarity,
   MobileNavItemId,
   OwnedCharacter,
   RecurrenceRule,
@@ -279,6 +287,8 @@ export interface AppActions {
   levelUpCharacter: (definitionId: string) => boolean;
   /** レベル上限を解放する。レベルが現在の上限に達し、素材が揃っている場合のみ成功する */
   ascendCharacter: (definitionId: string) => boolean;
+  /** かけらと硬貨を消費して結晶を1個合成する。素材が足りない場合は何も消費しない */
+  synthesizeCrystal: (type: CrystalType, rarity: ItemRarity) => boolean;
   upgradeFacility: (definitionId: string) => boolean;
   toggleFacility: (definitionId: string) => void;
 
@@ -1764,6 +1774,42 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
         const ascended = { ...c, ascensionStage: plan.nextStage ?? c.ascensionStage };
         return applyExperienceToCharacter(ascended, 0);
       }),
+    }));
+    return true;
+  },
+
+  synthesizeCrystal: (type, rarity) => {
+    const s = get();
+    const plan = planCrystalSynthesis(type, rarity, s.itemInventory);
+    if (!plan.canSynthesize) return false;
+    const consumed = consumeItems(s.itemInventory, plan.recipe.items);
+    if (!consumed.ok) return false;
+
+    const nextInventory = addItem(consumed.inventory, plan.recipe.crystalItemId, 1);
+    const createdAt = nowIso();
+    const transactions = [
+      ...consumed.consumed.map((stack) =>
+        createItemTransaction({
+          id: newId('item'),
+          itemId: stack.itemId,
+          delta: -stack.quantity,
+          reason: 'synthesis',
+          createdAt,
+        }),
+      ),
+      createItemTransaction({
+        id: newId('item'),
+        itemId: plan.recipe.crystalItemId,
+        delta: 1,
+        reason: 'synthesis',
+        createdAt,
+      }),
+    ];
+
+    set((prev) => ({
+      inventory: legacyInventoryFromItems(nextInventory, prev.inventory),
+      itemInventory: nextInventory,
+      itemHistory: [...transactions, ...prev.itemHistory].slice(0, BALANCE.maxItemHistory),
     }));
     return true;
   },
