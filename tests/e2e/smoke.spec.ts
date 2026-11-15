@@ -94,6 +94,8 @@ test('施設一覧から詳細を開いて戻れる', async ({ page }) => {
   await expect(page.getByRole('heading', { name: '施設' })).toBeVisible();
   await page.getByRole('button', { name: /コイン工房/ }).click();
   await expect(page.getByRole('button', { name: '← 施設一覧に戻る' })).toBeVisible();
+  await expect(page.getByText('現在の生産量')).toBeVisible();
+  await expect(page.getByText('レベル補正')).toBeVisible();
   await expect(page.getByRole('button', { name: /強化する/ })).toBeVisible();
   await page.getByRole('button', { name: '← 施設一覧に戻る' }).click();
   await expect(page.getByRole('heading', { name: '施設' })).toBeVisible();

@@ -1,8 +1,7 @@
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
-import { facilityUpgradeCost } from '../../domain/facility';
-import { MATERIAL_NAMES } from '../../domain/constants';
+import { facilityUpgradeCost, formatFacilityProduction } from '../../domain/facility';
 import { FACILITY_DEFINITIONS } from '../../data/seed';
 import { useAppStore } from '../../stores/appStore';
 
@@ -20,9 +19,8 @@ export function FacilityPanel() {
           const def = FACILITY_DEFINITIONS.find((d) => d.id === f.definitionId);
           const cost = facilityUpgradeCost(f.level);
           const production =
-            def?.type === 'currency'
-              ? `通貨 ${def.baseProductionPerMinute}/分`
-              : `素材（${MATERIAL_NAMES[def?.materialId ?? ''] ?? ''}）${def?.baseProductionPerMinute}/分`;
+            def !== undefined ? formatFacilityProduction(def, f.level) : '';
+
           return (
             <li key={f.definitionId} className="list-item unit-row">
               <span
@@ -39,7 +37,7 @@ export function FacilityPanel() {
                   </Badge>
                 </div>
                 <div className="list-item__meta">
-                  {def?.description}／基礎生産 {production}
+                  {def?.description}／現在の生産量 {production}
                 </div>
                 <div className="btn-row">
                   <Button

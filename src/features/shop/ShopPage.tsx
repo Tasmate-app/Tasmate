@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Card } from '../../components/ui/Card';
-import { facilityUpgradeCost } from '../../domain/facility';
-import { MATERIAL_NAMES } from '../../domain/constants';
+import { facilityUpgradeCost, formatFacilityProduction } from '../../domain/facility';
 import { FACILITY_DEFINITIONS } from '../../data/seed';
 import { useAppStore } from '../../stores/appStore';
 
@@ -34,9 +33,7 @@ export function ShopPage() {
             const def = FACILITY_DEFINITIONS.find((d) => d.id === f.definitionId);
             const cost = facilityUpgradeCost(f.level);
             const production =
-              def?.type === 'currency'
-                ? `通貨 ${def.baseProductionPerMinute}/分`
-                : `素材（${MATERIAL_NAMES[def?.materialId ?? ''] ?? ''}）${def?.baseProductionPerMinute}/分`;
+              def !== undefined ? formatFacilityProduction(def, f.level) : '';
             return (
               <li key={f.definitionId} className="list-item unit-row">
                 <span className="unit-avatar unit-avatar--facility is-on" aria-hidden="true">
@@ -46,7 +43,7 @@ export function ShopPage() {
                   <div className="list-item__title">
                     {def?.name ?? f.definitionId} <span className="unit-lv">所持 Lv.{f.level}</span>
                   </div>
-                  <div className="list-item__meta">強化で生産量アップ（基礎 {production}）</div>
+                  <div className="list-item__meta">強化で生産量アップ（現在 {production}）</div>
                   <div className="btn-row">
                     <button
                       type="button"

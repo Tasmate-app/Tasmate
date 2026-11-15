@@ -2,8 +2,11 @@ import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Badge } from '../../components/ui/Badge';
 import { Card } from '../../components/ui/Card';
-import { BALANCE, MATERIAL_NAMES } from '../../domain/constants';
-import { facilityUpgradeCost } from '../../domain/facility';
+import {
+  facilityLevelFactor,
+  facilityUpgradeCost,
+  formatFacilityProduction,
+} from '../../domain/facility';
 import { FACILITY_DEFINITIONS } from '../../data/seed';
 import { useAppStore } from '../../stores/appStore';
 
@@ -19,14 +22,6 @@ function getInitialSelectedId(state: unknown, definitionIds: string[]): string |
     }
   }
   return null;
-}
-
-function productionLabel(definitionId: string): string {
-  const def = FACILITY_DEFINITIONS.find((d) => d.id === definitionId);
-  if (def === undefined) return '';
-  return def.type === 'currency'
-    ? `通貨 ${def.baseProductionPerMinute}/分`
-    : `素材（${MATERIAL_NAMES[def.materialId ?? ''] ?? ''}）${def.baseProductionPerMinute}/分`;
 }
 
 /** 施設（ゲーム内の施設画面。一覧→詳細） */
@@ -88,7 +83,9 @@ export function FacilitiesPage() {
                             {f.enabled ? '稼働中' : '停止中'}
                           </Badge>
                         </span>
-                        <span className="list-item__meta">{productionLabel(f.definitionId)}</span>
+                        <span className="list-item__meta">
+                          {def !== undefined ? formatFacilityProduction(def, f.level) : ''}
+                        </span>
                       </span>
                     </button>
                   </li>
@@ -119,15 +116,12 @@ export function FacilitiesPage() {
               <p className="list-item__meta">{definition.description}</p>
               <dl className="companion-status__rows">
                 <div>
-                  <dt>基礎生産</dt>
-                  <dd>{productionLabel(owned.definitionId)}</dd>
+                  <dt>現在の生産量</dt>
+                  <dd>{formatFacilityProduction(definition, owned.level)}</dd>
                 </div>
                 <div>
                   <dt>レベル補正</dt>
-                  <dd>
-                    ×
-                    {(1 + Math.max(0, owned.level - 1) * BALANCE.facilityPerLevel).toFixed(1)}
-                  </dd>
+                  <dd>×{facilityLevelFactor(owned.level).toFixed(1)}</dd>
                 </div>
                 <div>
                   <dt>強化コスト</dt>
