@@ -10,6 +10,7 @@ import {
   computeWorkTimeTotals,
   filterHistoryEntries,
   formatWorkDuration,
+  getHistoryWindow,
   toDateKey,
 } from '@tasmate/core';
 import { useMobileAppStore } from '../stores/appStore';
@@ -27,19 +28,19 @@ import {
 } from '../ui';
 import { colors, fontSize, radius, spacing } from '../theme/tokens';
 
-const GRANULARITY_OPTIONS = [
-  { value: 'day', label: '日' },
-  { value: 'week', label: '週' },
-  { value: 'month', label: '月' },
-  { value: 'year', label: '年' },
-];
+interface GranularityOption {
+  value: HistoryGranularity;
+  label: string;
+  count: number;
+  rangeLabel: string;
+}
 
-const GRANULARITY_COUNT: Record<HistoryGranularity, number> = {
-  day: 7,
-  week: 8,
-  month: 6,
-  year: 5,
-};
+const GRANULARITY_OPTIONS: GranularityOption[] = [
+  { value: 'day', label: '日', count: 7, rangeLabel: '直近7日' },
+  { value: 'week', label: '週', count: 8, rangeLabel: '直近8週' },
+  { value: 'month', label: '月', count: 6, rangeLabel: '直近6か月' },
+  { value: 'year', label: '年', count: 5, rangeLabel: '直近5年' },
+];
 
 function formatEntryDate(iso: string): string {
   const date = new Date(iso);
@@ -108,21 +109,26 @@ export function HistoryScreen() {
     });
   }, [entries, categoryFilter, subCategoryFilter]);
 
+  const seriesOption =
+    GRANULARITY_OPTIONS.find((option) => option.value === granularity) ?? GRANULARITY_OPTIONS[0];
+  const todayKey = toDateKey(new Date());
   const series = useMemo(
-    () =>
-      buildTimeSeries(
-        filteredEntries,
-        granularity,
-        toDateKey(new Date()),
-        GRANULARITY_COUNT[granularity],
-      ),
-    [filteredEntries, granularity],
+    () => buildTimeSeries(filteredEntries, granularity, todayKey, seriesOption.count),
+    [filteredEntries, granularity, todayKey, seriesOption.count],
   );
   const maxSeriesSeconds = Math.max(1, ...series.map((point) => point.seconds));
-  const categoryTotals = useMemo(() => aggregateByCategory(filteredEntries), [filteredEntries]);
+  const historyWindow = useMemo(
+    () => getHistoryWindow(granularity, todayKey, seriesOption.count),
+    [granularity, todayKey, seriesOption.count],
+  );
+  const rangeEntries = useMemo(
+    () => filterHistoryEntries(filteredEntries, historyWindow),
+    [filteredEntries, historyWindow],
+  );
+  const categoryTotals = useMemo(() => aggregateByCategory(rangeEntries), [rangeEntries]);
   const subCategoryTotals = useMemo(
-    () => aggregateBySubCategory(filteredEntries),
-    [filteredEntries],
+    () => aggregateBySubCategory(rangeEntries),
+    [rangeEntries],
   );
   const categoryOptions = categories.filter(
     (category) => category.id === categoryFilter || category.archivedAt === undefined,
@@ -202,7 +208,10 @@ export function HistoryScreen() {
           )}
         </Panel>
 
-        <Panel title="カテゴリー別" eyebrow="CATEGORY BREAKDOWN">
+        <Panel
+          title={`カテゴリー別（${seriesOption.rangeLabel}）`}
+          eyebrow="CATEGORY BREAKDOWN"
+        >
           <ChipGroup
             options={[
               { value: '', label: 'すべて' },
@@ -235,7 +244,11 @@ export function HistoryScreen() {
           </View>
         </Panel>
 
-        <Panel title="サブカテゴリー別" eyebrow="SUB CATEGORY BREAKDOWN" tone="secondary">
+        <Panel
+          title={`サブカテゴリー別（${seriesOption.rangeLabel}）`}
+          eyebrow="SUB CATEGORY BREAKDOWN"
+          tone="secondary"
+        >
           {categoryFilter === '' ? (
             <Text style={styles.emptyNote}>
               カテゴリーを選ぶとサブカテゴリーで絞り込めます。
