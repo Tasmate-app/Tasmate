@@ -21,6 +21,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/facilities', label: '施設', title: '施設（一覧・強化）', icon: 'facility' },
   { to: '/shop', label: 'ショップ', title: 'ショップ（施設強化）', icon: 'shop' },
   { to: '/storage', label: '倉庫', title: '倉庫（報酬履歴）', icon: 'storage' },
+  { to: '/synthesis', label: '合成', title: '合成（結晶づくり）', icon: 'synthesis' },
 ];
 
 /** ゲーム内ナビゲーション（画面下部のメインメニュー） */

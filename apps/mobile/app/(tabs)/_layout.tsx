@@ -39,6 +39,7 @@ export default function TabsLayout() {
             <Tabs.Screen name="base" options={{ title: '拠点' }} />
             <Tabs.Screen name="character" options={{ title: 'キャラクター' }} />
             <Tabs.Screen name="inventory" options={{ title: 'かばん' }} />
+            <Tabs.Screen name="synthesis" options={{ title: '合成' }} />
           </Tabs>
         </SafeAreaView>
       </View>

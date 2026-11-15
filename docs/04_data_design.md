@@ -248,6 +248,8 @@
 
 残高だけでなく、可能であれば増減履歴を記録する。報酬の再処理時に二重付与しないため、各付与処理に一意な ID を持たせる。
 
+結晶合成のレシピ（結晶タイプごとのかけら、レアリティ別の必要数・硬貨）は `packages/core/src/inventory/crystalSynthesis.ts` で定義する。合成時の消費・付与はストアの `synthesizeCrystal` で行い、`itemHistory` の `reason` には `synthesis` を記録する。専用の永続フィールドや旧 `Inventory` の構造変更は行わない。
+
 ### Furniture / Costume / GiftRecipe
 
 拠点アイテム、コスチューム、プレゼント合成レシピの定義データ。購入・所持・配置・解禁状態はプレイヤーごとの所有データとして管理する。

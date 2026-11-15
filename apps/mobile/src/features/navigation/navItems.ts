@@ -22,4 +22,5 @@ export const MOBILE_NAV_META: Record<MobileNavItemId, MobileNavItemMeta> = {
     dish: '仲間',
   },
   inventory: { id: 'inventory', href: '/inventory', label: 'かばん', glyph: '✧', dish: '所持品' },
+  synthesis: { id: 'synthesis', href: '/synthesis', label: '合成', glyph: '⚗', dish: '結晶づくり' },
 };

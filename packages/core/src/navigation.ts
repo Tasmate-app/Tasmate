@@ -10,6 +10,7 @@ export const MOBILE_NAV_ITEM_IDS: readonly MobileNavItemId[] = [
   'base',
   'character',
   'inventory',
+  'synthesis',
 ];
 
 /** 起動直後の画面である出撃は常に表示する */
@@ -21,6 +22,7 @@ export const DEFAULT_NAVIGATION_ITEMS: readonly MobileNavItemPreference[] = [
   { id: 'base', visible: true },
   { id: 'character', visible: true },
   { id: 'inventory', visible: true },
+  { id: 'synthesis', visible: true },
 ];
 
 function isRecord(value: unknown): value is Record<string, unknown> {

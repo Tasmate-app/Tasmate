@@ -23,6 +23,7 @@ export * from './store';
 export * from './inventory/itemDefinitions';
 export * from './inventory/inventoryManager';
 export * from './inventory/materialStorage';
+export * from './inventory/crystalSynthesis';
 export * from './progression/progressionConfig';
 export * from './progression/levelSystem';
 export * from './progression/ascensionSystem';

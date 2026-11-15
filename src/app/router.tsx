@@ -7,6 +7,7 @@ import { CompanionsPage } from '../features/companions/CompanionsPage';
 import { FacilitiesPage } from '../features/facilities/FacilitiesPage';
 import { ShopPage } from '../features/shop/ShopPage';
 import { StoragePage } from '../features/storage/StoragePage';
+import { SynthesisPage } from '../features/synthesis/SynthesisPage';
 import { HistoryPage } from '../features/history/HistoryPage';
 import { CategoriesPage } from '../features/categories/CategoriesPage';
 import { SettingsPage } from '../features/settings/SettingsPage';
@@ -26,6 +27,7 @@ export const router = createBrowserRouter([
       { path: 'facilities', element: <FacilitiesPage /> },
       { path: 'shop', element: <ShopPage /> },
       { path: 'storage', element: <StoragePage /> },
+      { path: 'synthesis', element: <SynthesisPage /> },
       { path: 'settings', element: <SettingsPage /> },
       {
         path: 'settings/licenses',

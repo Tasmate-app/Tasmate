@@ -6,6 +6,7 @@ export type GameIconName =
   | 'facility'
   | 'shop'
   | 'storage'
+  | 'synthesis'
   | 'history'
   | 'categories'
   | 'settings';
@@ -68,6 +69,13 @@ export function GameIcon({ name }: { name: GameIconName }) {
         <>
           <path d="M3.5 7.5 10 4l6.5 3.5v7L10 18l-6.5-3.5Z" />
           <path d="M3.5 7.5 10 11l6.5-3.5M10 11v7" />
+        </>
+      )}
+      {name === 'synthesis' && (
+        <>
+          <path d="M7.5 3.5 12 8l-4.5 4.5L3 8Z" />
+          <path d="M13 8.5 16.5 12 13 15.5 9.5 12Z" />
+          <path d="M15.5 2.8v2.4M14.3 4h2.4" />
         </>
       )}
       {name === 'history' && (

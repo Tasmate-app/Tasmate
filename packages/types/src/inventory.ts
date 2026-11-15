@@ -23,7 +23,13 @@ export type CrystalType =
   | 'effort_crystal';
 
 /** アイテムの主な用途 */
-export type ItemUsage = 'level_up' | 'ascension' | 'shop' | 'legacy' | 'none';
+export type ItemUsage =
+  | 'level_up'
+  | 'ascension'
+  | 'synthesis'
+  | 'shop'
+  | 'legacy'
+  | 'none';
 
 /** アイテム定義（マスタ） */
 export interface ItemDefinition {
@@ -47,7 +53,13 @@ export interface ItemDefinition {
 export type ItemInventory = Record<string, number>;
 
 /** アイテムの増減理由 */
-export type ItemTransactionReason = 'reward' | 'level_up' | 'ascension' | 'migration' | 'other';
+export type ItemTransactionReason =
+  | 'reward'
+  | 'level_up'
+  | 'ascension'
+  | 'synthesis'
+  | 'migration'
+  | 'other';
 
 /** 素材の獲得・消費履歴 */
 export interface ItemTransaction {

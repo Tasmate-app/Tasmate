@@ -28,6 +28,8 @@ function usageLabel(definition: ItemDefinition): string {
       return 'レベルアップで使用';
     case 'ascension':
       return 'レベル上限解放で使用';
+    case 'synthesis':
+      return '結晶の合成で使用';
     case 'shop':
       return 'ショップで使用';
     case 'legacy':
