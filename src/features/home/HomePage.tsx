@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { RoomScene } from '../../game3d/RoomScene';
-import { ATTRIBUTE_NAMES, MATERIAL_NAMES } from '../../domain/constants';
+import { ATTRIBUTE_NAMES } from '../../domain/constants';
+import { formatFacilityProduction } from '../../domain/facility';
 import { CHARACTER_DEFINITIONS, FACILITY_DEFINITIONS } from '../../data/seed';
 import { formatElapsed } from '../../domain/session';
 import { useNow } from '../../hooks/useNow';
@@ -41,9 +42,9 @@ export function HomePage() {
       ? (FACILITY_DEFINITIONS.find((d) => d.id === selectedFacility.definitionId) ?? null)
       : null;
   const selectedFacilityProduction =
-    selectedFacilityDef?.type === 'currency'
-      ? `通貨 ${selectedFacilityDef.baseProductionPerMinute}/分`
-      : `素材（${MATERIAL_NAMES[selectedFacilityDef?.materialId ?? ''] ?? ''}）${selectedFacilityDef?.baseProductionPerMinute ?? 0}/分`;
+    selectedFacility !== null && selectedFacilityDef !== null
+      ? formatFacilityProduction(selectedFacilityDef, selectedFacility.level)
+      : '';
 
   const clearSelection = () => {
     setSelectedCharacterId(null);
@@ -140,7 +141,8 @@ export function HomePage() {
                   <span className="unit-lv">Lv.{selectedFacility.level}</span>
                 </p>
                 <p className="list-item__meta">
-                  {selectedFacility.enabled ? '稼働中' : '停止中'} ／ {selectedFacilityProduction}
+                  {selectedFacility.enabled ? '稼働中' : '停止中'} ／ 現在の生産量{' '}
+                  {selectedFacilityProduction}
                 </p>
               </div>
               <button type="button" className="ctx-panel__close" onClick={clearSelection} aria-label="閉じる">

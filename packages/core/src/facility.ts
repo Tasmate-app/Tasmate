@@ -1,10 +1,47 @@
 import type { FacilityDefinition, OwnedFacility } from '@tasmate/types';
-import { BALANCE } from './constants';
+import { BALANCE, MATERIAL_NAMES } from './constants';
 
 /** 施設生産結果 */
 export interface FacilityProduction {
   currency: number;
   materials: Partial<Record<string, number>>;
+}
+
+/** 施設レベルの生産補正倍率。Lv1 は 1.0、以降 1 レベルごとに加算される */
+export function facilityLevelFactor(level: number): number {
+  const safeLevel = Number.isFinite(level) ? Math.max(1, level) : 1;
+  return 1 + Math.max(0, safeLevel - 1) * BALANCE.facilityPerLevel;
+}
+
+/** 施設の現在の1分あたり生産量（基礎生産 × レベル補正 × 生産係数） */
+export function facilityProductionPerMinute(
+  definition: FacilityDefinition,
+  level: number,
+): number {
+  return (
+    definition.baseProductionPerMinute *
+    facilityLevelFactor(level) *
+    BALANCE.facilityProductionFactor
+  );
+}
+
+function formatProductionAmount(amount: number): string {
+  if (!Number.isFinite(amount)) return '0';
+  const rounded = Math.round(amount * 100) / 100;
+  return `${rounded}`;
+}
+
+/** 施設の現在の生産量を表示用の文字列にする */
+export function formatFacilityProduction(
+  definition: FacilityDefinition,
+  level: number,
+): string {
+  const amount = formatProductionAmount(facilityProductionPerMinute(definition, level));
+  if (definition.type === 'currency') {
+    return `通貨 ${amount}/分`;
+  }
+  const materialName = MATERIAL_NAMES[definition.materialId ?? ''] ?? '素材';
+  return `素材（${materialName}）${amount}/分`;
 }
 
 /**
@@ -27,10 +64,7 @@ export function calculateFacilityProduction(
     if (!owned.enabled) continue;
     const def = defMap.get(owned.definitionId);
     if (def === undefined) continue;
-    const levelFactor = 1 + Math.max(0, owned.level - 1) * BALANCE.facilityPerLevel;
-    const amount = Math.floor(
-      minutes * def.baseProductionPerMinute * levelFactor * BALANCE.facilityProductionFactor,
-    );
+    const amount = Math.floor(minutes * facilityProductionPerMinute(def, owned.level));
     if (amount <= 0) continue;
     if (def.type === 'currency') {
       result.currency += amount;
