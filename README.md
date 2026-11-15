@@ -155,16 +155,12 @@ Webでは起動時にCSS変数へ適用する。
 
 | Skill | 提供元 | ライセンス |
 | --- | --- | --- |
-| `eas-app-stores`<br>`eas-hosting`<br>`eas-observe`<br>`eas-simulator`<br>`eas-update`<br>`eas-update-insights`<br>`eas-workflows`<br>`expo-animation`<br>`expo-app-clip`<br>`expo-brownfield`<br>`expo-data-fetching`<br>`expo-design-system`<br>`expo-dev-client`<br>`expo-dom`<br>`expo-examples`<br>`expo-migrate-module`<br>`expo-module`<br>`expo-native-ui`<br>`expo-overview`<br>`expo-project-structure`<br>`expo-router`<br>`expo-skill-eval`<br>`expo-ui`<br>`expo-upgrade`<br>`expo-web-to-native` | [expo/skills](https://github.com/expo/skills) | MIT |
-| `vercel-optimize`<br>`vercel-react-best-practices`<br>`vercel-react-native-skills` | [vercel-labs/agent-skills](https://github.com/vercel-labs/agent-skills) | MIT |
+| `eas-app-stores`<br>`eas-simulator`<br>`expo-design-system`<br>`expo-examples`<br>`expo-native-ui`<br>`expo-overview`<br>`expo-router`<br>`expo-upgrade` | [expo/skills](https://github.com/expo/skills) | MIT |
 | `frontend-design` | 外部（[`LICENSE.txt`](.agents/skills/frontend-design/LICENSE.txt) 同梱） | Apache-2.0 |
 | `ai-integration`<br>`data-security`<br>`game-domain`<br>`game-ui-design`<br>`task-timer`<br>`testing-quality`<br>`threejs-development` | 本リポジトリで作成 | MIT（[`LICENSE`](LICENSE)） |
 
 補足:
 
-- `expo-animation` の MIT ライセンスは Copyright (c) 2026 Emil Kowalski。
-- `vercel-labs/agent-skills` はリポジトリ直下に LICENSE ファイルがなく、各 Skill の
-  `SKILL.md` または README の記載を根拠とする。
 - Skill を再配布する場合は、各ライセンスの条件（著作権表示・ライセンス全文の保持など）に従う。
 
 ## キャラクター素材
