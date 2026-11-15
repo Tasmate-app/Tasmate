@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { HistoryEntry, WorkSession } from '../src/types/index';
 import {
+  addDays,
   aggregateByCategory,
   aggregateBySubCategory,
   buildHistoryEntries,
@@ -8,8 +9,11 @@ import {
   computeWorkTimeTotals,
   filterHistoryEntries,
   formatWorkDuration,
+  getHistoryWindow,
+  parseDateKey,
   sessionDateKey,
   sessionWorkSeconds,
+  toDateKey,
 } from '@tasmate/core';
 
 function session(overrides: Partial<WorkSession> = {}): WorkSession {
@@ -263,6 +267,78 @@ describe('推移系列', () => {
     const series = buildTimeSeries(entries, 'week', '2026-10-26', 2);
     expect(series.map((point) => point.key)).toEqual(['2026-10-19', '2026-10-26']);
     expect(series.map((point) => point.seconds)).toEqual([180, 30]);
+  });
+});
+
+describe('履歴の表示期間', () => {
+  it('日単位は当日を含む直近の日数', () => {
+    expect(getHistoryWindow('day', '2026-01-05', 3)).toEqual({
+      fromDateKey: '2026-01-03',
+      toDateKey: '2026-01-05',
+    });
+  });
+
+  it('週単位は月曜始まりで現在週全体を含む', () => {
+    expect(getHistoryWindow('week', '2026-01-07', 2)).toEqual({
+      fromDateKey: '2025-12-29',
+      toDateKey: '2026-01-11',
+    });
+  });
+
+  it('月単位は月初から当月末まで', () => {
+    expect(getHistoryWindow('month', '2026-01-15', 3)).toEqual({
+      fromDateKey: '2025-11-01',
+      toDateKey: '2026-01-31',
+    });
+  });
+
+  it('年単位は年初から年末まで', () => {
+    expect(getHistoryWindow('year', '2026-06-15', 5)).toEqual({
+      fromDateKey: '2022-01-01',
+      toDateKey: '2026-12-31',
+    });
+  });
+
+  it('件数は1以上に正規化する', () => {
+    expect(getHistoryWindow('day', '2026-01-05', 0)).toEqual({
+      fromDateKey: '2026-01-05',
+      toDateKey: '2026-01-05',
+    });
+  });
+
+  it('推移グラフのバケット範囲と一致する', () => {
+    for (const granularity of ['day', 'week', 'month', 'year'] as const) {
+      const window = getHistoryWindow(granularity, '2026-01-15', 3);
+      const series = buildTimeSeries([], granularity, '2026-01-15', 3);
+      const first = series[0]?.key;
+      const last = series[series.length - 1]?.key;
+      if (granularity === 'month') {
+        expect(first).toBe(window.fromDateKey.slice(0, 7));
+        expect(last).toBe(window.toDateKey.slice(0, 7));
+      } else if (granularity === 'year') {
+        expect(first).toBe(window.fromDateKey.slice(0, 4));
+        expect(last).toBe(window.toDateKey.slice(0, 4));
+      } else if (granularity === 'week') {
+        expect(first).toBe(window.fromDateKey);
+        expect(last).toBe(toDateKey(addDays(parseDateKey(window.toDateKey), -6)));
+      } else {
+        expect(first).toBe(window.fromDateKey);
+        expect(last).toBe(window.toDateKey);
+      }
+    }
+  });
+
+  it('期間外のエントリは内訳集計に含めない', () => {
+    const window = getHistoryWindow('week', '2026-10-21', 2);
+    const entries = [
+      entry({ sessionId: 'before', dateKey: '2026-10-11', durationSeconds: 60 }),
+      entry({ sessionId: 'start', dateKey: '2026-10-12', durationSeconds: 120 }),
+      entry({ sessionId: 'end', dateKey: '2026-10-25', durationSeconds: 180 }),
+      entry({ sessionId: 'after', dateKey: '2026-10-26', durationSeconds: 240 }),
+    ];
+    const inRange = filterHistoryEntries(entries, window);
+    expect(inRange.map((item) => item.sessionId)).toEqual(['start', 'end']);
+    expect(aggregateByCategory(inRange)[0]?.seconds).toBe(300);
   });
 });
 
