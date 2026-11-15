@@ -227,6 +227,50 @@ export function buildTimeSeries(
   }));
 }
 
+export interface HistoryWindow {
+  fromDateKey: string;
+  toDateKey: string;
+}
+
+/**
+ * 推移グラフの表示範囲を日付キーの範囲へ変換する。
+ * `buildTimeSeries` のバケット境界と揃え、現在の週・月・年は全体を含める。
+ */
+export function getHistoryWindow(
+  granularity: HistoryGranularity,
+  endDateKey: string,
+  count: number,
+): HistoryWindow {
+  const safeCount = Math.max(1, Math.floor(count));
+  const endDate = parseDateKey(endDateKey);
+  switch (granularity) {
+    case 'day':
+      return {
+        fromDateKey: toDateKey(addDays(endDate, -(safeCount - 1))),
+        toDateKey: endDateKey,
+      };
+    case 'week': {
+      const start = startOfWeek(endDate);
+      return {
+        fromDateKey: toDateKey(addDays(start, -7 * (safeCount - 1))),
+        toDateKey: toDateKey(addDays(start, 6)),
+      };
+    }
+    case 'month':
+      return {
+        fromDateKey: toDateKey(
+          new Date(endDate.getFullYear(), endDate.getMonth() - (safeCount - 1), 1),
+        ),
+        toDateKey: toDateKey(new Date(endDate.getFullYear(), endDate.getMonth() + 1, 0)),
+      };
+    case 'year':
+      return {
+        fromDateKey: toDateKey(new Date(endDate.getFullYear() - (safeCount - 1), 0, 1)),
+        toDateKey: toDateKey(new Date(endDate.getFullYear(), 11, 31)),
+      };
+  }
+}
+
 /** カテゴリー別の実作業時間。未分類は categoryId=null にまとめる */
 export function aggregateByCategory(entries: readonly HistoryEntry[]): CategoryTimeTotal[] {
   const grouped = new Map<string, CategoryTimeTotal>();
