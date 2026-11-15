@@ -256,26 +256,6 @@ export function SynthesisScreen() {
             })}
           </View>
         </Panel>
-
-        <Panel title="かけらの対応表" eyebrow="RECIPES">
-          <View style={styles.guideList}>
-            {SHARD_ITEM_IDS.map((itemId) => {
-              const definition = getItemDefinition(itemId);
-              const types = SYNTHESIZABLE_CRYSTAL_TYPES.filter(
-                (type) => CRYSTAL_SYNTHESIS_SHARDS[type] === itemId,
-              );
-              return (
-                <View key={itemId} style={styles.guideRow}>
-                  <Text style={styles.guideIcon}>{definition?.icon}</Text>
-                  <Text style={styles.guideName}>{definition?.name}</Text>
-                  <Text style={styles.guideTypes}>
-                    {types.map((type) => CRYSTAL_TYPE_LABELS[type]).join('・')}
-                  </Text>
-                </View>
-              );
-            })}
-          </View>
-        </Panel>
       </ScrollView>
     </ScreenBackground>
   );
@@ -441,31 +421,5 @@ const styles = StyleSheet.create({
   },
   costMissing: {
     color: colors.danger,
-  },
-  guideList: {
-    gap: spacing.xs,
-  },
-  guideRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: spacing.xs,
-  },
-  guideIcon: {
-    fontSize: 18,
-  },
-  guideName: {
-    width: 90,
-    color: colors.text,
-    fontSize: fontSize.sm,
-    fontWeight: '900',
-  },
-  guideTypes: {
-    flex: 1,
-    color: colors.textMuted,
-    fontSize: fontSize.xs,
-    fontWeight: '700',
   },
 });

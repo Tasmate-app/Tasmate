@@ -187,29 +187,6 @@ export function SynthesisPage() {
             </ul>
           </div>
         </section>
-
-        <section className="synthesis-guide" aria-label="かけらの対応表">
-          <h2>かけらの対応表</h2>
-          <ul className="synthesis-guide__list">
-            {SHARD_ITEM_IDS.map((itemId) => {
-              const definition = getItemDefinition(itemId);
-              const types = SYNTHESIZABLE_CRYSTAL_TYPES.filter(
-                (type) => CRYSTAL_SYNTHESIS_SHARDS[type] === itemId,
-              );
-              return (
-                <li key={itemId} className="synthesis-guide__item">
-                  <span className="synthesis-guide__icon" aria-hidden="true">
-                    {definition?.icon}
-                  </span>
-                  <span className="synthesis-guide__name">{definition?.name}</span>
-                  <span className="synthesis-guide__types">
-                    {types.map((type) => CRYSTAL_TYPE_LABELS[type]).join('・')}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
       </div>
     </div>
   );
