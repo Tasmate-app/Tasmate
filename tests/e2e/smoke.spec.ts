@@ -12,9 +12,9 @@ test.beforeEach(async ({ page }) => {
 test('ゲーム内ナビゲーションから全メニューへ遷移できる', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByLabel('3Dシェアハウス')).toBeVisible();
-  for (const name of ['出撃', '仲間', '施設', 'ショップ', '倉庫'] as const) {
+  for (const name of ['出撃', '仲間', '施設', 'ショップ', '倉庫', '合成'] as const) {
     await page.getByRole('link', { name, exact: true }).click();
-    await expect(page).toHaveURL(new RegExp(`/${name === '出撃' ? 'sortie' : name === '仲間' ? 'companions' : name === '施設' ? 'facilities' : name === 'ショップ' ? 'shop' : 'storage'}`));
+    await expect(page).toHaveURL(new RegExp(`/${name === '出撃' ? 'sortie' : name === '仲間' ? 'companions' : name === '施設' ? 'facilities' : name === 'ショップ' ? 'shop' : name === '倉庫' ? 'storage' : 'synthesis'}`));
   }
 });
 
@@ -106,6 +106,18 @@ test('ショップと倉庫が表示される', async ({ page }) => {
   await page.goto('/storage');
   await expect(page.getByRole('heading', { name: '倉庫' })).toBeVisible();
   await expect(page.getByRole('heading', { name: '報酬履歴' })).toBeVisible();
+});
+
+test('合成画面で結晶の種類とレシピを確認できる', async ({ page }) => {
+  await page.goto('/synthesis');
+  await expect(page.getByRole('heading', { name: '合成' })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: '知識の結晶【N】を合成' }),
+  ).toBeVisible();
+  await page.getByRole('tab', { name: '創造の結晶' }).click();
+  await expect(
+    page.getByRole('button', { name: '創造の結晶【N】を合成' }),
+  ).toBeVisible();
 });
 
 test('週間カレンダーで予定と繰り返しを作成できる', async ({ page }) => {
