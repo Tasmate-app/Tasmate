@@ -66,6 +66,7 @@ describe('設定ストア', () => {
       { id: 'history', visible: false },
       { id: 'base', visible: true },
       { id: 'inventory', visible: true },
+      { id: 'synthesis', visible: true },
     ];
     source.settings = {
       lastBackupAt: null,
@@ -141,7 +142,7 @@ describe('設定ストア', () => {
     store.moveNavigationItem('inventory', 'up');
     expect(
       useAppStore.getState().settings.navigationItems.map((item) => item.id),
-    ).toEqual(['sortie', 'history', 'base', 'inventory', 'character']);
+    ).toEqual(['sortie', 'history', 'base', 'inventory', 'character', 'synthesis']);
 
     store.resetNavigationItems();
     expect(useAppStore.getState().settings.navigationItems).toEqual(

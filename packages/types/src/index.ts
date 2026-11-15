@@ -25,7 +25,13 @@ export type WorkSessionState = 'idle' | 'running' | 'paused';
 export type TimerMode = 'estimate' | 'stopwatch';
 
 /** モバイル版サイドバーに表示できる項目 */
-export type MobileNavItemId = 'sortie' | 'history' | 'base' | 'character' | 'inventory';
+export type MobileNavItemId =
+  | 'sortie'
+  | 'history'
+  | 'base'
+  | 'character'
+  | 'inventory'
+  | 'synthesis';
 
 /** モバイル版サイドバーの表示設定。順序がそのまま表示順になる */
 export interface MobileNavItemPreference {

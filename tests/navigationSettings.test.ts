@@ -11,7 +11,7 @@ import {
 } from '@tasmate/core';
 
 describe('モバイルサイドバーの設定ロジック', () => {
-  it('既定では5項目すべてを既定順で表示する', () => {
+  it('既定では6項目すべてを既定順で表示する', () => {
     const items = createDefaultNavigationItems();
     expect(items.map((item) => item.id)).toEqual([...MOBILE_NAV_ITEM_IDS]);
     expect(items.every((item) => item.visible)).toBe(true);
@@ -38,6 +38,7 @@ describe('モバイルサイドバーの設定ロジック', () => {
       'history',
       'base',
       'character',
+      'synthesis',
     ]);
     expect(normalized.find((item) => item.id === 'inventory')?.visible).toBe(false);
   });
@@ -67,6 +68,7 @@ describe('モバイルサイドバーの設定ロジック', () => {
       'character',
       'sortie',
       'inventory',
+      'synthesis',
     ]);
   });
 
@@ -78,6 +80,7 @@ describe('モバイルサイドバーの設定ロジック', () => {
       'base',
       'inventory',
       'character',
+      'synthesis',
     ]);
     expect(moveNavigationItem(items, 'history', 'up').map((item) => item.id)).toEqual([
       'history',
@@ -85,8 +88,9 @@ describe('モバイルサイドバーの設定ロジック', () => {
       'base',
       'character',
       'inventory',
+      'synthesis',
     ]);
     expect(moveNavigationItem(items, 'sortie', 'up')).toEqual(items);
-    expect(moveNavigationItem(items, 'inventory', 'down')).toEqual(items);
+    expect(moveNavigationItem(items, 'synthesis', 'down')).toEqual(items);
   });
 });
