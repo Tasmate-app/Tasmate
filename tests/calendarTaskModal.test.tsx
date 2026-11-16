@@ -13,6 +13,45 @@ function resetStore(): void {
 beforeEach(resetStore);
 afterEach(cleanup);
 
+describe('CalendarTaskModal の繰り返し予定', () => {
+  it('「すべて」で全曜日の繰り返し予定を作成する', () => {
+    render(
+      <CalendarTaskModal open initialDate="2026-11-20" onClose={() => undefined} />,
+    );
+
+    fireEvent.change(screen.getByLabelText('予定名（必須）'), {
+      target: { value: '毎日の復習' },
+    });
+    fireEvent.click(screen.getByLabelText('毎週くり返す'));
+    fireEvent.click(screen.getByRole('button', { name: 'すべて' }));
+    fireEvent.click(screen.getByRole('button', { name: '予定を追加' }));
+
+    expect(useAppStore.getState().recurrenceRules[0]?.daysOfWeek).toEqual([
+      1, 2, 3, 4, 5, 6, 7,
+    ]);
+  });
+
+  it('全曜日選択済みで「すべて」を押すと全解除し、保存時に曜日エラーになる', () => {
+    render(
+      <CalendarTaskModal open initialDate="2026-11-20" onClose={() => undefined} />,
+    );
+
+    fireEvent.change(screen.getByLabelText('予定名（必須）'), {
+      target: { value: '毎日の復習' },
+    });
+    fireEvent.click(screen.getByLabelText('毎週くり返す'));
+    const toggleAll = screen.getByRole('button', { name: 'すべて' });
+    fireEvent.click(toggleAll);
+    fireEvent.click(toggleAll);
+    fireEvent.click(screen.getByRole('button', { name: '予定を追加' }));
+
+    expect(
+      screen.getByText('繰り返す曜日を1つ以上選択してください。'),
+    ).not.toBeNull();
+    expect(useAppStore.getState().recurrenceRules).toHaveLength(0);
+  });
+});
+
 describe('CalendarTaskModal のストップウォッチ予定', () => {
   it('予定日時を持つストップウォッチ予定を作成する', () => {
     render(
