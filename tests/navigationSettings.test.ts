@@ -11,7 +11,7 @@ import {
 } from '@tasmate/core';
 
 describe('モバイルサイドバーの設定ロジック', () => {
-  it('既定では6項目すべてを既定順で表示する', () => {
+  it('既定では9項目すべてを既定順で表示する', () => {
     const items = createDefaultNavigationItems();
     expect(items.map((item) => item.id)).toEqual([...MOBILE_NAV_ITEM_IDS]);
     expect(items.every((item) => item.visible)).toBe(true);
@@ -34,16 +34,30 @@ describe('モバイルサイドバーの設定ロジック', () => {
 
     expect(normalized.map((item) => item.id)).toEqual([
       'inventory',
-      'sortie',
+      'home',
       'history',
+      'plan',
       'base',
       'character',
+      'facilities',
+      'shop',
       'synthesis',
     ]);
     expect(normalized.find((item) => item.id === 'inventory')?.visible).toBe(false);
   });
 
-  it('出撃は非表示にできず、正規化でも表示へ戻す', () => {
+  it('旧sortie設定をhomeへ移行する', () => {
+    const normalized = normalizeNavigationItems([
+      { id: 'sortie', visible: true },
+      { id: 'history', visible: false },
+    ]);
+
+    expect(normalized.map((item) => item.id)[0]).toBe('home');
+    expect(normalized.find((item) => item.id === 'history')?.visible).toBe(false);
+    expect(normalized.some((item) => (item.id as string) === 'sortie')).toBe(false);
+  });
+
+  it('ホームは非表示にできず、正規化でも表示へ戻す', () => {
     expect(
       setNavigationItemVisible(createDefaultNavigationItems(), PINNED_MOBILE_NAV_ITEM_ID, false),
     ).toEqual(createDefaultNavigationItems());
@@ -59,15 +73,18 @@ describe('モバイルサイドバーの設定ロジック', () => {
   it('表示項目だけを元の順序で取り出す', () => {
     const items = normalizeNavigationItems([
       { id: 'character', visible: true },
-      { id: 'sortie', visible: true },
+      { id: 'home', visible: true },
       { id: 'history', visible: false },
       { id: 'base', visible: false },
       { id: 'inventory', visible: true },
     ]);
     expect(visibleNavigationItems(items).map((item) => item.id)).toEqual([
       'character',
-      'sortie',
+      'home',
       'inventory',
+      'plan',
+      'facilities',
+      'shop',
       'synthesis',
     ]);
   });
@@ -75,22 +92,28 @@ describe('モバイルサイドバーの設定ロジック', () => {
   it('上下に並べ替え、端では順序を変えない', () => {
     const items = createDefaultNavigationItems();
     expect(moveNavigationItem(items, 'inventory', 'up').map((item) => item.id)).toEqual([
-      'sortie',
+      'home',
       'history',
+      'plan',
       'base',
-      'inventory',
       'character',
+      'inventory',
+      'facilities',
+      'shop',
       'synthesis',
     ]);
     expect(moveNavigationItem(items, 'history', 'up').map((item) => item.id)).toEqual([
       'history',
-      'sortie',
+      'home',
+      'plan',
       'base',
       'character',
+      'facilities',
       'inventory',
+      'shop',
       'synthesis',
     ]);
-    expect(moveNavigationItem(items, 'sortie', 'up')).toEqual(items);
+    expect(moveNavigationItem(items, 'home', 'up')).toEqual(items);
     expect(moveNavigationItem(items, 'synthesis', 'down')).toEqual(items);
   });
 });

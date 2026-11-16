@@ -5,8 +5,8 @@ import { facilityUpgradeCost, formatFacilityProduction } from '../../domain/faci
 import { FACILITY_DEFINITIONS } from '../../data/seed';
 import { useAppStore } from '../../stores/appStore';
 
-/** 施設一覧・強化（ホームの簡易操作用） */
-export function FacilityPanel() {
+/** 施設一覧・強化（拠点の簡易操作用。readOnlyでは閲覧のみ） */
+export function FacilityPanel({ readOnly = false }: { readOnly?: boolean }) {
   const facilities = useAppStore((s) => s.facilities);
   const inventory = useAppStore((s) => s.inventory);
   const upgradeFacility = useAppStore((s) => s.upgradeFacility);
@@ -39,17 +39,19 @@ export function FacilityPanel() {
                 <div className="list-item__meta">
                   {def?.description}／現在の生産量 {production}
                 </div>
-                <div className="btn-row">
-                  <Button
-                    disabled={inventory.currency < cost}
-                    onClick={() => upgradeFacility(f.definitionId)}
-                  >
-                    強化（通貨 {cost}）
-                  </Button>
-                  <Button variant="secondary" onClick={() => toggleFacility(f.definitionId)}>
-                    {f.enabled ? '停止する' : '稼働する'}
-                  </Button>
-                </div>
+                {!readOnly && (
+                  <div className="btn-row">
+                    <Button
+                      disabled={inventory.currency < cost}
+                      onClick={() => upgradeFacility(f.definitionId)}
+                    >
+                      強化（通貨 {cost}）
+                    </Button>
+                    <Button variant="secondary" onClick={() => toggleFacility(f.definitionId)}>
+                      {f.enabled ? '停止する' : '稼働する'}
+                    </Button>
+                  </div>
+                )}
               </div>
             </li>
           );

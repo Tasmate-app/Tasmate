@@ -13,7 +13,6 @@ import {
   FACILITY_DEFINITIONS,
   experienceToNextLevel,
   facilityLevelFactor,
-  facilityUpgradeCost,
   formatFacilityProduction,
   planLevelUp,
 } from '@tasmate/core';
@@ -46,11 +45,8 @@ export function BaseScreen() {
   const router = useRouter();
   const characters = useMobileAppStore((s) => s.characters);
   const facilities = useMobileAppStore((s) => s.facilities);
-  const inventory = useMobileAppStore((s) => s.inventory);
   const itemInventory = useMobileAppStore((s) => s.itemInventory);
   const levelUpCharacter = useMobileAppStore((s) => s.levelUpCharacter);
-  const upgradeFacility = useMobileAppStore((s) => s.upgradeFacility);
-  const toggleFacility = useMobileAppStore((s) => s.toggleFacility);
 
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
   const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null);
@@ -110,7 +106,7 @@ export function BaseScreen() {
         <ScreenHeader
           eyebrow="BASE / SHARE HOUSE"
           title="拠点"
-          subtitle="3Dシェアハウスを拠点に、仲間と施設を育てよう。"
+          subtitle="3Dシェアハウスを拠点に、仲間と施設の様子を見てみよう。"
           right={
             <View style={styles.baseChip}>
               <View style={styles.baseChipIcon}>
@@ -366,36 +362,15 @@ export function BaseScreen() {
                 label="レベル補正"
                 value={`×${facilityLevelFactor(selectedFacility.level).toFixed(1)}`}
               />
-              <FacilityDetailRow
-                label="強化費用"
-                value={`通貨 ${facilityUpgradeCost(selectedFacility.level)}`}
-              />
             </View>
-            <View style={styles.actions}>
-              <GameButton
-                label={
-                  inventory.currency < facilityUpgradeCost(selectedFacility.level)
-                    ? '通貨不足'
-                    : `強化（通貨 ${facilityUpgradeCost(selectedFacility.level)}）`
-                }
-                disabled={inventory.currency < facilityUpgradeCost(selectedFacility.level)}
-                onPress={() => {
-                  const ok = upgradeFacility(selectedFacility.definitionId);
-                  setFeedback(ok ? '施設を強化しました。' : '通貨が足りません。');
-                }}
-                style={styles.action}
-              />
-              <GameButton
-                label={selectedFacility.enabled ? '稼働を停止' : '稼働を再開'}
-                variant="secondary"
-                onPress={() => {
-                  toggleFacility(selectedFacility.definitionId);
-                  setFeedback(null);
-                }}
-                style={styles.action}
-              />
-            </View>
-            {feedback !== null && <Text style={styles.feedback}>{feedback}</Text>}
+            <Text style={styles.note}>
+              強化と稼働の切り替えは施設タブで行えます。
+            </Text>
+            <GameButton
+              label="施設タブで強化・稼働切替"
+              variant="secondary"
+              onPress={() => router.push('/facilities')}
+            />
           </Panel>
         )}
 
@@ -465,7 +440,7 @@ export function BaseScreen() {
         <Panel
           title="施設"
           eyebrow="FACILITIES"
-          subtitle="タップして生産状況と強化メニューを確認"
+          subtitle="タップして生産状況を確認。強化は施設タブで行えます"
           tone="secondary"
         >
           <ScrollView

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { HistoryGranularity } from '@tasmate/types';
 import {
   aggregateByCategory,
@@ -116,10 +117,17 @@ export function HistoryPage() {
   return (
     <div className="game-screen">
       <div className="game-container">
-        <h1 className="game-screen__title">履歴</h1>
-        <p className="list-item__meta companion-lead">
-          実際に作業した時間だけを集計します。一時停止中の時間は含みません。
-        </p>
+        <div className="game-screen__head">
+          <div>
+            <h1 className="game-screen__title">履歴</h1>
+            <p className="list-item__meta companion-lead">
+              実際に作業した時間だけを集計します。一時停止中の時間は含みません。
+            </p>
+          </div>
+          <Link to="/categories" className="btn btn--secondary">
+            分類管理
+          </Link>
+        </div>
 
         <div className="stat-row history-summary">
           <div className="stat-pill">

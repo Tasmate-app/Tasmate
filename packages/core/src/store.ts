@@ -319,7 +319,7 @@ export interface AppActions {
   /** 初回チュートリアルを完了した日時を記録する */
   markTutorialCompleted: (completedAt: string) => void;
 
-  /** モバイル版サイドバーの項目を表示・非表示にする。出撃は常に表示 */
+  /** モバイル版サイドバーの項目を表示・非表示にする。ホームは常に表示 */
   setNavigationItemVisible: (id: MobileNavItemId, visible: boolean) => void;
   /** モバイル版サイドバーの項目を1つ上または下へ移動する */
   moveNavigationItem: (id: MobileNavItemId, direction: 'up' | 'down') => void;
