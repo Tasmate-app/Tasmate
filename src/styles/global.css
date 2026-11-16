@@ -4015,6 +4015,29 @@ h3 {
   gap: var(--space-sm);
 }
 
+.history-entry__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.history-entry__delete {
+  appearance: none;
+  border: 1px solid var(--color-danger-soft);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-danger);
+  font-size: 0.68rem;
+  font-weight: 900;
+  padding: 3px 8px;
+  cursor: pointer;
+}
+
+.history-entry__delete:hover {
+  border-color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+
 .history-entry__duration {
   margin-top: 4px;
   font-size: 0.94rem;
