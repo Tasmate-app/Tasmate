@@ -137,10 +137,14 @@ test('週間カレンダーで予定と繰り返しを作成できる', async ({
   const repeatDialog = page.getByRole('dialog', { name: '予定を追加' });
   await repeatDialog.getByLabel('予定名（必須）').fill('毎朝の復習');
   await repeatDialog.getByLabel('毎週くり返す').check();
+  await repeatDialog.getByRole('button', { name: 'すべて' }).click();
   await repeatDialog.getByRole('button', { name: '予定を追加' }).click();
   await expect(page.getByRole('heading', { name: '繰り返し予定' })).toBeVisible();
   await expect(page.getByText('毎朝の復習', { exact: true }).first()).toBeVisible();
   const recurrencePanel = page.getByRole('region', { name: '繰り返し予定' });
+  await expect(
+    recurrencePanel.getByText('月・火・水・木・金・土・日', { exact: false }),
+  ).toBeVisible();
   const notClipped = await recurrencePanel.evaluate(
     (element) => element.scrollHeight <= element.clientHeight + 1,
   );
