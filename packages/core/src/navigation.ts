@@ -5,25 +5,36 @@ import type { MobileNavItemId, MobileNavItemPreference } from '@tasmate/types';
  * 表示順は AppSettings.navigationItems の順序に従う。
  */
 export const MOBILE_NAV_ITEM_IDS: readonly MobileNavItemId[] = [
-  'sortie',
+  'home',
   'history',
+  'plan',
   'base',
   'character',
+  'facilities',
   'inventory',
+  'shop',
   'synthesis',
 ];
 
-/** 起動直後の画面である出撃は常に表示する */
-export const PINNED_MOBILE_NAV_ITEM_ID: MobileNavItemId = 'sortie';
+/** 起動直後の画面であるホームは常に表示する */
+export const PINNED_MOBILE_NAV_ITEM_ID: MobileNavItemId = 'home';
 
 export const DEFAULT_NAVIGATION_ITEMS: readonly MobileNavItemPreference[] = [
-  { id: 'sortie', visible: true },
+  { id: 'home', visible: true },
   { id: 'history', visible: true },
+  { id: 'plan', visible: true },
   { id: 'base', visible: true },
   { id: 'character', visible: true },
+  { id: 'facilities', visible: true },
   { id: 'inventory', visible: true },
+  { id: 'shop', visible: true },
   { id: 'synthesis', visible: true },
 ];
+
+/** 旧保存データのIDを現行IDへ読み替える */
+const LEGACY_MOBILE_NAV_ITEM_ALIASES: Readonly<Record<string, MobileNavItemId>> = {
+  sortie: 'home',
+};
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -39,7 +50,7 @@ export function createDefaultNavigationItems(): MobileNavItemPreference[] {
 
 /**
  * 保存データの並び順を維持しつつ、不明な項目・重複を除去する。
- * 欠損した項目は既定順の末尾へ補完し、出撃は必ず表示状態にする。
+ * 欠損した項目は既定順の末尾へ補完し、ホームは必ず表示状態にする。
  */
 export function normalizeNavigationItems(value: unknown): MobileNavItemPreference[] {
   const source = Array.isArray(value) ? value : [];
@@ -48,7 +59,11 @@ export function normalizeNavigationItems(value: unknown): MobileNavItemPreferenc
 
   for (const entry of source) {
     if (!isRecord(entry)) continue;
-    const id = entry['id'];
+    const rawId = entry['id'];
+    const id =
+      typeof rawId === 'string'
+        ? (LEGACY_MOBILE_NAV_ITEM_ALIASES[rawId] ?? rawId)
+        : rawId;
     if (!isMobileNavItemId(id) || seen.has(id)) continue;
     items.push({ id, visible: entry['visible'] !== false });
     seen.add(id);

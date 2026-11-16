@@ -34,11 +34,14 @@ export default function TabsLayout() {
               sceneStyle: styles.scene,
             }}
           >
-            <Tabs.Screen name="index" options={{ title: '出撃' }} />
+            <Tabs.Screen name="index" options={{ title: 'ホーム' }} />
             <Tabs.Screen name="history" options={{ title: '履歴' }} />
+            <Tabs.Screen name="plan" options={{ title: '計画' }} />
             <Tabs.Screen name="base" options={{ title: '拠点' }} />
             <Tabs.Screen name="character" options={{ title: 'キャラクター' }} />
+            <Tabs.Screen name="facilities" options={{ title: '施設' }} />
             <Tabs.Screen name="inventory" options={{ title: 'かばん' }} />
+            <Tabs.Screen name="shop" options={{ title: 'ショップ' }} />
             <Tabs.Screen name="synthesis" options={{ title: '合成' }} />
           </Tabs>
         </SafeAreaView>

@@ -26,11 +26,14 @@ export type TimerMode = 'estimate' | 'stopwatch';
 
 /** モバイル版サイドバーに表示できる項目 */
 export type MobileNavItemId =
-  | 'sortie'
+  | 'home'
   | 'history'
+  | 'plan'
   | 'base'
   | 'character'
+  | 'facilities'
   | 'inventory'
+  | 'shop'
   | 'synthesis';
 
 /** モバイル版サイドバーの表示設定。順序がそのまま表示順になる */

@@ -1,5 +1,5 @@
-import { SortieScreen } from '../../src/screens/SortieScreen';
+import { HomeScreen } from '../../src/screens/HomeScreen';
 
-export default function SortieRoute() {
-  return <SortieScreen />;
+export default function HomeRoute() {
+  return <HomeScreen />;
 }

@@ -2,7 +2,7 @@ import { Navigate, createBrowserRouter } from 'react-router-dom';
 import { GameShell } from '../components/game/GameShell';
 import { HomePage } from '../features/home/HomePage';
 import { WeeklyCalendarPage } from '../features/calendar/WeeklyCalendarPage';
-import { SortiePage } from '../features/sortie/SortiePage';
+import { BasePage } from '../features/base/BasePage';
 import { CompanionsPage } from '../features/companions/CompanionsPage';
 import { FacilitiesPage } from '../features/facilities/FacilitiesPage';
 import { ShopPage } from '../features/shop/ShopPage';
@@ -19,15 +19,15 @@ export const router = createBrowserRouter([
     element: <GameShell />,
     children: [
       { index: true, element: <HomePage /> },
-      { path: 'sortie', element: <SortiePage /> },
-      { path: 'calendar', element: <WeeklyCalendarPage /> },
       { path: 'history', element: <HistoryPage /> },
-      { path: 'categories', element: <CategoriesPage /> },
-      { path: 'companions', element: <CompanionsPage /> },
+      { path: 'plan', element: <WeeklyCalendarPage /> },
+      { path: 'base', element: <BasePage /> },
+      { path: 'character', element: <CompanionsPage /> },
       { path: 'facilities', element: <FacilitiesPage /> },
+      { path: 'inventory', element: <StoragePage /> },
       { path: 'shop', element: <ShopPage /> },
-      { path: 'storage', element: <StoragePage /> },
       { path: 'synthesis', element: <SynthesisPage /> },
+      { path: 'categories', element: <CategoriesPage /> },
       { path: 'settings', element: <SettingsPage /> },
       {
         path: 'settings/licenses',
@@ -37,8 +37,12 @@ export const router = createBrowserRouter([
         },
       },
       { path: 'privacy', element: <PrivacyPolicyPage /> },
-      // 旧シェアハウスURLの互換用
-      { path: 'house', element: <Navigate to="/" replace /> },
+      // 旧URLの互換用
+      { path: 'sortie', element: <Navigate to="/" replace /> },
+      { path: 'calendar', element: <Navigate to="/plan" replace /> },
+      { path: 'companions', element: <Navigate to="/character" replace /> },
+      { path: 'storage', element: <Navigate to="/inventory" replace /> },
+      { path: 'house', element: <Navigate to="/base" replace /> },
     ],
   },
 ]);

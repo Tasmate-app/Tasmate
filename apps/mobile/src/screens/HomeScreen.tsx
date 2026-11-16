@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import type { RecurrenceRule, Task } from '@tasmate/types';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import type { Task } from '@tasmate/types';
 import {
   WEEKDAY_LABELS,
   formatWeekRange,
@@ -15,12 +15,10 @@ import { useMobileAppStore } from '../stores/appStore';
 import { ActiveRestPanel } from '../features/sortie/ActiveRestPanel';
 import { ActiveSortiePanel } from '../features/sortie/ActiveSortiePanel';
 import { InterruptedQuestPanel } from '../features/sortie/InterruptedQuestPanel';
-import { RecurrenceEditorModal } from '../features/sortie/RecurrenceEditorModal';
 import { RewardResultPanel } from '../features/sortie/RewardResultPanel';
 import { SortieSetupModal } from '../features/sortie/SortieSetupModal';
 import { StopwatchStartModal } from '../features/sortie/StopwatchStartModal';
 import { TaskEditorModal } from '../features/sortie/TaskEditorModal';
-import { WeeklyPlannerSection } from '../features/sortie/WeeklyPlannerSection';
 import { useNow } from '../hooks/useNow';
 import { categoryColor, taskScheduleLabel, taskTimeLabel } from '../lib/taskMeta';
 import {
@@ -47,18 +45,16 @@ interface EditorState {
   date?: string;
 }
 
-export function SortieScreen() {
+export function HomeScreen() {
   const tasks = useMobileAppStore((s) => s.tasks);
   const activeSession = useMobileAppStore((s) => s.activeSession);
   const weeklyProgress = useMobileAppStore((s) => s.weeklyProgress);
   const now = useNow(60_000);
 
   const [editor, setEditor] = useState<EditorState | null>(null);
-  const [ruleEditor, setRuleEditor] = useState<{ rule?: RecurrenceRule } | null>(null);
   const [setupTaskId, setSetupTaskId] = useState<string | null>(null);
   const [stopwatchOpen, setStopwatchOpen] = useState(false);
   const [lastRewardId, setLastRewardId] = useState<string | null>(null);
-  const [showPlanner, setShowPlanner] = useState(false);
 
   const todayKey = toDateKey(new Date(now));
   const currentWeekStart = weekStartKey(new Date(now));
@@ -116,8 +112,8 @@ export function SortieScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <ScreenHeader
-            eyebrow="SORTIE / DAILY QUEST"
-            title="出撃"
+            eyebrow="HOME / DAILY QUEST"
+            title="ホーム"
             subtitle="クエストを選んで、集中した時間を報酬と成長につなげよう。"
             right={<StreakPill streak={weeklyProgress.currentStreak} />}
           />
@@ -204,19 +200,7 @@ export function SortieScreen() {
               ))}
             </View>
 
-            <View style={styles.heroActions}>
-              <GameButton
-                label="＋ クエストを追加"
-                onPress={() => openNewTask()}
-                style={styles.heroAction}
-              />
-              <GameButton
-                label={showPlanner ? '計画を閉じる' : '週間計画'}
-                variant="secondary"
-                onPress={() => setShowPlanner((value) => !value)}
-                style={styles.heroAction}
-              />
-            </View>
+            <GameButton label="＋ クエストを追加" onPress={() => openNewTask()} />
             <GameButton
               label="⏱ 即時開始（ストップウォッチ）"
               variant="secondary"
@@ -323,40 +307,7 @@ export function SortieScreen() {
                 )}
               </Panel>
 
-              <Pressable
-                accessibilityRole="button"
-                accessibilityState={{ expanded: showPlanner }}
-                accessibilityLabel="週間計画を開く"
-                onPress={() => setShowPlanner((value) => !value)}
-                style={({ pressed }) => [
-                  styles.plannerToggle,
-                  showPlanner ? styles.plannerToggleOpen : null,
-                  pressed ? styles.pressed : null,
-                ]}
-              >
-                <View style={styles.plannerIcon}>
-                  <Text style={styles.plannerIconText}>▦</Text>
-                </View>
-                <View style={styles.plannerBody}>
-                  <Text style={styles.plannerTitle}>週間計画</Text>
-                  <Text style={styles.plannerSub}>
-                    {showPlanner
-                      ? 'タップして閉じる'
-                      : '1週間の予定・継続状況・繰り返し予定を確認'}
-                  </Text>
-                </View>
-                <Text style={styles.plannerChevron}>{showPlanner ? '▲' : '▼'}</Text>
-              </Pressable>
             </>
-          )}
-
-          {showPlanner && (
-            <WeeklyPlannerSection
-              onEditTask={openEditTask}
-              onCreateTask={(date) => openNewTask(date)}
-              onCreateRule={() => setRuleEditor({})}
-              onEditRule={(rule) => setRuleEditor({ rule })}
-            />
           )}
         </ScrollView>
       </ScreenBackground>
@@ -375,11 +326,6 @@ export function SortieScreen() {
       <StopwatchStartModal
         open={stopwatchOpen}
         onClose={() => setStopwatchOpen(false)}
-      />
-      <RecurrenceEditorModal
-        open={ruleEditor !== null}
-        rule={ruleEditor?.rule}
-        onClose={() => setRuleEditor(null)}
       />
     </>
   );
@@ -683,13 +629,6 @@ const styles = StyleSheet.create({
   weekTextToday: {
     color: colors.white,
   },
-  heroActions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  heroAction: {
-    flex: 1,
-  },
   nextMission: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -768,57 +707,5 @@ const styles = StyleSheet.create({
   questList: {
     gap: spacing.sm,
     marginTop: spacing.xs,
-  },
-  plannerToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    ...shadows.soft,
-  },
-  plannerToggleOpen: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primaryPale,
-  },
-  plannerIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primarySoft,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-  },
-  plannerIconText: {
-    color: colors.primaryDark,
-    fontSize: fontSize.lg,
-    fontWeight: '900',
-  },
-  plannerBody: {
-    flex: 1,
-    gap: 1,
-  },
-  plannerTitle: {
-    color: colors.text,
-    fontSize: fontSize.md,
-    fontWeight: '900',
-  },
-  plannerSub: {
-    color: colors.textMuted,
-    fontSize: fontSize.xs,
-    lineHeight: 16,
-  },
-  plannerChevron: {
-    color: colors.primary,
-    fontSize: fontSize.sm,
-    fontWeight: '900',
-  },
-  pressed: {
-    opacity: 0.82,
   },
 });
