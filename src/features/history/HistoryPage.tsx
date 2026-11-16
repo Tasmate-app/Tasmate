@@ -47,10 +47,22 @@ export function HistoryPage() {
   const tasks = useAppStore((s) => s.tasks);
   const categories = useAppStore((s) => s.categories);
   const subCategories = useAppStore((s) => s.subCategories);
+  const deleteSession = useAppStore((s) => s.deleteSession);
 
   const [granularity, setGranularity] = useState<HistoryGranularity>('day');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [subCategoryFilter, setSubCategoryFilter] = useState('');
+
+  const handleDeleteSession = (sessionId: string, taskTitle: string) => {
+    if (
+      !window.confirm(
+        `「${taskTitle}」の作業セッションを削除しますか？\n削除直後は「元に戻す」から復元できます。`,
+      )
+    ) {
+      return;
+    }
+    deleteSession(sessionId);
+  };
 
   const entries = useMemo(
     () => buildHistoryEntries(sessionHistory, tasks, categories, subCategories),
@@ -273,9 +285,19 @@ export function HistoryPage() {
                   <li key={entry.sessionId} className="list-item">
                     <div className="history-entry__head">
                       <span className="list-item__title">{entry.taskTitle}</span>
-                      <Badge tone={entry.completed ? 'success' : 'warning'}>
-                        {entry.completed ? '完了' : '中断'}
-                      </Badge>
+                      <div className="history-entry__actions">
+                        <Badge tone={entry.completed ? 'success' : 'warning'}>
+                          {entry.completed ? '完了' : '中断'}
+                        </Badge>
+                        <button
+                          type="button"
+                          className="history-entry__delete"
+                          aria-label={`${entry.taskTitle}の作業セッションを削除`}
+                          onClick={() => handleDeleteSession(entry.sessionId, entry.taskTitle)}
+                        >
+                          削除
+                        </button>
+                      </div>
                     </div>
                     <div className="list-item__meta">
                       {formatEntryDate(entry.startedAt)}・{entry.categoryName}

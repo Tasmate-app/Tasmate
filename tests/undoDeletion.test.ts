@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { WorkSession } from '@tasmate/types';
 import {
   createAppStore,
   initialAppState,
@@ -8,6 +9,22 @@ import {
 
 function createStore() {
   return createAppStore({ storage: null, initialState: initialAppState() });
+}
+
+function makeSession(overrides: Partial<WorkSession> = {}): WorkSession {
+  return {
+    id: 'session-1',
+    taskId: 'task-1',
+    startedAt: '2026-10-20T01:00:00.000Z',
+    endedAt: '2026-10-20T01:30:00.000Z',
+    accumulatedSeconds: 0,
+    state: 'idle',
+    result: 'completed',
+    destinationId: 'd-hills',
+    assignedCharacterIds: ['c-hinata'],
+    taskTitleSnapshot: '英語の復習',
+    ...overrides,
+  };
 }
 
 function createTask(store: ReturnType<typeof createStore>, title = '英語の復習') {
@@ -141,6 +158,51 @@ describe('削除の取り消し', () => {
 
     store.getState().undoLastDeletion();
     expect(store.getState().tasks.find((task) => task.id === taskId)?.archivedAt).toBeDefined();
+  });
+
+  it('削除した作業セッションを元の位置に戻せる', () => {
+    const store = createStore();
+    const newer = makeSession({ id: 'session-newer', taskTitleSnapshot: '新しい作業' });
+    const older = makeSession({ id: 'session-older', taskTitleSnapshot: '古い作業' });
+    store.setState({ sessionHistory: [newer, older] });
+
+    store.getState().deleteSession('session-newer');
+    expect(store.getState().sessionHistory.map((session) => session.id)).toEqual([
+      'session-older',
+    ]);
+    expect(store.getState().lastDeletion).toMatchObject({
+      kind: 'session',
+      label: '新しい作業',
+    });
+
+    store.getState().undoLastDeletion();
+    expect(store.getState().sessionHistory.map((session) => session.id)).toEqual([
+      'session-newer',
+      'session-older',
+    ]);
+    expect(store.getState().lastDeletion).toBeNull();
+  });
+
+  it('未終了のセッションは削除せず、取り消し対象にもしない', () => {
+    const store = createStore();
+    const session = makeSession({ id: 'session-active', endedAt: undefined, result: undefined });
+    store.setState({ sessionHistory: [session] });
+
+    store.getState().deleteSession('session-active');
+    expect(store.getState().sessionHistory.map((item) => item.id)).toEqual(['session-active']);
+    expect(store.getState().lastDeletion).toBeNull();
+  });
+
+  it('トーストを閉じた後は削除した作業セッションを元に戻せない', () => {
+    const store = createStore();
+    store.setState({ sessionHistory: [makeSession({ id: 'session-1' })] });
+
+    store.getState().deleteSession('session-1');
+    store.getState().dismissLastDeletion();
+    expect(store.getState().lastDeletion).toBeNull();
+
+    store.getState().undoLastDeletion();
+    expect(store.getState().sessionHistory).toHaveLength(0);
   });
 
   it('直近の削除情報は保存スナップショットに含めない', () => {

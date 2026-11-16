@@ -86,6 +86,8 @@
 
 中断・再開では1回の再開を新しい `WorkSession` として記録する。報酬・作業時間の集計対象は各セグメントの実作業時間のみで、`carriedSeconds` は表示用の累計時間として扱う。
 
+履歴からの削除は `sessionHistory` から対象を取り除き、作業時間の集計から除外する。確定済みの報酬・タスク状態・週次評価・`appliedRewardSessionIds` は変更しない。削除直後は `lastDeletion` に復元情報を保持し、取り消しトーストから元の位置へ戻せる。`lastDeletion` は保存対象に含めない。
+
 ### InterruptedQuest
 
 中断して保持しているクエスト。再開すると新しい `WorkSession` を開始し、`elapsedSeconds` を `carriedSeconds` として引き継ぐ。
