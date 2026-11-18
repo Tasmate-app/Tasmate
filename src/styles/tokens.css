@@ -84,6 +84,38 @@
   --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-smooth: ease-out;
 
+  --font-weight-regular: 400;
+  --font-weight-medium: 600;
+  --font-weight-bold: 700;
+  --font-weight-black: 900;
+
+  --line-height-display: 40px;
+  --line-height-title: 32px;
+  --line-height-heading: 28px;
+  --line-height-body: 26px;
+  --line-height-body-small: 22px;
+  --line-height-label: 20px;
+  --line-height-caption: 18px;
+
+  --font-display: 32px;
+  --font-title: 24px;
+  --font-heading: 20px;
+  --font-body: 16px;
+  --font-body-small: 14px;
+  --font-label: 14px;
+  --font-caption: 12px;
+
+  --breakpoint-compact: 480px;
+  --breakpoint-drawer: 768px;
+  --breakpoint-wide: 1024px;
+
+  --control-min-touch: 44px;
+  --control-field-height: 48px;
+  --control-icon-button: 40px;
+  --hud-height: 56px;
+  --sidebar-width: 248px;
+  --nav-item-height: 48px;
+
   --shadow-soft: 0 4px 12px rgb(13 74 112 / 7%);
   --shadow-card: 0 10px 24px rgb(13 74 112 / 10%);
   --shadow-floating: 0 16px 34px rgb(13 74 112 / 18%);
@@ -91,13 +123,27 @@
   --shadow-gold: 0 8px 20px rgb(255 194 71 / 30%);
   --shadow-accent: 0 8px 20px rgb(139 124 255 / 28%);
 
+  --cat-1: #0891b2;
+  --cat-2: #4f46e5;
+  --cat-3: #0f9f6e;
+  --cat-4: #d97706;
+  --cat-5: #7c3aed;
+  --rarity-n: #64748b;
+  --rarity-r: #0284c7;
+  --rarity-sr: #7c3aed;
+  --rarity-ssr: #d97706;
+  --rarity-ur: #e11d48;
+  --status-planned: #587195;
+  --status-active: #12a878;
+  --status-interrupted: #c47a0a;
+  --status-completed: #1aa3df;
+  --status-cancelled: #e04669;
+
   /* Web 固有 */
   --font-base:
     'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Noto Sans JP', 'Yu Gothic UI',
     system-ui, sans-serif;
   --font-mono: ui-monospace, 'Cascadia Code', Consolas, monospace;
   --max-content-width: 1200px;
-  --sidebar-width: 236px;
-  --hud-height: 58px;
   --icon-size: 20px;
 }

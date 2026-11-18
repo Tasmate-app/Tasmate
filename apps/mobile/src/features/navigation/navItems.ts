@@ -1,5 +1,6 @@
 import type { Href } from 'expo-router';
 import type { MobileNavItemId } from '@tasmate/types';
+import { NAV_ITEM_META, NAV_ITEM_ORDER } from '@tasmate/design-tokens';
 
 export interface MobileNavItemMeta {
   id: MobileNavItemId;
@@ -9,27 +10,22 @@ export interface MobileNavItemMeta {
   dish: string;
 }
 
-/** サイドバーに表示する画面のメタ情報。並び順は保存済み設定に従う */
-export const MOBILE_NAV_META: Record<MobileNavItemId, MobileNavItemMeta> = {
-  home: { id: 'home', href: '/', label: 'ホーム', glyph: '◁', dish: 'クエスト' },
-  history: { id: 'history', href: '/history', label: '履歴', glyph: '◷', dish: '作業ログ' },
-  plan: { id: 'plan', href: '/plan', label: '計画', glyph: '▦', dish: '週間予定' },
-  base: { id: 'base', href: '/base', label: '拠点', glyph: '⌂', dish: 'シェアハウス' },
-  character: {
-    id: 'character',
-    href: '/character',
-    label: 'キャラクター',
-    glyph: '✦',
-    dish: '仲間',
-  },
-  facilities: {
-    id: 'facilities',
-    href: '/facilities',
-    label: '施設',
-    glyph: '⬢',
-    dish: '生産・強化',
-  },
-  inventory: { id: 'inventory', href: '/inventory', label: 'かばん', glyph: '✧', dish: '所持品' },
-  shop: { id: 'shop', href: '/shop', label: 'ショップ', glyph: '◈', dish: '強化' },
-  synthesis: { id: 'synthesis', href: '/synthesis', label: '合成', glyph: '⚗', dish: '結晶づくり' },
-};
+/**
+ * サイドバーに表示する画面のメタ情報。
+ * 値は Web と共有する NAV_ITEM_META を正とし、並び順は保存済み設定に従う。
+ */
+export const MOBILE_NAV_META: Record<MobileNavItemId, MobileNavItemMeta> = Object.fromEntries(
+  NAV_ITEM_ORDER.map((id) => {
+    const meta = NAV_ITEM_META[id];
+    return [
+      id,
+      {
+        id,
+        href: meta.path as Href,
+        label: meta.label,
+        glyph: meta.glyph,
+        dish: meta.description,
+      },
+    ];
+  }),
+) as Record<MobileNavItemId, MobileNavItemMeta>;
