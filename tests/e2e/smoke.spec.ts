@@ -30,6 +30,33 @@ test('ゲーム内ナビゲーションから全メニューへ遷移できる',
   }
 });
 
+test('狭い画面ではドロワーからメニューを開いて遷移できる', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'メニューを開く' }).click();
+  const menu = page.getByRole('navigation', { name: 'ゲームメニュー' });
+  await expect(menu).toBeVisible();
+  await menu.getByRole('link', { name: '履歴', exact: true }).click();
+  await expect(page).toHaveURL(/\/history$/);
+  await expect(menu).not.toBeVisible();
+
+  await page.getByRole('button', { name: 'メニューを開く' }).click();
+  await page.getByRole('link', { name: 'メニューを編集' }).click();
+  await expect(page).toHaveURL(/\/settings#navigation$/);
+  await expect(page.getByRole('heading', { name: 'サイドバー' })).toBeInViewport();
+});
+
+test('設定からサイドバーの表示項目を変更できる', async ({ page }) => {
+  await page.goto('/settings#navigation');
+  await expect(page.getByRole('heading', { name: 'サイドバー' })).toBeVisible();
+  const menu = page.getByRole('navigation', { name: 'ゲームメニュー' });
+  const row = page.getByRole('listitem').filter({ hasText: 'ショップ' });
+  await row.getByRole('button', { name: 'ショップを非表示にする' }).click();
+  await expect(menu.getByRole('link', { name: 'ショップ', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: '初期配置に戻す' }).click();
+  await expect(menu.getByRole('link', { name: 'ショップ', exact: true })).toBeVisible();
+});
+
 test('拠点画面で3Dシェアハウスを表示できる', async ({ page }) => {
   await page.goto('/base');
   await expect(page.getByRole('heading', { name: '拠点' })).toBeVisible();

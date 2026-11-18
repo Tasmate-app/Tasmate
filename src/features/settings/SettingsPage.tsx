@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   backupFileName,
   serializeBackup,
@@ -11,6 +11,7 @@ import { Field, TextInput } from '../../components/ui/Field';
 import { downloadTextFile, readTextFile } from '../../services/backupFile';
 import { useAppStore } from '../../stores/appStore';
 import { TutorialModal } from '../tutorial/TutorialModal';
+import { NavigationSettingsCard } from './NavigationSettingsCard';
 
 function formatBackupDate(value: string | null): string {
   if (value === null) return '未実施';
@@ -28,6 +29,7 @@ function formatBackupDate(value: string | null): string {
 /** 設定画面。データ管理・アプリ情報・ライセンス導線をまとめる */
 export function SettingsPage() {
   const navigate = useNavigate();
+  const { hash } = useLocation();
   const settings = useAppStore((s) => s.settings);
   const canPersist = useAppStore((s) => s.canPersist);
   const importAppState = useAppStore((s) => s.importAppState);
@@ -41,6 +43,11 @@ export function SettingsPage() {
   const [resetOpen, setResetOpen] = useState(false);
   const [resetConfirmText, setResetConfirmText] = useState('');
   const [tutorialOpen, setTutorialOpen] = useState(false);
+
+  useEffect(() => {
+    if (hash !== '#navigation') return;
+    document.getElementById('navigation')?.scrollIntoView({ block: 'start' });
+  }, [hash]);
 
   useEffect(() => {
     if (!resetOpen) return;
@@ -135,6 +142,8 @@ export function SettingsPage() {
           </Button>
         </div>
       </Card>
+
+      <NavigationSettingsCard />
 
       <div className="page-grid page-grid--two">
         <Card title="データ管理">
