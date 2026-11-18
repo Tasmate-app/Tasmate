@@ -134,7 +134,7 @@ export function WeeklyCalendarPage() {
       <header className="calendar-page__hero">
         <div>
           <p className="eyebrow">WEEKLY PLANNER</p>
-          <h1>週間カレンダー</h1>
+          <h1 className="game-screen__title">週間カレンダー</h1>
           <p className="calendar-page__lead">
             予定を組み、80%達成で連続週数を伸ばそう。未達成でも1週ずつしか減りません。
           </p>
