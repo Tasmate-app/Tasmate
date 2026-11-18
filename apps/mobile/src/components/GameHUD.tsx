@@ -10,20 +10,22 @@ import {
 import { useNow } from '../hooks/useNow';
 import { useMobileAppStore } from '../stores/appStore';
 import {
-  attributePalette,
   colors,
+  control,
   fontSize,
+  fontWeight,
   radius,
+  resourcePalette,
   shadows,
   spacing,
   withAlpha,
 } from '../theme/tokens';
 
-const MATERIAL_META: Record<string, { glyph: string; color: string }> = {
-  shard_sun: { glyph: attributePalette.sun.glyph, color: attributePalette.sun.color },
-  shard_moon: { glyph: attributePalette.moon.glyph, color: attributePalette.moon.color },
-  shard_star: { glyph: attributePalette.star.glyph, color: attributePalette.star.color },
-};
+const MATERIAL_META = {
+  shard_sun: resourcePalette.shard_sun,
+  shard_moon: resourcePalette.shard_moon,
+  shard_star: resourcePalette.shard_star,
+} as const;
 
 export function GameHUD({ onOpenNavigation }: { onOpenNavigation?: () => void }) {
   const router = useRouter();
@@ -48,6 +50,8 @@ export function GameHUD({ onOpenNavigation }: { onOpenNavigation?: () => void })
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="メニューを開く"
+              hitSlop={8}
+              android_ripple={{ color: colors.primarySoft, borderless: true }}
               onPress={onOpenNavigation}
               style={({ pressed }) => [
                 styles.menuButton,
@@ -72,6 +76,8 @@ export function GameHUD({ onOpenNavigation }: { onOpenNavigation?: () => void })
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="設定を開く"
+            hitSlop={8}
+            android_ripple={{ color: colors.primarySoft, borderless: true }}
             onPress={() => router.push('/settings')}
             style={({ pressed }) => [
               styles.settingsButton,
@@ -84,17 +90,17 @@ export function GameHUD({ onOpenNavigation }: { onOpenNavigation?: () => void })
 
         <View style={styles.resources}>
           <ResourceChip
-            glyph="◈"
+            glyph={resourcePalette.currency.glyph}
             value={inventory.currency}
-            color={colors.gold}
-            label="通貨"
+            color={resourcePalette.currency.color}
+            label={resourcePalette.currency.label}
             highlight
           />
           <ResourceChip
-            glyph="✦"
+            glyph={resourcePalette.stardust.glyph}
             value={itemInventory['stardust'] ?? 0}
-            color={colors.accent}
-            label="星屑"
+            color={resourcePalette.stardust.color}
+            label={resourcePalette.stardust.label}
           />
           <ResourceChip
             glyph={MATERIAL_META.shard_sun.glyph}
@@ -168,12 +174,13 @@ function ResourceChip({
 }) {
   return (
     <View
+      accessible
+      accessibilityLabel={`${label} ${value}`}
       style={[
         styles.resource,
         highlight ? styles.resourceHighlight : null,
         highlight ? { borderColor: withAlpha(colors.gold, 0.55) } : null,
       ]}
-      accessibilityLabel={`${label} ${value}`}
     >
       <View style={[styles.resourceGlyphBox, { backgroundColor: withAlpha(color, 0.14) }]}>
         <Text style={[styles.resourceGlyph, { color }]}>{glyph}</Text>
@@ -203,7 +210,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    minHeight: 38,
+    minHeight: control.minTouch,
   },
   brand: {
     flexDirection: 'row',
@@ -212,8 +219,8 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   brandMark: {
-    width: 30,
-    height: 30,
+    width: 32,
+    height: 32,
     borderRadius: radius.sm,
     backgroundColor: colors.primary,
     overflow: 'hidden',
@@ -221,20 +228,20 @@ const styles = StyleSheet.create({
   brandWord: {
     color: colors.text,
     fontSize: fontSize.md,
-    fontWeight: '900',
+    fontWeight: fontWeight.bold,
     letterSpacing: 0.2,
     lineHeight: 16,
   },
   brandSub: {
     color: colors.primary,
     fontSize: 7,
-    fontWeight: '900',
+    fontWeight: fontWeight.bold,
     letterSpacing: 1.4,
   },
   settingsButton: {
     marginLeft: 'auto',
-    width: 34,
-    height: 34,
+    width: control.minTouch,
+    height: control.minTouch,
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
@@ -243,8 +250,8 @@ const styles = StyleSheet.create({
     borderColor: colors.borderStrong,
   },
   menuButton: {
-    width: 34,
-    height: 34,
+    width: control.minTouch,
+    height: control.minTouch,
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
@@ -254,18 +261,20 @@ const styles = StyleSheet.create({
   },
   menuGlyph: {
     color: colors.primaryDark,
-    fontSize: 16,
-    fontWeight: '900',
-    lineHeight: 19,
+    fontSize: 18,
+    fontWeight: fontWeight.bold,
+    lineHeight: 22,
+    includeFontPadding: false,
   },
   settingsButtonPressed: {
     opacity: 0.7,
   },
   settingsGlyph: {
     color: colors.primaryDark,
-    fontSize: 17,
-    fontWeight: '900',
-    lineHeight: 20,
+    fontSize: 19,
+    fontWeight: fontWeight.bold,
+    lineHeight: 22,
+    includeFontPadding: false,
   },
   resources: {
     flexDirection: 'row',

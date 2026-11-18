@@ -16,15 +16,17 @@ import { visibleNavigationItems } from '@tasmate/core';
 import { MOBILE_NAV_META, type MobileNavItemMeta } from '../features/navigation/navItems';
 import { useMobileAppStore } from '../stores/appStore';
 import {
+  control,
   colors,
   fontSize,
+  fontWeight,
   radius,
   shadows,
   spacing,
   withAlpha,
 } from '../theme/tokens';
 
-const DOCKED_WIDTH = 248;
+const DOCKED_WIDTH = control.sidebarWidth;
 const MIN_OVERLAY_WIDTH = 264;
 const MAX_OVERLAY_WIDTH = 340;
 
@@ -68,6 +70,8 @@ function SidebarContent({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="メニューを閉じる"
+            hitSlop={8}
+            android_ripple={{ color: colors.primarySoft, borderless: true }}
             onPress={onClose}
             style={({ pressed }) => [styles.closeButton, pressed ? styles.pressed : null]}
           >
@@ -91,9 +95,10 @@ function SidebarContent({
           return (
             <Pressable
               key={item.id}
-              accessibilityRole="button"
+              accessibilityRole="link"
               accessibilityLabel={`${item.label}（${item.dish}）`}
               accessibilityState={{ selected: active }}
+              android_ripple={{ color: withAlpha(colors.primary, 0.16) }}
               onPress={() => onNavigate(item.href)}
               style={({ pressed }) => [
                 styles.item,
@@ -131,6 +136,7 @@ function SidebarContent({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="サイドバーの表示項目を編集"
+          android_ripple={{ color: colors.primarySoft }}
           onPress={onEdit}
           style={({ pressed }) => [styles.editButton, pressed ? styles.pressed : null]}
         >
@@ -326,18 +332,20 @@ const styles = StyleSheet.create({
   brandWord: {
     color: colors.text,
     fontSize: fontSize.lg,
-    fontWeight: '900',
+      fontWeight: fontWeight.bold,
+
     letterSpacing: 0.2,
   },
   brandSub: {
     color: colors.primary,
     fontSize: 8,
-    fontWeight: '900',
+      fontWeight: fontWeight.bold,
+
     letterSpacing: 1.1,
   },
   closeButton: {
-    width: 34,
-    height: 34,
+    width: control.minTouch,
+    height: control.minTouch,
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
@@ -347,10 +355,12 @@ const styles = StyleSheet.create({
   },
   closeGlyph: {
     color: colors.primaryDark,
-    fontSize: 19,
-    fontWeight: '900',
+    fontSize: 20,
+    fontWeight: fontWeight.bold,
     lineHeight: 22,
+    includeFontPadding: false,
   },
+
   sectionRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -367,7 +377,8 @@ const styles = StyleSheet.create({
   sectionLabel: {
     color: colors.primaryDark,
     fontSize: 10,
-    fontWeight: '900',
+      fontWeight: fontWeight.bold,
+
     letterSpacing: 1.2,
   },
   scroll: {
@@ -424,7 +435,8 @@ const styles = StyleSheet.create({
   glyph: {
     color: colors.navInactive,
     fontSize: fontSize.lg,
-    fontWeight: '900',
+      fontWeight: fontWeight.bold,
+
   },
   glyphActive: {
     color: colors.white,
@@ -436,7 +448,8 @@ const styles = StyleSheet.create({
   label: {
     color: colors.textMuted,
     fontSize: fontSize.md,
-    fontWeight: '900',
+      fontWeight: fontWeight.bold,
+
   },
   labelActive: {
     color: colors.primaryDark,
@@ -444,7 +457,7 @@ const styles = StyleSheet.create({
   dish: {
     color: colors.textSubtle,
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: fontWeight.bold,
   },
   dishActive: {
     color: colors.primary,
@@ -452,7 +465,8 @@ const styles = StyleSheet.create({
   chevron: {
     color: colors.textSubtle,
     fontSize: fontSize.lg,
-    fontWeight: '900',
+      fontWeight: fontWeight.bold,
+
   },
   chevronActive: {
     color: colors.primary,
@@ -464,7 +478,7 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
   },
   editButton: {
-    minHeight: 42,
+    minHeight: control.minTouch,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -477,17 +491,19 @@ const styles = StyleSheet.create({
   editGlyph: {
     color: colors.primaryDark,
     fontSize: fontSize.md,
-    fontWeight: '900',
+      fontWeight: fontWeight.bold,
+
   },
   editLabel: {
     color: colors.primaryDark,
     fontSize: fontSize.sm,
-    fontWeight: '900',
+      fontWeight: fontWeight.bold,
+
   },
   footerNote: {
     color: colors.textSubtle,
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: fontWeight.bold,
     lineHeight: 15,
     textAlign: 'center',
   },
