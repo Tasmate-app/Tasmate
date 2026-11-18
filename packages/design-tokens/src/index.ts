@@ -125,9 +125,17 @@ export function withAlpha(hex: string, opacity: number): string {
   return `${hex}${clamped.toString(16).padStart(2, '0')}`;
 }
 
+/**
+ * 余白スケール。
+ * xxs / tight / snug はバッジやチップなどのコントロール内部専用。
+ * ページ余白・セクション間隔などの構造リズムには xs〜xxl を使う。
+ */
 export const spacing = {
+  xxs: 2,
   xs: 4,
+  tight: 6,
   sm: 8,
+  snug: 10,
   md: 12,
   lg: 16,
   xl: 24,
@@ -164,7 +172,7 @@ export const fontWeight = {
 export const layout = {
   screenPadding: spacing.lg,
   hudMinHeight: 50,
-  hudHeight: 58,
+  hudHeight: 56,
   tabBarHeight: 64,
   tabBarPadding: 14,
   contentGap: spacing.md,
@@ -305,8 +313,11 @@ export const cssVariables: Record<string, string> = {
   '--attr-moon': attributePalette.moon.color,
   '--attr-star': attributePalette.star.color,
   '--attr-none': attributePalette.none.color,
+  '--space-xxs': `${spacing.xxs}px`,
   '--space-xs': `${spacing.xs}px`,
+  '--space-tight': `${spacing.tight}px`,
   '--space-sm': `${spacing.sm}px`,
+  '--space-snug': `${spacing.snug}px`,
   '--space-md': `${spacing.md}px`,
   '--space-lg': `${spacing.lg}px`,
   '--space-xl': `${spacing.xl}px`,

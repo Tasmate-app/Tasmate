@@ -55,8 +55,11 @@
   --attr-star: #f5659d;
   --attr-none: #94a3b8;
 
+  --space-xxs: 2px;
   --space-xs: 4px;
+  --space-tight: 6px;
   --space-sm: 8px;
+  --space-snug: 10px;
   --space-md: 12px;
   --space-lg: 16px;
   --space-xl: 24px;
@@ -105,6 +108,8 @@
   --font-label: 14px;
   --font-caption: 12px;
 
+  /* メディアクエリは CSS 変数を使えないため、値は design-tokens の
+     breakpoints（480 / 768 / 1024）と手動で一致させる。 */
   --breakpoint-compact: 480px;
   --breakpoint-drawer: 768px;
   --breakpoint-wide: 1024px;

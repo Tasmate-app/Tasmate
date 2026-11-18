@@ -359,7 +359,7 @@ h3 {
   background: var(--color-overlay);
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--anim-med) var(--ease-smooth);
+  transition: opacity var(--anim-base) var(--ease-smooth);
 }
 
 .game-sidebar__backdrop.is-visible {
@@ -382,8 +382,8 @@ h3 {
   transform: translateX(-102%);
   visibility: hidden;
   transition:
-    transform var(--anim-med) var(--ease-smooth),
-    visibility var(--anim-med) var(--ease-smooth);
+    transform var(--anim-base) var(--ease-smooth),
+    visibility var(--anim-base) var(--ease-smooth);
 }
 
 .game-sidebar.is-open {
