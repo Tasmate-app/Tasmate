@@ -46,6 +46,8 @@ import {
   activeSubCategories,
   findCategoryById,
   findSubCategoryById,
+  normalizeCategoryCrystalType,
+  sanitizeCategoryKeywords,
 } from './categories';
 import { computeSessionReward } from './rewardService';
 import { CHARACTER_DEFINITIONS } from './seed';
@@ -60,7 +62,7 @@ import { legacyInventoryFromItems } from './inventory/materialStorage';
 import { planCrystalSynthesis } from './inventory/crystalSynthesis';
 import { applyExperienceToCharacter, planLevelUp } from './progression/levelSystem';
 import { planAscension } from './progression/ascensionSystem';
-import { evaluateTaskWithFallback, rollTaskReward } from './rewards/rewardCalculator';
+import { evaluateTaskByKeywords, rollTaskReward } from './rewards/rewardCalculator';
 import { applyTaskRewardToState } from './rewards/rewardProcessor';
 import {
   createDefaultNavigationItems,
@@ -97,7 +99,22 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
+function normalizeCategoryMetadata(
+  metadata: CategoryMetadataInput | undefined,
+): Pick<Category, 'keywords' | 'defaultCrystalType'> {
+  const keywords = sanitizeCategoryKeywords(metadata?.keywords);
+  return {
+    keywords: keywords.length > 0 ? keywords : undefined,
+    defaultCrystalType: normalizeCategoryCrystalType(metadata?.defaultCrystalType),
+  };
+}
+
 const WEEKLY_USER_ID = 'local-user';
+
+export interface CategoryMetadataInput {
+  keywords?: readonly string[];
+  defaultCrystalType?: CrystalType;
+}
 
 export interface TaskInput {
   title: string;
@@ -255,7 +272,9 @@ export interface AppActions {
   ensureRecurringOccurrencesForWeek: (weekStart: string) => void;
 
   /** カテゴリーを追加する。空名・重複名は追加しない（戻り値は作成 ID、失敗時 ''） */
-  addCategory: (name: string) => string;
+  addCategory: (name: string, metadata?: CategoryMetadataInput) => string;
+  /** キーワードと既定の結晶タイプを更新する。未指定の項目は解除する */
+  updateCategoryMetadata: (id: string, metadata: CategoryMetadataInput) => void;
   renameCategory: (id: string, name: string) => void;
   /** 論理削除。配下のサブカテゴリーも選択肢から外す */
   deleteCategory: (id: string) => void;
@@ -575,6 +594,7 @@ type SettlementState = Pick<
   | 'stardustCarry'
   | 'weeklyProgress'
   | 'appliedRewardSessionIds'
+  | 'categories'
 >;
 
 /**
@@ -602,6 +622,11 @@ function settleSession(
     rewardMultiplier: currentWeeklyMultiplier(state),
   });
   const actualMinutes = billableMinutes(elapsed, BALANCE.minimumBillableSeconds);
+  const category =
+    task === undefined
+      ? undefined
+      : state.categories.find((item) => item.id === task.categoryId) ??
+        state.categories.find((item) => item.name === task.category);
   const alreadyRewarded = state.taskRewards.some((reward) => reward.taskId === session.taskId);
   const taskRewardResult = rollTaskReward({
     taskId: session.taskId,
@@ -611,7 +636,7 @@ function settleSession(
     actualMinutes,
     coins: record.finalReward.currency,
     completed: result === 'completed',
-    evaluation: evaluateTaskWithFallback({ task, actualMinutes }),
+    evaluation: evaluateTaskByKeywords({ task, actualMinutes, category }),
     targetCharacterId: session.assignedCharacterIds[0] ?? null,
     previousStardustCarry: state.stardustCarry,
     nowIso: endedAt,
@@ -942,7 +967,7 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
       };
     }),
 
-  addCategory: (name) => {
+  addCategory: (name, metadata) => {
     const trimmed = name.trim();
     if (trimmed === '') return '';
     let createdId = '';
@@ -961,12 +986,31 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
         order,
         createdAt: timestamp,
         updatedAt: timestamp,
+        ...normalizeCategoryMetadata(metadata),
       };
       createdId = category.id;
       return { categories: [...s.categories, category] };
     });
     return createdId;
   },
+
+  updateCategoryMetadata: (id, metadata) =>
+    set((s) => {
+      const current = s.categories.find((category) => category.id === id);
+      if (current === undefined) return s;
+      const timestamp = nowIso();
+      return {
+        categories: s.categories.map((category) =>
+          category.id === id
+            ? {
+                ...category,
+                ...normalizeCategoryMetadata(metadata),
+                updatedAt: timestamp,
+              }
+            : category,
+        ),
+      };
+    }),
 
   renameCategory: (id, name) =>
     set((s) => {

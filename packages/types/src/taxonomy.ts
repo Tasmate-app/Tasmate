@@ -4,6 +4,8 @@
  * 名称変更・削除後も履歴表示を壊さないようにする。
  */
 
+import type { CrystalType } from './inventory';
+
 /** ユーザーが管理するカテゴリー */
 export interface Category {
   id: string;
@@ -14,6 +16,10 @@ export interface Category {
   updatedAt: string;
   /** 論理削除日時。履歴表示には残すが、新規選択肢からは除外する */
   archivedAt?: string;
+  /** タスク内容に含まれると優先的に判定へ使うユーザー定義キーワード */
+  keywords?: string[];
+  /** キーワード一致時に付与する結晶タイプ。未設定時はカテゴリ名から推定する */
+  defaultCrystalType?: CrystalType;
 }
 
 /** カテゴリーに属するサブカテゴリー */

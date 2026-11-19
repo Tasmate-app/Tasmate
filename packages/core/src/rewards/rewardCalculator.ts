@@ -1,12 +1,13 @@
 import type {
   AIRewardEvaluation,
+  Category,
   ItemStack,
   Task,
   TaskAnalysisInput,
   TaskCompletionReward,
   TaskRewardRoll,
 } from '@tasmate/types';
-import { analyzeTaskFallback } from '@tasmate/ai-rewards';
+import { analyzeTaskByKeywords } from '@tasmate/ai-rewards';
 import { pickRarity } from './dropRateTable';
 import {
   decideDrop,
@@ -18,20 +19,25 @@ import { TASK_REWARD_CONFIG } from './rewardConfig';
 export interface BuildTaskAnalysisInputArgs {
   task: Task | undefined;
   actualMinutes: number;
+  /** タスクが属するカテゴリー。キーワードと既定タイプの判定に使う */
+  category?: Category;
 }
 
 export function buildTaskAnalysisInput({
   task,
   actualMinutes,
+  category,
 }: BuildTaskAnalysisInputArgs): TaskAnalysisInput {
   return {
     taskId: task?.id ?? 'unknown-task',
     title: task?.title ?? 'タスク',
     description: task?.description ?? '',
     category: task?.category ?? '',
-    subject: task?.subject,
+    subject: task?.subCategoryName ?? task?.subject,
     estimatedMinutes: Math.max(1, Math.floor(task?.estimatedMinutes ?? actualMinutes)),
     actualMinutes: Math.max(0, actualMinutes),
+    categoryKeywords: category?.keywords,
+    categoryDefaultType: category?.defaultCrystalType,
   };
 }
 
@@ -127,9 +133,14 @@ export function rollTaskReward(args: RollTaskRewardArgs): RollTaskRewardResult {
   };
 }
 
-/** 同期フォールバックで評価する。AIアダプター導入後も失敗時の共通経路として使う */
+/** キーワード判定で評価する。AIアダプター導入後も失敗時の共通経路として使う */
+export function evaluateTaskByKeywords(args: BuildTaskAnalysisInputArgs): AIRewardEvaluation {
+  return analyzeTaskByKeywords(buildTaskAnalysisInput(args));
+}
+
+/** 旧APIとの互換用 */
 export function evaluateTaskWithFallback(args: BuildTaskAnalysisInputArgs): AIRewardEvaluation {
-  return analyzeTaskFallback(buildTaskAnalysisInput(args));
+  return evaluateTaskByKeywords(args);
 }
 
 export function hasTaskRewardForTask(

@@ -7,6 +7,7 @@ import {
   createAppStore,
   initialAppState,
   normalizeAppState,
+  parseKeywordInput,
   resolveClassification,
 } from '@tasmate/core';
 
@@ -232,6 +233,74 @@ describe('カテゴリー管理アクション', () => {
     });
     store.getState().renameCategory('cat-default-work', '制作');
     expect(store.getState().tasks[0].category).toBe('制作');
+  });
+  it('カテゴリーのキーワードと既定結晶タイプを保存・更新できる', () => {
+    const store = createAppStore({ storage: null, initialState: initialAppState() });
+    const categoryId = store.getState().addCategory('読書', {
+      keywords: [' 技術書 ', '技術書', '論文'],
+      defaultCrystalType: 'knowledge_crystal',
+    });
+    const created = store.getState().categories.find((category) => category.id === categoryId);
+    expect(created?.keywords).toEqual(['技術書', '論文']);
+    expect(created?.defaultCrystalType).toBe('knowledge_crystal');
+
+    store.getState().updateCategoryMetadata(categoryId, { keywords: ['小説'] });
+    const updated = store.getState().categories.find((category) => category.id === categoryId);
+    expect(updated?.keywords).toEqual(['小説']);
+    expect(updated?.defaultCrystalType).toBeUndefined();
+  });
+
+  it('キーワード入力を正規化し、上限を超える入力を切り捨てる', () => {
+    expect(parseKeywordInput(' 技術書,、論文\n技術書 ')).toEqual(['技術書', '論文']);
+    const many = Array.from({ length: 30 }, (_, index) => `キーワード${index}`);
+    expect(parseKeywordInput(many.join(','))).toHaveLength(20);
+  });
+
+  it('既定カテゴリーには結晶タイプとキーワードが設定される', () => {
+    const state = initialAppState();
+    const study = state.categories.find((category) => category.id === 'cat-default-study');
+    expect(study?.defaultCrystalType).toBe('knowledge_crystal');
+    expect(study?.keywords).toContain('勉強');
+  });
+
+  it('保存データ読み込み時にカテゴリーのメタデータを保持する', () => {
+    const normalized = normalizeAppState(
+      legacyState({
+        categorySystemInitialized: true,
+        categories: [
+          {
+            id: 'cat-custom',
+            name: '読書',
+            order: 0,
+            createdAt: '2026-10-01T00:00:00.000Z',
+            updatedAt: '2026-10-01T00:00:00.000Z',
+            keywords: ['技術書', '技術書', '論文'],
+            defaultCrystalType: 'knowledge_crystal',
+          },
+        ],
+      }),
+      new Date(2026, 10, 9, 12),
+    );
+    expect(normalized.categories[0]?.keywords).toEqual(['技術書', '論文']);
+    expect(normalized.categories[0]?.defaultCrystalType).toBe('knowledge_crystal');
+  });
+
+  it('カテゴリー名変更・削除・取り消しでメタデータを保持する', () => {
+    const store = createAppStore({ storage: null, initialState: initialAppState() });
+    const categoryId = store.getState().addCategory('読書', {
+      keywords: ['技術書'],
+      defaultCrystalType: 'knowledge_crystal',
+    });
+    store.getState().renameCategory(categoryId, 'インプット');
+    expect(
+      store.getState().categories.find((category) => category.id === categoryId)?.keywords,
+    ).toEqual(['技術書']);
+
+    store.getState().deleteCategory(categoryId);
+    store.getState().undoLastDeletion();
+    const restored = store.getState().categories.find((category) => category.id === categoryId);
+    expect(restored?.keywords).toEqual(['技術書']);
+    expect(restored?.defaultCrystalType).toBe('knowledge_crystal');
   });
 });
 

@@ -147,8 +147,9 @@ Webでは起動時にCSS変数へ適用する。
   週の開始は月曜 00:00（ローカル時刻）、達成条件は80%以上。
 - 週間カレンダー・継続報酬の仕様は
   [`docs/06_weekly_calendar_and_streak.md`](docs/06_weekly_calendar_and_streak.md) を参照。
-- Supabase / AI API の接続は後続フェーズ。AI 報酬は `src/services/rewardService.ts` に
-  集約済みで、暫定ルール（`src/domain/`）がフォールバックとして残る設計。
+- Supabase / AI API の接続は後続フェーズ。現在の結晶タイプ判定は `packages/ai-rewards` の
+  キーワード判定（カテゴリのユーザーキーワード、組み込みキーワード、カテゴリ既定タイプ）を使い、
+  AI 接続後はその判定をフォールバックとして使う。
 
 ## 仮実装の一覧（仕様未確定のため固定しないこと）
 
@@ -157,6 +158,7 @@ Webでは起動時にCSS変数へ適用する。
 - 同時進行セッションは1件まで
 - キャラ初期所持2人、施設2種、素材3種（`src/data/seed.ts`）
 - 通貨初期値 100、中断時報酬係数 0.5、下限 60 秒未満は報酬なし
+- 結晶タイプのキーワード判定とカテゴリ初期キーワード（`packages/ai-rewards/src/keywordAnalyzer.ts`、`packages/core/src/categories.ts`）
 - 仕様確定後は `docs/` とテストを合わせて更新すること
 
 ## 設計資料

@@ -1,14 +1,77 @@
 import { useState, type FormEvent } from 'react';
-import type { Category, SubCategory } from '@tasmate/types';
+import type { Category, CrystalType, SubCategory } from '@tasmate/types';
 import {
   activeCategories,
   activeSubCategories,
+  CRYSTAL_TYPE_LABELS,
+  CRYSTAL_TYPES,
+  formatKeywordInput,
+  inferCategoryCrystalType,
+  parseKeywordInput,
   sortSubCategories,
 } from '@tasmate/core';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
-import { Field, TextInput } from '../../components/ui/Field';
+import { Field, SelectInput, TextArea, TextInput } from '../../components/ui/Field';
 import { useAppStore } from '../../stores/appStore';
+
+interface CategoryMetadataFieldsProps {
+  idPrefix: string;
+  crystalType: CrystalType | '';
+  keywords: string;
+  onCrystalTypeChange: (value: CrystalType | '') => void;
+  onKeywordsChange: (value: string) => void;
+}
+
+function CategoryMetadataFields({
+  idPrefix,
+  crystalType,
+  keywords,
+  onCrystalTypeChange,
+  onKeywordsChange,
+}: CategoryMetadataFieldsProps) {
+  return (
+    <>
+      <Field label="既定の結晶タイプ" htmlFor={`${idPrefix}-crystal-type`}>
+        <SelectInput
+          id={`${idPrefix}-crystal-type`}
+          value={crystalType}
+          onChange={(event) => onCrystalTypeChange(event.target.value as CrystalType | '')}
+        >
+          <option value="">自動（カテゴリ名から推定）</option>
+          {CRYSTAL_TYPES.map((type) => (
+            <option key={type} value={type}>
+              {CRYSTAL_TYPE_LABELS[type]}
+            </option>
+          ))}
+        </SelectInput>
+      </Field>
+      <Field label="キーワード（任意）" htmlFor={`${idPrefix}-keywords`}>
+        <TextArea
+          id={`${idPrefix}-keywords`}
+          value={keywords}
+          onChange={(event) => onKeywordsChange(event.target.value)}
+          placeholder="例：技術書、論文、単語"
+          maxLength={400}
+          aria-describedby={`${idPrefix}-keywords-help`}
+        />
+      </Field>
+      <p className="list-item__meta" id={`${idPrefix}-keywords-help`}>
+        カンマ・読点・改行区切りで入力します。タスク名や説明に含まれると、このカテゴリの既定タイプを優先します。
+      </p>
+    </>
+  );
+}
+
+function categoryTypeLabel(category: Category): string {
+  if (category.defaultCrystalType !== undefined) {
+    return CRYSTAL_TYPE_LABELS[category.defaultCrystalType];
+  }
+  const inferred = inferCategoryCrystalType(category.name);
+  return inferred === undefined
+    ? '自動（知識の結晶）'
+    : `自動（${CRYSTAL_TYPE_LABELS[inferred]}）`;
+}
 
 interface CategoryCardProps {
   category: Category;
@@ -18,6 +81,7 @@ interface CategoryCardProps {
 
 function CategoryCard({ category, categories, subCategories }: CategoryCardProps) {
   const renameCategory = useAppStore((s) => s.renameCategory);
+  const updateCategoryMetadata = useAppStore((s) => s.updateCategoryMetadata);
   const deleteCategory = useAppStore((s) => s.deleteCategory);
   const moveCategory = useAppStore((s) => s.moveCategory);
   const addSubCategory = useAppStore((s) => s.addSubCategory);
@@ -27,6 +91,10 @@ function CategoryCard({ category, categories, subCategories }: CategoryCardProps
 
   const [editingCategory, setEditingCategory] = useState(false);
   const [categoryDraft, setCategoryDraft] = useState(category.name);
+  const [crystalDraft, setCrystalDraft] = useState<CrystalType | ''>(
+    category.defaultCrystalType ?? '',
+  );
+  const [keywordsDraft, setKeywordsDraft] = useState(formatKeywordInput(category.keywords));
   const [confirmDeleteCategory, setConfirmDeleteCategory] = useState(false);
   const [newSubName, setNewSubName] = useState('');
   const [editingSubId, setEditingSubId] = useState<string | null>(null);
@@ -44,8 +112,12 @@ function CategoryCard({ category, categories, subCategories }: CategoryCardProps
   const saveCategoryName = () => {
     if (categoryDraft.trim() === '') return;
     renameCategory(category.id, categoryDraft);
+    updateCategoryMetadata(category.id, {
+      keywords: parseKeywordInput(keywordsDraft),
+      defaultCrystalType: crystalDraft === '' ? undefined : crystalDraft,
+    });
     setEditingCategory(false);
-    setMessage('カテゴリー名を変更しました。');
+    setMessage('カテゴリーを更新しました。');
   };
 
   const onAddSub = (event: FormEvent) => {
@@ -71,11 +143,20 @@ function CategoryCard({ category, categories, subCategories }: CategoryCardProps
       <div className="category-card__head">
         {editingCategory ? (
           <div className="category-card__edit">
-            <TextInput
-              value={categoryDraft}
-              onChange={(event) => setCategoryDraft(event.target.value)}
-              maxLength={40}
-              aria-label="カテゴリー名"
+            <Field label="カテゴリー名" htmlFor={`category-name-${category.id}`}>
+              <TextInput
+                id={`category-name-${category.id}`}
+                value={categoryDraft}
+                onChange={(event) => setCategoryDraft(event.target.value)}
+                maxLength={40}
+              />
+            </Field>
+            <CategoryMetadataFields
+              idPrefix={`category-edit-${category.id}`}
+              crystalType={crystalDraft}
+              keywords={keywordsDraft}
+              onCrystalTypeChange={setCrystalDraft}
+              onKeywordsChange={setKeywordsDraft}
             />
             <div className="category-actions">
               <button type="button" className="category-action" onClick={saveCategoryName}>
@@ -87,6 +168,8 @@ function CategoryCard({ category, categories, subCategories }: CategoryCardProps
                 onClick={() => {
                   setEditingCategory(false);
                   setCategoryDraft(category.name);
+                  setCrystalDraft(category.defaultCrystalType ?? '');
+                  setKeywordsDraft(formatKeywordInput(category.keywords));
                 }}
               >
                 取消
@@ -120,10 +203,12 @@ function CategoryCard({ category, categories, subCategories }: CategoryCardProps
                 className="category-action"
                 onClick={() => {
                   setCategoryDraft(category.name);
+                  setCrystalDraft(category.defaultCrystalType ?? '');
+                  setKeywordsDraft(formatKeywordInput(category.keywords));
                   setEditingCategory(true);
                 }}
               >
-                名前変更
+                編集
               </button>
               {confirmDeleteCategory ? (
                 <>
@@ -155,6 +240,18 @@ function CategoryCard({ category, categories, subCategories }: CategoryCardProps
           </>
         )}
       </div>
+
+      {!editingCategory && (
+        <div className="category-meta">
+          <span>結晶タイプ：{categoryTypeLabel(category)}</span>
+          <span>
+            キーワード：
+            {category.keywords !== undefined && category.keywords.length > 0
+              ? category.keywords.join('、')
+              : '未設定'}
+          </span>
+        </div>
+      )}
 
       {confirmDeleteCategory && (
         <p className="list-item__meta">
@@ -301,6 +398,8 @@ export function CategoriesPage() {
   const addCategory = useAppStore((s) => s.addCategory);
 
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryCrystalType, setNewCategoryCrystalType] = useState<CrystalType | ''>('');
+  const [newCategoryKeywords, setNewCategoryKeywords] = useState('');
   const [message, setMessage] = useState('');
 
   const active = activeCategories(categories);
@@ -308,12 +407,18 @@ export function CategoriesPage() {
 
   const onAddCategory = (event: FormEvent) => {
     event.preventDefault();
-    const id = addCategory(newCategoryName);
+    const id = addCategory(newCategoryName, {
+      keywords: parseKeywordInput(newCategoryKeywords),
+      defaultCrystalType:
+        newCategoryCrystalType === '' ? undefined : newCategoryCrystalType,
+    });
     if (id === '') {
       setMessage('同じ名前のカテゴリーがあるか、名前が空です。');
       return;
     }
     setNewCategoryName('');
+    setNewCategoryCrystalType('');
+    setNewCategoryKeywords('');
     setMessage('カテゴリーを追加しました。');
   };
 
@@ -336,6 +441,13 @@ export function CategoriesPage() {
                 maxLength={40}
               />
             </Field>
+            <CategoryMetadataFields
+              idPrefix="new-category"
+              crystalType={newCategoryCrystalType}
+              keywords={newCategoryKeywords}
+              onCrystalTypeChange={setNewCategoryCrystalType}
+              onKeywordsChange={setNewCategoryKeywords}
+            />
             <Button type="submit" disabled={newCategoryName.trim() === ''}>
               カテゴリーを追加
             </Button>

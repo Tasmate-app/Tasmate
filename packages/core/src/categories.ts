@@ -1,10 +1,61 @@
-import type { Category, RecurrenceRule, SubCategory, Task } from '@tasmate/types';
+import type { Category, CrystalType, RecurrenceRule, SubCategory, Task } from '@tasmate/types';
+import { CRYSTAL_TYPES } from './inventory/itemDefinitions';
 
 /**
  * カテゴリー／サブカテゴリーの初期データと移行ロジック。
  * 既存の「カテゴリ（名称）＋科目」を壊さず、ID を持つ階層構造へ移行する。
  * 日付・ID の生成は呼び出し側から渡し、このモジュールは純粋に保つ。
  */
+
+export const CATEGORY_KEYWORD_MAX_COUNT = 20;
+export const CATEGORY_KEYWORD_MAX_LENGTH = 24;
+
+const CRYSTAL_TYPE_SET: ReadonlySet<string> = new Set<string>(CRYSTAL_TYPES);
+
+function normalizeKeywordEntry(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.replace(/\s+/g, ' ').trim();
+  if (trimmed === '' || trimmed.length > CATEGORY_KEYWORD_MAX_LENGTH) return null;
+  return trimmed;
+}
+
+/** 入力文字列または配列から、保存可能なキーワード配列を作る */
+export function sanitizeCategoryKeywords(value: unknown): string[] {
+  const entries: unknown[] =
+    typeof value === 'string'
+      ? value.split(/[,\n、]/)
+      : Array.isArray(value)
+        ? value
+        : [];
+  const keywords: string[] = [];
+  const seen = new Set<string>();
+  for (const entry of entries) {
+    const keyword = normalizeKeywordEntry(entry);
+    if (keyword === null) continue;
+    const key = keyword.normalize('NFKC').toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    keywords.push(keyword);
+    if (keywords.length >= CATEGORY_KEYWORD_MAX_COUNT) break;
+  }
+  return keywords;
+}
+
+/** フォームのカンマ区切り文字列をキーワード配列へ変換する */
+export function parseKeywordInput(value: string): string[] {
+  return sanitizeCategoryKeywords(value);
+}
+
+/** キーワード配列をフォーム表示用の文字列へ変換する */
+export function formatKeywordInput(keywords: readonly string[] | undefined): string {
+  return (keywords ?? []).join('、');
+}
+
+export function normalizeCategoryCrystalType(value: unknown): CrystalType | undefined {
+  return typeof value === 'string' && CRYSTAL_TYPE_SET.has(value)
+    ? (value as CrystalType)
+    : undefined;
+}
 
 interface DefaultSubCategorySeed {
   id: string;
@@ -14,6 +65,8 @@ interface DefaultSubCategorySeed {
 interface DefaultCategorySeed {
   id: string;
   name: string;
+  defaultCrystalType: CrystalType;
+  keywords: readonly string[];
   subCategories: DefaultSubCategorySeed[];
 }
 
@@ -25,6 +78,8 @@ export const DEFAULT_CATEGORY_SEEDS: readonly DefaultCategorySeed[] = [
   {
     id: 'cat-default-study',
     name: '勉強',
+    defaultCrystalType: 'knowledge_crystal',
+    keywords: ['勉強', '学習', '暗記', '読書', '講義', '復習', '予習', '資格', '単語'],
     subCategories: [
       { id: 'sub-default-study-math', name: '数学' },
       { id: 'sub-default-study-english', name: '英語' },
@@ -35,6 +90,8 @@ export const DEFAULT_CATEGORY_SEEDS: readonly DefaultCategorySeed[] = [
   {
     id: 'cat-default-work',
     name: '作業',
+    defaultCrystalType: 'thought_crystal',
+    keywords: ['作業', 'プログラミング', 'コード', '設計', '開発', '分析'],
     subCategories: [
       { id: 'sub-default-work-programming', name: 'プログラミング' },
       { id: 'sub-default-work-illustration', name: 'イラスト' },
@@ -44,15 +101,30 @@ export const DEFAULT_CATEGORY_SEEDS: readonly DefaultCategorySeed[] = [
   {
     id: 'cat-default-exercise',
     name: '運動',
+    defaultCrystalType: 'effort_crystal',
+    keywords: ['運動', '筋トレ', 'ランニング', 'ストレッチ', 'トレーニング'],
     subCategories: [
       { id: 'sub-default-exercise-strength', name: '筋力トレーニング' },
       { id: 'sub-default-exercise-running', name: 'ランニング' },
       { id: 'sub-default-exercise-stretch', name: 'ストレッチ' },
     ],
   },
-  { id: 'cat-default-chores', name: '家事', subCategories: [] },
-  { id: 'cat-default-other', name: 'その他', subCategories: [] },
+  {
+    id: 'cat-default-chores',
+    name: '家事',
+    defaultCrystalType: 'effort_crystal',
+    keywords: ['家事', '掃除', '片付け', '洗濯', '料理'],
+    subCategories: [],
+  },
+  {
+    id: 'cat-default-other',
+    name: 'その他',
+    defaultCrystalType: 'knowledge_crystal',
+    keywords: [],
+    subCategories: [],
+  },
 ] as const;
+
 
 export function createDefaultCategories(nowIso: string): {
   categories: Category[];
@@ -67,6 +139,8 @@ export function createDefaultCategories(nowIso: string): {
       order: categoryIndex,
       createdAt: nowIso,
       updatedAt: nowIso,
+      defaultCrystalType: seed.defaultCrystalType,
+      keywords: seed.keywords.length > 0 ? [...seed.keywords] : undefined,
     });
     seed.subCategories.forEach((sub, subIndex) => {
       subCategories.push({
@@ -151,6 +225,8 @@ export function normalizeCategoryList(value: unknown): Category[] {
     }
     if (seen.has(id)) return;
     seen.add(id);
+    const keywords = sanitizeCategoryKeywords(entry['keywords']);
+    const defaultCrystalType = normalizeCategoryCrystalType(entry['defaultCrystalType']);
     categories.push({
       id,
       name: name.trim(),
@@ -158,6 +234,8 @@ export function normalizeCategoryList(value: unknown): Category[] {
       createdAt: typeof entry['createdAt'] === 'string' ? entry['createdAt'] : new Date(0).toISOString(),
       updatedAt: typeof entry['updatedAt'] === 'string' ? entry['updatedAt'] : new Date(0).toISOString(),
       archivedAt: typeof entry['archivedAt'] === 'string' ? entry['archivedAt'] : undefined,
+      keywords: keywords.length > 0 ? keywords : undefined,
+      defaultCrystalType,
     });
   });
   return sortCategories(categories);

@@ -12,8 +12,8 @@ export interface AIRewardEvaluation {
   difficulty: TaskDifficulty;
   confidence: number;
   reason: string;
-  /** ai = モデル推論、fallback = カテゴリ・キーワードによる代替判定 */
-  source: 'ai' | 'fallback';
+  /** ai = モデル推論、keyword = キーワード判定、fallback = 旧形式の代替判定 */
+  source: 'ai' | 'keyword' | 'fallback';
 }
 
 /** AI へ渡すタスク情報 */
@@ -25,6 +25,10 @@ export interface TaskAnalysisInput {
   subject?: string;
   estimatedMinutes: number;
   actualMinutes: number;
+  /** カテゴリーに設定されたユーザー定義キーワード */
+  categoryKeywords?: readonly string[];
+  /** カテゴリーに設定された既定の結晶タイプ。未設定時は名前から推定する */
+  categoryDefaultType?: CrystalType;
 }
 
 /** 抽選結果の保存用スナップショット */

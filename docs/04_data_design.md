@@ -49,6 +49,24 @@
 
 `timerMode` は予定時間の扱いだけを表し、予定日・時刻の有無とは独立している。stopwatch でも `scheduledDate` / `startTime` / `endTime` を保持でき、週間カレンダーや次のクエストに表示される。
 
+### Category / SubCategory
+
+タスクの分類。カテゴリはキーワード判定の設定を持つ。サブカテゴリは名前のみを持ち、キーワード設定は今回の対象外。
+
+| フィールド案 | 意味 |
+|---|---|
+| id | カテゴリ ID |
+| name | カテゴリ名 |
+| order | 表示順 |
+| archivedAt | 論理削除日時（任意） |
+| keywords | ユーザー設定キーワード（任意。最大20件、1件24文字） |
+| defaultCrystalType | 既定の結晶タイプ（任意） |
+| createdAt / updatedAt | 作成・更新日時 |
+
+`keywords` はカンマ・読点・改行区切りで入力し、NFKC正規化・小文字化・重複排除して保存する。`defaultCrystalType` が未設定の場合はカテゴリ名から推定し、推定できない場合は `knowledge_crystal` とする。どちらも任意項目のため、旧保存データは未設定として読み込み、状態の `version` は上げない。
+
+結晶タイプの判定優先順位は、ユーザーキーワード一致、組み込みキーワードのスコアリング、カテゴリ既定タイプ、`knowledge_crystal` の順とする。組み込みキーワードは一致数、最長一致長、定義順で決定する。サブカテゴリ名は判定材料に含めるが、サブカテゴリ側のキーワード設定は行わない。
+
 ### RecurrenceRule
 
 毎週の予定を生成するルール。
@@ -281,7 +299,8 @@
 
 ### 入力候補
 
-- タスク名・説明・カテゴリ
+- タスク名・説明・カテゴリ・サブカテゴリ
+- カテゴリのユーザーキーワードと既定結晶タイプ
 - 勉強科目（該当する場合）
 - 予定時間と実作業時間
 - 完了・中断などの結果
@@ -324,7 +343,7 @@
 | OwnedCharacter.ascensionStage | レベル上限解放の段階（0〜5） |
 | settings | アプリ設定（`lastBackupAt` / `tutorialCompletedAt` / `navigationItems` / `notifications`） |
 
-既存の `Inventory`（currency / shard_*）は互換維持のため残し、`itemInventory` の通貨・旧素材と同期する。旧保存データは `inventory` から `itemInventory` を補完する。`settings` がない旧データはバックアップ未実施・チュートリアル未完了・既定のサイドバー・通知初期値（有効、開始通知ON、未完了通知ON、既定時刻 09:00、猶予10分）を補完する。
+既存の `Inventory`（currency / shard_*）は互換維持のため残し、`itemInventory` の通貨・旧素材と同期する。旧保存データは `inventory` から `itemInventory` を補完する。`settings` がない旧データはバックアップ未実施・チュートリアル未完了・既定のサイドバー・通知初期値（有効、開始通知ON、未完了通知ON、既定時刻 09:00、猶予10分）を補完する。カテゴリの `keywords` / `defaultCrystalType` がない旧データは未設定として扱う。
 
 ## 6. ローカル保存とバックアップ
 
