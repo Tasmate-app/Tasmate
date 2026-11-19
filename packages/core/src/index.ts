@@ -11,6 +11,7 @@ export * from './session';
 export * from './categories';
 export * from './analytics';
 export * from './weekly';
+export * from './notifications';
 export * from './recurrence';
 export * from './seed';
 export * from './rewardService';

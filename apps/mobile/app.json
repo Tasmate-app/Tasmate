@@ -17,6 +17,9 @@
         "backgroundColor": "#0B5FE3",
         "foregroundImage": "./assets/android-icon-foreground.png"
       },
+      "permissions": [
+        "android.permission.SCHEDULE_EXACT_ALARM"
+      ],
       "predictiveBackGestureEnabled": false
     },
     "web": {
@@ -34,7 +37,15 @@
           }
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/android-icon-monochrome.png",
+          "color": "#0B5FE3",
+          "defaultChannel": "task-reminders"
+        }
+      ]
     ],
     "extra": {
       "router": {

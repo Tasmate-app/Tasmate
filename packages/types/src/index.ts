@@ -42,6 +42,20 @@ export interface MobileNavItemPreference {
   visible: boolean;
 }
 
+/** 予定クエストのローカル通知設定。Web 版では使用しない */
+export interface NotificationSettings {
+  /** 通知全体の有効・無効 */
+  enabled: boolean;
+  /** 予定時刻になったときの開始通知（#44） */
+  taskStartEnabled: boolean;
+  /** 開始時刻を過ぎても未完了のときの通知（#45） */
+  incompleteReminderEnabled: boolean;
+  /** 開始時刻が未設定の予定に使う既定時刻（ローカル HH:mm） */
+  defaultStartTime: string;
+  /** 未完了通知を送るまでの猶予（分） */
+  incompleteDelayMinutes: number;
+}
+
 /** アプリ全体のユーザー設定 */
 export interface AppSettings {
   /** 最後にバックアップを書き出した日時（ISO 8601）。未実施は null */
@@ -50,6 +64,8 @@ export interface AppSettings {
   tutorialCompletedAt: string | null;
   /** モバイル版サイドバーの表示項目。Web 版では使用しない */
   navigationItems: MobileNavItemPreference[];
+  /** モバイル版の予定クエスト通知。Web 版では使用しない */
+  notifications: NotificationSettings;
 }
 
 /** 報酬レコードの状態 */

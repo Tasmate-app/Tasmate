@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { createDefaultNavigationItems } from '@tasmate/core';
+import {
+  createDefaultNavigationItems,
+  createDefaultNotificationSettings,
+} from '@tasmate/core';
 import { toDateKey } from '../src/domain/weekly';
 import {
   isValidAppState,
@@ -214,6 +217,7 @@ describe('不足フィールドの補完', () => {
       lastBackupAt: null,
       tutorialCompletedAt: null,
       navigationItems: createDefaultNavigationItems(),
+      notifications: createDefaultNotificationSettings(),
     });
   });
 
@@ -225,6 +229,7 @@ describe('不足フィールドの補完', () => {
       lastBackupAt: null,
       tutorialCompletedAt: null,
       navigationItems: createDefaultNavigationItems(),
+      notifications: createDefaultNotificationSettings(),
     });
   });
 
@@ -249,5 +254,33 @@ describe('不足フィールドの補完', () => {
     expect(normalized.settings.tutorialCompletedAt).toBe(
       '2026-11-13T09:30:00.000Z',
     );
+  });
+
+  it('通知設定の欠落・不正値を初期値と範囲内の値に補完する', () => {
+    const missing = normalizeAppState(makeLegacy());
+    expect(missing.settings.notifications).toEqual(
+      createDefaultNotificationSettings(),
+    );
+
+    const normalized = normalizeAppState(
+      makeLegacy({
+        settings: {
+          notifications: {
+            enabled: false,
+            taskStartEnabled: false,
+            incompleteReminderEnabled: false,
+            defaultStartTime: '25:99',
+            incompleteDelayMinutes: 0,
+          },
+        },
+      }),
+    );
+    expect(normalized.settings.notifications).toEqual({
+      enabled: false,
+      taskStartEnabled: false,
+      incompleteReminderEnabled: false,
+      defaultStartTime: '09:00',
+      incompleteDelayMinutes: 1,
+    });
   });
 });

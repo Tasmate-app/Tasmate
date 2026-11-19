@@ -6,6 +6,7 @@ import {
   backupFileName,
   createBackup,
   createDefaultNavigationItems,
+  createDefaultNotificationSettings,
   initialAppState,
   parseBackup,
   serializeBackup,
@@ -49,6 +50,7 @@ function makeState(): AppState {
     lastBackupAt: '2026-01-01T00:00:00.000Z',
     tutorialCompletedAt: '2026-01-02T00:00:00.000Z',
     navigationItems: createDefaultNavigationItems(),
+    notifications: createDefaultNotificationSettings(),
   };
   return state;
 }

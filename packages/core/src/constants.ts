@@ -98,6 +98,26 @@ export const WEEKLY_RULES = {
   ],
 } as const;
 
+/**
+ * 予定クエスト通知の設定。
+ * 通知の予約数・猶予・識別子をここで一元管理し、UI や計算に直書きしない。
+ */
+export const NOTIFICATION_RULES = {
+  /** 開始時刻が未設定の予定に使う既定時刻（ローカル HH:mm） */
+  defaultStartTime: '09:00',
+  /** 未完了通知の猶予として設定できる下限・上限（分） */
+  minDelayMinutes: 1,
+  maxDelayMinutes: 1440,
+  /** 未完了通知の猶予の初期値（分） */
+  defaultDelayMinutes: 10,
+  /** OS に同時予約する通知の上限。近い順に採用する */
+  maxScheduledNotifications: 64,
+  /** このアプリが予約した通知だけを識別するための prefix */
+  identifierPrefix: 'tasmate:',
+  /** Android の通知チャンネル ID */
+  channelId: 'task-reminders',
+} as const;
+
 /** 素材の表示名 */
 export const MATERIAL_NAMES: Record<string, string> = {
   shard_sun: '太陽のかけら',

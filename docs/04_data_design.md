@@ -134,12 +134,24 @@
 
 ### AppSettings
 
-アプリ全体のユーザー設定。バックアップ状態と初回チュートリアルの完了状態を持つ。
+アプリ全体のユーザー設定。バックアップ状態、初回チュートリアルの完了状態、Native版の通知設定を持つ。
 
 | フィールド案 | 意味 |
 |---|---|
 | lastBackupAt | 最後にバックアップを書き出した日時（ISO 8601）。未実施は null |
 | tutorialCompletedAt | 初回チュートリアルを完了した日時（ISO 8601）。未完了は null |
+| navigationItems | Native版サイドバーの表示項目と並び順。Web版では使用しない |
+| notifications | Native版の予定クエスト通知設定。Web版では使用しない |
+
+`notifications` の内訳:
+
+| フィールド | 意味 |
+|---|---|
+| enabled | 通知全体の有効・無効。初期値は true |
+| taskStartEnabled | 開始予定時刻になったときの通知（#44） |
+| incompleteReminderEnabled | 開始時刻を過ぎても未完了のときの通知（#45） |
+| defaultStartTime | 開始時刻がない予定に使う既定時刻（ローカル HH:mm、初期値 09:00） |
+| incompleteDelayMinutes | 未完了通知までの猶予（分、初期値 10、1〜1440） |
 
 ### RewardRecord
 
@@ -310,9 +322,9 @@
 | taskRewards | タスク完了報酬の抽選結果（上限500件） |
 | stardustCarry | 星屑の端数（分） |
 | OwnedCharacter.ascensionStage | レベル上限解放の段階（0〜5） |
-| settings | アプリ設定（`lastBackupAt` / `tutorialCompletedAt`） |
+| settings | アプリ設定（`lastBackupAt` / `tutorialCompletedAt` / `navigationItems` / `notifications`） |
 
-既存の `Inventory`（currency / shard_*）は互換維持のため残し、`itemInventory` の通貨・旧素材と同期する。旧保存データは `inventory` から `itemInventory` を補完する。`settings` がない旧データは `{ lastBackupAt: null, tutorialCompletedAt: null }` を補完する。
+既存の `Inventory`（currency / shard_*）は互換維持のため残し、`itemInventory` の通貨・旧素材と同期する。旧保存データは `inventory` から `itemInventory` を補完する。`settings` がない旧データはバックアップ未実施・チュートリアル未完了・既定のサイドバー・通知初期値（有効、開始通知ON、未完了通知ON、既定時刻 09:00、猶予10分）を補完する。
 
 ## 6. ローカル保存とバックアップ
 

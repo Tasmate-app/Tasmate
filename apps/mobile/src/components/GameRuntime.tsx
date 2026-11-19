@@ -1,14 +1,24 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { AppState } from 'react-native';
+import { useRootNavigationState, useRouter } from 'expo-router';
 import { isRestDue, weekStartKey } from '@tasmate/core';
 import { useNow } from '../hooks/useNow';
 import { useMobileAppStore } from '../stores/appStore';
+import {
+  consumeInitialTaskNotificationResponse,
+  getNotificationPermissionInfo,
+  requestNotificationPermission,
+  subscribeToTaskNotificationResponses,
+  syncTaskNotifications,
+} from '../services/taskNotifications';
 
 export function GameRuntime() {
   useWeeklyEvaluationWatcher();
   useRestCompletionWatcher();
   useLongWorkWatcher();
   useBackgroundFlush();
+  useTaskNotificationSync();
+  useTaskNotificationRouting();
   return null;
 }
 
@@ -64,4 +74,68 @@ function useBackgroundFlush() {
     });
     return () => subscription.remove();
   }, []);
+}
+
+function useTaskNotificationSync() {
+  const tasks = useMobileAppStore((s) => s.tasks);
+  const settings = useMobileAppStore((s) => s.settings.notifications);
+  const initialPermissionChecked = useRef(false);
+
+  useEffect(() => {
+    if (initialPermissionChecked.current) return;
+    initialPermissionChecked.current = true;
+    const current = useMobileAppStore.getState().settings.notifications;
+    if (!current.enabled) return;
+    void (async () => {
+      const permission = await getNotificationPermissionInfo();
+      if (permission.status === 'undetermined' && permission.canAskAgain) {
+        await requestNotificationPermission();
+      }
+      const state = useMobileAppStore.getState();
+      await syncTaskNotifications({
+        tasks: state.tasks,
+        settings: state.settings.notifications,
+      });
+    })();
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      if (cancelled) return;
+      void syncTaskNotifications({ tasks, settings });
+    }, 300);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [tasks, settings]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (status) => {
+      if (status !== 'active') return;
+      const state = useMobileAppStore.getState();
+      void syncTaskNotifications({
+        tasks: state.tasks,
+        settings: state.settings.notifications,
+      });
+    });
+    return () => subscription.remove();
+  }, []);
+}
+
+function useTaskNotificationRouting() {
+  const router = useRouter();
+  const navigationState = useRootNavigationState();
+  const ready = navigationState?.key !== undefined;
+
+  useEffect(() => {
+    if (!ready) return;
+    if (consumeInitialTaskNotificationResponse() !== null) {
+      router.push('/');
+    }
+    return subscribeToTaskNotificationResponses(() => {
+      router.push('/');
+    });
+  }, [ready, router]);
 }

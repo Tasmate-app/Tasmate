@@ -1,7 +1,12 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest';
-import { initialAppState, serializeBackup, type AppState } from '@tasmate/core';
-import { createDefaultNavigationItems } from '@tasmate/core';
+import {
+  createDefaultNavigationItems,
+  createDefaultNotificationSettings,
+  initialAppState,
+  serializeBackup,
+  type AppState,
+} from '@tasmate/core';
 import { useAppStore } from '../src/stores/appStore';
 
 const NOW = new Date('2026-11-12T09:30:00.000Z');
@@ -35,6 +40,7 @@ describe('設定ストア', () => {
       lastBackupAt: '2026-01-01T00:00:00.000Z',
       tutorialCompletedAt: '2026-01-02T00:00:00.000Z',
       navigationItems: createDefaultNavigationItems(),
+      notifications: createDefaultNotificationSettings(),
     };
 
     const result = useAppStore
@@ -75,6 +81,7 @@ describe('設定ストア', () => {
       lastBackupAt: null,
       tutorialCompletedAt: null,
       navigationItems: customNavigation,
+      notifications: createDefaultNotificationSettings(),
     };
 
     const result = useAppStore
@@ -112,6 +119,7 @@ describe('設定ストア', () => {
         lastBackupAt: NOW.toISOString(),
         tutorialCompletedAt: NOW.toISOString(),
         navigationItems: createDefaultNavigationItems(),
+        notifications: createDefaultNotificationSettings(),
       },
     });
 
@@ -122,7 +130,34 @@ describe('設定ストア', () => {
       lastBackupAt: null,
       tutorialCompletedAt: null,
       navigationItems: createDefaultNavigationItems(),
+      notifications: createDefaultNotificationSettings(),
     });
+  });
+
+  it('通知設定を更新し、不正な時刻・猶予を補完する', () => {
+    const store = useAppStore.getState();
+
+    store.updateNotificationSettings({
+      enabled: false,
+      taskStartEnabled: false,
+      defaultStartTime: '07:30',
+      incompleteDelayMinutes: 20,
+    });
+    expect(useAppStore.getState().settings.notifications).toMatchObject({
+      enabled: false,
+      taskStartEnabled: false,
+      defaultStartTime: '07:30',
+      incompleteDelayMinutes: 20,
+    });
+
+    store.updateNotificationSettings({
+      defaultStartTime: '25:00',
+      incompleteDelayMinutes: 0,
+    });
+    expect(useAppStore.getState().settings.notifications.defaultStartTime).toBe(
+      '09:00',
+    );
+    expect(useAppStore.getState().settings.notifications.incompleteDelayMinutes).toBe(1);
   });
 
   it('サイドバー項目の表示切替と並べ替えを保存する', () => {
