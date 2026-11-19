@@ -40,8 +40,6 @@ import {
   withAlpha,
 } from '../theme/tokens';
 
-type ModelState = 'loading' | 'ready' | 'error';
-
 export function BaseScreen() {
   const router = useRouter();
   const characters = useMobileAppStore((s) => s.characters);
@@ -51,7 +49,6 @@ export function BaseScreen() {
 
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
   const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null);
-  const [modelState, setModelState] = useState<ModelState>('loading');
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const { height } = useWindowDimensions();
@@ -139,32 +136,11 @@ export function BaseScreen() {
             onSelectCharacter={selectCharacter}
             onSelectFacility={selectFacility}
             onClearSelection={clearSelection}
-            onModelReady={() => setModelState('ready')}
-            onModelError={() => setModelState('error')}
           />
           <View pointerEvents="none" style={styles.roomTop}>
             <View style={styles.roomTitleOverlay}>
               <Text style={styles.roomEyebrow}>SHARE HOUSE / HOME</Text>
               <Text style={styles.roomTitle}>みんなの拠点</Text>
-            </View>
-            <View style={styles.roomBadge}>
-              <View
-                style={[
-                  styles.roomDot,
-                  modelState === 'ready'
-                    ? styles.roomDotReady
-                    : modelState === 'error'
-                      ? styles.roomDotError
-                      : null,
-                ]}
-              />
-              <Text style={styles.roomBadgeText}>
-                {modelState === 'ready'
-                  ? '3D表示中'
-                  : modelState === 'error'
-                    ? '簡易表示'
-                    : '読み込み中'}
-              </Text>
             </View>
           </View>
           <View pointerEvents="none" style={styles.roomHint}>
@@ -591,7 +567,6 @@ const styles = StyleSheet.create({
     top: spacing.sm,
     flexDirection: 'row',
     alignItems: 'flex-start',
-    justifyContent: 'space-between',
     gap: spacing.sm,
   },
   roomTitleOverlay: {
@@ -613,35 +588,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: fontSize.md,
     fontWeight: '900',
-  },
-  roomBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: colors.surfaceGlassStrong,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    ...shadows.soft,
-  },
-  roomDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: colors.gold,
-  },
-  roomDotReady: {
-    backgroundColor: colors.success,
-  },
-  roomDotError: {
-    backgroundColor: colors.danger,
-  },
-  roomBadgeText: {
-    color: colors.textMuted,
-    fontSize: 9,
-    fontWeight: '800',
   },
   roomHint: {
     position: 'absolute',
