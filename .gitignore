@@ -24,5 +24,10 @@ Thumbs.db
 .env.local
 .env.*.local
 
+# 署名鍵（リポジトリ外で管理する）
+*.keystore
+*.jks
+*.p12
+
 # 一時ファイル
 *.tsbuildinfo
