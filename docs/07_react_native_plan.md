@@ -465,3 +465,12 @@ Web / Native とも次の9タブで統一する。
 - 分類管理はタブに含めず、履歴画面から `/categories` を開く。
 - Webの旧URL（`/sortie`, `/calendar`, `/companions`, `/storage`, `/house`）は正規URLへリダイレクトする。
 - 拠点は3D・住人・施設概要の閲覧に限定し、施設の強化・稼働切替は施設タブへ移す。
+
+## 14. CI/CD（2026-11-19）
+
+- CIは`.github/workflows/ci.yml`で、Pull Request・main push・手動実行時にWebのlint/typecheck/test/build/ライセンス差分とNativeの型チェック、Playwright E2Eを実行する。
+- リリースは`.github/workflows/release.yml`で、`vX.Y.Z`タグがmain上にある場合のみ実行する。
+- WebはCloudflare Pages（Direct Upload）へ`wrangler`でデプロイする。SPAの直リンクは`public/_redirects`でフォールバックする。
+- NativeはUbuntuランナー上で`expo prebuild`とローカルGradleを使い、全4ABIのrelease APKをビルドする。EAS Buildは使わない。
+- 署名は`apps/mobile/plugins/withAndroidReleaseSigning.js`が`android/app/build.gradle`へrelease署名設定を追加する。秘密情報は`TASMATE_UPLOAD_*`環境変数から読み、リポジトリへコミットしない。
+- `apps/mobile/android/`は引き続き生成物でありコミットしない。手順の詳細はREADMEのCI/CDを参照する。
