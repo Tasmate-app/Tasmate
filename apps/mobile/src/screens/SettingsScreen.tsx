@@ -7,6 +7,7 @@ import { backupFileName, serializeBackup } from '@tasmate/core';
 import { useMobileAppStore } from '../stores/appStore';
 import { pickBackupFile, shareBackupFile } from '../services/backupFile';
 import { SidebarSettingsPanel } from '../features/navigation/SidebarSettingsPanel';
+import { NotificationSettingsPanel } from '../features/notifications/NotificationSettingsPanel';
 import { TutorialSheet } from '../features/tutorial/TutorialSheet';
 import {
   FormField,
@@ -121,7 +122,7 @@ export function SettingsScreen() {
         <ScreenHeader
           eyebrow="SETTINGS / DATA"
           title="設定"
-          subtitle="サイドバーの表示とバックアップ・アプリ情報を管理します。データはこの端末内に保存されます。"
+          subtitle="通知・サイドバーの表示・バックアップ・アプリ情報を管理します。データはこの端末内に保存されます。"
           right={
             <GameButton
               label="戻る"
@@ -139,6 +140,8 @@ export function SettingsScreen() {
             </Text>
           </View>
         )}
+
+        <NotificationSettingsPanel />
 
         <SidebarSettingsPanel />
 
