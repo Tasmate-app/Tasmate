@@ -30,6 +30,10 @@ import {
 
 import { BALANCE } from './constants';
 import {
+  createDefaultNotificationSettings,
+  normalizeNotificationSettings,
+} from './notifications';
+import {
   createDefaultCategories,
   migrateCategorySystem,
   normalizeCategoryList,
@@ -130,6 +134,7 @@ export function initialAppState(): AppState {
       lastBackupAt: null,
       tutorialCompletedAt: null,
       navigationItems: createDefaultNavigationItems(),
+      notifications: createDefaultNotificationSettings(),
     },
   };
 }
@@ -442,6 +447,10 @@ export function isValidAppState(value: unknown): value is AppState {
     if (navigationItems !== undefined && !Array.isArray(navigationItems)) {
       return false;
     }
+    const notifications = value['settings']['notifications'];
+    if (notifications !== undefined && !isRecord(notifications)) {
+      return false;
+    }
   }
 
   return true;
@@ -573,6 +582,7 @@ function normalizeSettings(value: unknown): AppSettings {
       lastBackupAt: null,
       tutorialCompletedAt: null,
       navigationItems: createDefaultNavigationItems(),
+      notifications: createDefaultNotificationSettings(),
     };
   }
   const lastBackupAt = value['lastBackupAt'];
@@ -588,6 +598,7 @@ function normalizeSettings(value: unknown): AppSettings {
         ? tutorialCompletedAt
         : null,
     navigationItems: normalizeNavigationItems(value['navigationItems']),
+    notifications: normalizeNotificationSettings(value['notifications']),
   };
 }
 

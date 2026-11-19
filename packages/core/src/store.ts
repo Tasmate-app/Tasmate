@@ -32,6 +32,7 @@ import {
   supportMessage,
 } from './rest';
 import { initialAppState, toAppStateSnapshot, type AppState } from './appState';
+import { normalizeNotificationSettings } from './notifications';
 import { parseBackup, type BackupParseResult } from './backup';
 import {
   DEFAULT_SAVE_DEBOUNCE_MS,
@@ -72,6 +73,7 @@ import type {
   InterruptedQuest,
   ItemRarity,
   MobileNavItemId,
+  NotificationSettings,
   OwnedCharacter,
   RecurrenceRule,
   RestSession,
@@ -312,6 +314,8 @@ export interface AppActions {
   moveNavigationItem: (id: MobileNavItemId, direction: 'up' | 'down') => void;
   /** モバイル版サイドバーの並びを初期状態に戻す */
   resetNavigationItems: () => void;
+  /** 予定クエスト通知の設定を更新する */
+  updateNotificationSettings: (patch: Partial<NotificationSettings>) => void;
 
   /** 非同期ストレージから状態を復元する。復元済みなら何もしない */
   hydrate: () => Promise<void>;
@@ -1990,6 +1994,18 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
   resetNavigationItems: () => {
     set((s) => ({
       settings: { ...s.settings, navigationItems: createDefaultNavigationItems() },
+    }));
+  },
+
+  updateNotificationSettings: (patch) => {
+    set((s) => ({
+      settings: {
+        ...s.settings,
+        notifications: normalizeNotificationSettings({
+          ...s.settings.notifications,
+          ...patch,
+        }),
+      },
     }));
   },
 
