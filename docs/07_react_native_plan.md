@@ -390,7 +390,9 @@ LunaのGLB表示・タップ選択・カメラ操作・フレームレートは�
 - Expo Routerで画面遷移を構築。
 - タスク作成、タイマー、出撃、報酬、仲間、施設、カレンダーを実装。
 - Webの `location.state` 依存をパラメータ/ストアに置換。
-- 通知は別フェーズ（expo-notifications）。
+- 予定クエスト通知（開始時刻・未完了）を `expo-notifications` で実装済み。Webは対象外。
+  - Androidは通知チャンネルと `SCHEDULE_EXACT_ALARM` を使用し、正確なアラーム未許可時は近似時刻で通知する。
+  - `app.json` のネイティブ設定を変更しているため、実機確認にはAPK/開発ビルドの再作成が必要。
 
 ### Phase F: モバイル3D統合
 

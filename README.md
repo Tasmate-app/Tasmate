@@ -68,6 +68,7 @@ adb install -r apps/mobile/android/app/build/outputs/apk/release/app-release.apk
 - `release` は Expo テンプレートの debug キーで署名されるため、そのまま端末へ導入できる。
 - `debug` APK は Metro の起動が必要なため、単体確認には `release` を使う。
 - ネイティブ設定を変更した場合は `npm run prebuild:android -w tasmate-mobile -- --clean` で再生成する。
+- `expo-notifications` のプラグイン設定（通知アイコン・チャンネル・`SCHEDULE_EXACT_ALARM`）を含むため、通知機能の確認にはAPK/開発ビルドを再作成する。Expo Goでは設定の一部が反映されない。
 - `apps/mobile/android/` は生成物のためコミットしない。
 - 初回は Gradle・Android SDK・NDK のダウンロードで数 GB と時間がかかる。
 
@@ -102,8 +103,8 @@ Webでは起動時にCSS変数へ適用する。
 - `/shop` ショップ：施設強化の購入（家具・コスチュームは準備中）
 - `/storage` 倉庫：所持アイテム・報酬履歴の確認
 - `/synthesis` 合成：かけらと硬貨から結晶を作成
-- `/settings` 設定：サイドバーの表示項目・並び順、データのバックアップ書き出し・復元・
-  リセット、アプリ情報、OSSライセンス一覧への導線
+- `/settings` 設定：通知（開始時刻・未完了リマインダー）、サイドバーの表示項目・並び順、
+  データのバックアップ書き出し・復元・リセット、アプリ情報、OSSライセンス一覧への導線
 - `/settings/licenses` OSSライセンス：直接・間接依存のライブラリとライセンス全文
 - `/house` は `/` へリダイレクト（旧URL互換）
 
@@ -121,6 +122,9 @@ Webでは起動時にCSS変数へ適用する。
   進行中のタイマー・休憩を含めず、復元時は現在の状態を上書きして進行中セッションを解除する。
   ファイルは最大 5MB。Web はダウンロードとファイル選択、Native は共有シートとファイル選択を使う。
   最終バックアップ日時は `AppState.settings.lastBackupAt` に保存する。
+- Nativeの予定クエスト通知は端末内で予約・表示し、外部サーバーへ送信しない。設定は
+  `AppState.settings.notifications` に保存し、タスクの変更・完了・削除やアプリ復帰時に予約を同期する。
+  Android 13以降は通知権限、Android 12以降は正確なアラーム権限の許可が必要（未許可でも近似時刻で通知）。
 - 週次判定は未判定の過去週を古い順に処理し、`weekStart` 単位で冪等に記録する。
   週の開始は月曜 00:00（ローカル時刻）、達成条件は80%以上。
 - 週間カレンダー・継続報酬の仕様は
