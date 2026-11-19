@@ -123,15 +123,11 @@ jobs:
           java-version: 17
       - uses: android-actions/setup-android@v3
         with:
-          packages: ''
-
-      - name: Install Android SDK packages
-        run: |
-          sdkmanager --channel=3 \
-            "platforms;android-37" \
-            "build-tools;37.0.0" \
-            "ndk;27.1.12297006" \
-            "cmake;3.31.6"
+          packages: |
+            platforms;android-37.0
+            build-tools;37.0.0
+            ndk;27.1.12297006
+            cmake;3.31.6
       - uses: actions/cache@v4
         with:
           path: |
