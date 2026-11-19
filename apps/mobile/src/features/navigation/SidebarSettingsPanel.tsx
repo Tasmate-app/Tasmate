@@ -15,7 +15,7 @@ export function SidebarSettingsPanel() {
     <Panel
       title="サイドバー"
       eyebrow="NAVIGATION"
-      subtitle="表示する項目と並び順を変更できます。出撃は常に表示されます。"
+      subtitle="表示する項目と並び順を変更できます。ホームは常に表示されます。"
       tone="secondary"
     >
       <View style={styles.list}>

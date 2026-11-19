@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
 import { CHARACTER_DEFINITIONS } from '../../data/seed';
@@ -21,7 +21,7 @@ function getInitialSelectedId(state: unknown, definitionIds: string[]): string |
   return null;
 }
 
-/** 仲間（ゲーム内のキャラクター画面。一覧→詳細ステータス） */
+/** キャラクター画面。一覧から詳細ステータスを確認する。 */
 export function CompanionsPage() {
   const characters = useAppStore((s) => s.characters);
   const inventory = useAppStore((s) => s.inventory);
@@ -30,7 +30,7 @@ export function CompanionsPage() {
   const ascendCharacter = useAppStore((s) => s.ascendCharacter);
   const location = useLocation();
 
-  // 選択状態は画面内のみで管理し、永続化しない
+  // 選択状態はこの画面内の状態に留め、正規データとして扱わない。
   const [selectedId, setSelectedId] = useState<string | null>(() =>
     getInitialSelectedId(
       location.state,
@@ -48,17 +48,17 @@ export function CompanionsPage() {
       <div className="game-container companion">
         {owned === null ? (
           <>
-            <h1 className="companion-title">仲間</h1>
+            <h1 className="companion-title">キャラクター</h1>
             {characters.length === 0 ? (
-              <Card title="仲間がいません">
+              <Card title="キャラクターがいません">
                 <p className="list-item__meta">
-                  所持キャラクターがありません。出撃やホーム画面から仲間を増やしましょう。
+                  所持キャラクターがいません。育成やホーム画面からキャラクターを増やしましょう。
                 </p>
               </Card>
             ) : (
               <>
                 <p className="list-item__meta companion-lead">
-                  仲間を選ぶとステータス画面が開きます。
+                  キャラクターを選ぶとステータス画面が開きます。
                 </p>
                 <div className="companion-layout companion-layout--list">
                   <CharacterSelector
@@ -73,8 +73,12 @@ export function CompanionsPage() {
         ) : (
           <>
             <div className="game-screen__head">
-              <button type="button" className="btn btn--secondary" onClick={() => setSelectedId(null)}>
-                ← 仲間一覧に戻る
+              <button
+                type="button"
+                className="btn btn--secondary"
+                onClick={() => setSelectedId(null)}
+              >
+                ← キャラクター一覧に戻る
               </button>
             </div>
             <div className="companion-layout companion-layout--detail">

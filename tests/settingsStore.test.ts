@@ -68,10 +68,13 @@ describe('設定ストア', () => {
     const source = initialAppState();
     const customNavigation: AppState['settings']['navigationItems'] = [
       { id: 'character', visible: true },
-      { id: 'sortie', visible: true },
+      { id: 'home', visible: true },
       { id: 'history', visible: false },
+      { id: 'plan', visible: true },
       { id: 'base', visible: true },
+      { id: 'facilities', visible: true },
       { id: 'inventory', visible: true },
+      { id: 'shop', visible: true },
       { id: 'synthesis', visible: true },
     ];
     source.settings = {
@@ -167,17 +170,27 @@ describe('設定ストア', () => {
         .settings.navigationItems.find((item) => item.id === 'history')?.visible,
     ).toBe(false);
 
-    store.setNavigationItemVisible('sortie', false);
+    store.setNavigationItemVisible('home', false);
     expect(
       useAppStore
         .getState()
-        .settings.navigationItems.find((item) => item.id === 'sortie')?.visible,
+        .settings.navigationItems.find((item) => item.id === 'home')?.visible,
     ).toBe(true);
 
     store.moveNavigationItem('inventory', 'up');
     expect(
       useAppStore.getState().settings.navigationItems.map((item) => item.id),
-    ).toEqual(['sortie', 'history', 'base', 'inventory', 'character', 'synthesis']);
+    ).toEqual([
+      'home',
+      'history',
+      'plan',
+      'base',
+      'character',
+      'inventory',
+      'facilities',
+      'shop',
+      'synthesis',
+    ]);
 
     store.resetNavigationItems();
     expect(useAppStore.getState().settings.navigationItems).toEqual(

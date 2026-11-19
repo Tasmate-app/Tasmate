@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import type { HistoryGranularity } from '@tasmate/types';
 import {
@@ -85,10 +85,22 @@ export function HistoryScreen() {
   const tasks = useMobileAppStore((s) => s.tasks);
   const categories = useMobileAppStore((s) => s.categories);
   const subCategories = useMobileAppStore((s) => s.subCategories);
+  const deleteSession = useMobileAppStore((s) => s.deleteSession);
 
   const [granularity, setGranularity] = useState<HistoryGranularity>('day');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [subCategoryFilter, setSubCategoryFilter] = useState('');
+
+  const handleDeleteSession = (sessionId: string, taskTitle: string) => {
+    Alert.alert(
+      '作業セッションを削除',
+      `「${taskTitle}」の作業履歴を削除しますか？\n削除直後は「元に戻す」から復元できます。`,
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        { text: '削除', style: 'destructive', onPress: () => deleteSession(sessionId) },
+      ],
+    );
+  };
 
   const entries = useMemo(
     () => buildHistoryEntries(sessionHistory, tasks, categories, subCategories),
@@ -304,10 +316,19 @@ export function HistoryScreen() {
                       {formatWorkDuration(entry.durationSeconds)}
                     </Text>
                   </View>
-                  <Badge
-                    label={entry.completed ? '完了' : '中断'}
-                    tone={entry.completed ? 'success' : 'warning'}
-                  />
+                  <View style={styles.entryActions}>
+                    <Badge
+                      label={entry.completed ? '完了' : '中断'}
+                      tone={entry.completed ? 'success' : 'warning'}
+                    />
+                    <GameButton
+                      label="削除"
+                      size="sm"
+                      variant="danger"
+                      accessibilityLabel={`${entry.taskTitle}の作業セッションを削除`}
+                      onPress={() => handleDeleteSession(entry.sessionId, entry.taskTitle)}
+                    />
+                  </View>
                 </View>
               ))}
             </View>
@@ -427,6 +448,10 @@ const styles = StyleSheet.create({
   entryBody: {
     flex: 1,
     gap: 1,
+  },
+  entryActions: {
+    alignItems: 'flex-end',
+    gap: spacing.xs,
   },
   entryTitle: {
     color: colors.text,

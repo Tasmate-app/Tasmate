@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import type { WorkSession } from '@tasmate/types';
 import { initialAppState } from '@tasmate/core';
 import { HistoryPage } from '../src/features/history/HistoryPage';
@@ -41,6 +42,14 @@ function makeSession({
   };
 }
 
+function renderHistoryPage() {
+  return render(
+    <MemoryRouter>
+      <HistoryPage />
+    </MemoryRouter>,
+  );
+}
+
 function categoryBreakdown(): HTMLElement {
   const heading = screen.getByRole('heading', { name: /^カテゴリー別/ });
   const card = heading.closest('section');
@@ -72,11 +81,14 @@ beforeEach(() => {
   });
 });
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 describe('HistoryPage のカテゴリー別期間', () => {
   it('日単位では表示期間外のカテゴリーを集計しない', () => {
-    render(<HistoryPage />);
+    renderHistoryPage();
 
     const breakdown = categoryBreakdown();
     expect(within(breakdown).queryByText('勉強')).not.toBeNull();
@@ -85,7 +97,7 @@ describe('HistoryPage のカテゴリー別期間', () => {
   });
 
   it('週単位に切り替えると期間内のカテゴリーが追加される', () => {
-    render(<HistoryPage />);
+    renderHistoryPage();
 
     fireEvent.click(screen.getByRole('button', { name: '週' }));
 
@@ -93,5 +105,37 @@ describe('HistoryPage のカテゴリー別期間', () => {
     const breakdown = categoryBreakdown();
     expect(within(breakdown).queryByText('勉強')).not.toBeNull();
     expect(within(breakdown).queryByText('作業')).not.toBeNull();
+  });
+});
+
+describe('HistoryPage の作業セッション削除', () => {
+  it('確認後に作業セッションを履歴から削除できる', () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    renderHistoryPage();
+
+    fireEvent.click(
+      screen.getByRole('button', { name: '今日の作業の作業セッションを削除' }),
+    );
+
+    expect(window.confirm).toHaveBeenCalled();
+    expect(useAppStore.getState().sessionHistory.some((session) => session.id === 'inside')).toBe(
+      false,
+    );
+    expect(useAppStore.getState().lastDeletion).toMatchObject({ kind: 'session' });
+    expect(screen.queryByText('今日の作業')).toBeNull();
+  });
+
+  it('確認をキャンセルした場合は削除しない', () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+    renderHistoryPage();
+
+    fireEvent.click(
+      screen.getByRole('button', { name: '今日の作業の作業セッションを削除' }),
+    );
+
+    expect(useAppStore.getState().sessionHistory.some((session) => session.id === 'inside')).toBe(
+      true,
+    );
+    expect(screen.queryByText('今日の作業')).not.toBeNull();
   });
 });

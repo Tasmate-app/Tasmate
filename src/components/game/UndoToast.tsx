@@ -9,6 +9,7 @@ const KIND_LABELS: Record<PendingDeletion['kind'], string> = {
   category: 'カテゴリー',
   subCategory: 'サブカテゴリー',
   recurrenceRule: '繰り返し',
+  session: '作業セッション',
 };
 
 /** 削除直後に「元に戻す」操作を提示する */

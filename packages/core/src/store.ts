@@ -220,6 +220,14 @@ export type PendingDeletion =
       label: string;
       rule: RecurrenceRule;
       deletedAt: string;
+    }
+  | {
+      kind: 'session';
+      id: string;
+      label: string;
+      session: WorkSession;
+      index: number;
+      deletedAt: string;
     };
 
 export interface AppActions {
@@ -274,6 +282,11 @@ export interface AppActions {
   /** 中断中のクエストを破棄し、タスクを予定に戻す。追加報酬は付与しない */
   discardInterruptedQuest: (id: string) => void;
   cancelSession: () => void;
+  /**
+   * 作業履歴から終了済みセッションを削除する。
+   * 確定済み報酬・タスク状態・週次評価は変更しない。
+   */
+  deleteSession: (id: string) => void;
 
   /** 休憩を開始する。時間は有効範囲に丸められる */
   startRest: (plannedMinutes: number, sourceSessionId?: string) => void;
@@ -308,7 +321,7 @@ export interface AppActions {
   /** 初回チュートリアルを完了した日時を記録する */
   markTutorialCompleted: (completedAt: string) => void;
 
-  /** モバイル版サイドバーの項目を表示・非表示にする。出撃は常に表示 */
+  /** モバイル版サイドバーの項目を表示・非表示にする。ホームは常に表示 */
   setNavigationItemVisible: (id: MobileNavItemId, visible: boolean) => void;
   /** モバイル版サイドバーの項目を1つ上または下へ移動する */
   moveNavigationItem: (id: MobileNavItemId, direction: 'up' | 'down') => void;
@@ -1395,6 +1408,15 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
             lastDeletion: null,
           };
         }
+        case 'session': {
+          if (s.sessionHistory.some((session) => session.id === pending.id)) {
+            return { lastDeletion: null };
+          }
+          const restored = [...s.sessionHistory];
+          const index = Math.min(Math.max(pending.index, 0), restored.length);
+          restored.splice(index, 0, pending.session);
+          return { sessionHistory: restored, lastDeletion: null };
+        }
       }
     }),
 
@@ -1657,6 +1679,24 @@ export function createAppStore(options: CreateAppStoreOptions = {}) {
       ),
     }));
   },
+
+  deleteSession: (id) =>
+    set((s) => {
+      const index = s.sessionHistory.findIndex((session) => session.id === id);
+      const session = index >= 0 ? s.sessionHistory[index] : undefined;
+      if (session === undefined || session.endedAt === undefined) return s;
+      return {
+        sessionHistory: s.sessionHistory.filter((item) => item.id !== id),
+        lastDeletion: {
+          kind: 'session' as const,
+          id,
+          label: session.taskTitleSnapshot ?? '作業セッション',
+          session,
+          index,
+          deletedAt: nowIso(),
+        },
+      };
+    }),
 
   startRest: (plannedMinutes, sourceSessionId) => {
     const { sessionHistory } = get();

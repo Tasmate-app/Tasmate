@@ -5,28 +5,61 @@ test.beforeEach(async ({ page }) => {
   await seedCompletedTutorial(page);
 });
 
+const NAV_ITEMS = [
+  { label: 'ホーム', path: '/' },
+  { label: '履歴', path: '/history' },
+  { label: '計画', path: '/plan' },
+  { label: '拠点', path: '/base' },
+  { label: 'キャラクター', path: '/character' },
+  { label: '施設', path: '/facilities' },
+  { label: 'かばん', path: '/inventory' },
+  { label: 'ショップ', path: '/shop' },
+  { label: '合成', path: '/synthesis' },
+] as const;
+
 /**
  * スモークテスト：ゲーム一体型UIの基本画面が表示できること。
  * タイマーの長時間待機は行わず、画面遷移と主要要素の存在を確認する。
  */
 test('ゲーム内ナビゲーションから全メニューへ遷移できる', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByLabel('3Dシェアハウス')).toBeVisible();
-  for (const name of ['出撃', '仲間', '施設', 'ショップ', '倉庫', '合成'] as const) {
-    await page.getByRole('link', { name, exact: true }).click();
-    await expect(page).toHaveURL(new RegExp(`/${name === '出撃' ? 'sortie' : name === '仲間' ? 'companions' : name === '施設' ? 'facilities' : name === 'ショップ' ? 'shop' : name === '倉庫' ? 'storage' : 'synthesis'}`));
+  await expect(page.getByRole('heading', { name: 'クエスト選択' })).toBeVisible();
+  for (const item of NAV_ITEMS) {
+    await page.getByRole('link', { name: item.label, exact: true }).click();
+    await expect(page).toHaveURL(new RegExp(`${item.path === '/' ? '/' : item.path}$`));
   }
 });
 
-test('出撃画面でクエスト選択と出撃準備が表示される', async ({ page }) => {
+test('拠点画面で3Dシェアハウスを表示できる', async ({ page }) => {
+  await page.goto('/base');
+  await expect(page.getByRole('heading', { name: '拠点' })).toBeVisible();
+  await expect(page.getByLabel('3Dシェアハウス')).toBeVisible();
+});
+
+test('旧URLから新しい画面へリダイレクトされる', async ({ page }) => {
   await page.goto('/sortie');
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole('heading', { name: 'クエスト選択' })).toBeVisible();
+
+  await page.goto('/companions');
+  await expect(page).toHaveURL(/\/character$/);
+
+  await page.goto('/storage');
+  await expect(page).toHaveURL(/\/inventory$/);
+
+  await page.goto('/calendar');
+  await expect(page).toHaveURL(/\/plan$/);
+});
+
+test('ホーム画面でクエスト選択と出撃準備が表示される', async ({ page }) => {
+  await page.goto('/');
   await expect(page.getByRole('heading', { name: 'クエスト選択' })).toBeVisible();
   await expect(page.getByRole('heading', { name: '出撃準備' })).toBeVisible();
   await expect(page.getByRole('button', { name: '新しいクエストを作成' })).toBeVisible();
 });
 
 test('クエストを作成できる', async ({ page }) => {
-  await page.goto('/sortie');
+  await page.goto('/');
   await page.getByRole('button', { name: '新しいクエストを作成' }).click();
   await page.getByLabel('クエスト名（必須）').fill('E2Eテストクエスト');
   await page.getByRole('button', { name: 'クエストを追加' }).click();
@@ -34,7 +67,7 @@ test('クエストを作成できる', async ({ page }) => {
 });
 
 test('ストップウォッチ形式のクエストを作成できる', async ({ page }) => {
-  await page.goto('/sortie');
+  await page.goto('/');
   await page.getByRole('button', { name: '新しいクエストを作成' }).click();
   await page.getByLabel('クエスト名（必須）').fill('ストップウォッチ予定テスト');
   await page.getByRole('button', { name: 'ストップウォッチ', exact: true }).click();
@@ -44,7 +77,7 @@ test('ストップウォッチ形式のクエストを作成できる', async ({
 });
 
 test('作成したクエストが再読み込み後も復元される', async ({ page }) => {
-  await page.goto('/sortie');
+  await page.goto('/');
   await page.getByRole('button', { name: '新しいクエストを作成' }).click();
   await page.getByLabel('クエスト名（必須）').fill('永続化テストクエスト');
   await page.getByRole('button', { name: 'クエストを追加' }).click();
@@ -57,7 +90,7 @@ test('作成したクエストが再読み込み後も復元される', async ({
 });
 
 test('作業完了後に休憩を提案し、設定した時間で休憩を開始できる', async ({ page }) => {
-  await page.goto('/sortie');
+  await page.goto('/');
   await page.getByRole('button', { name: '新しいクエストを作成' }).click();
   await page.getByLabel('クエスト名（必須）').fill('休憩テストクエスト');
   await page.getByRole('button', { name: 'クエストを追加' }).click();
@@ -70,16 +103,16 @@ test('作業完了後に休憩を提案し、設定した時間で休憩を開�
   await expect(page.getByLabel('休憩中')).toBeVisible();
 });
 
-test('仲間一覧から詳細を開いて戻れる', async ({ page }) => {
-  await page.goto('/companions');
-  await expect(page.getByRole('heading', { name: '仲間' })).toBeVisible();
+test('キャラクター一覧から詳細を開いて戻れる', async ({ page }) => {
+  await page.goto('/character');
+  await expect(page.getByRole('heading', { name: 'キャラクター' })).toBeVisible();
   await expect(page.getByRole('group', { name: 'キャラクター選択' })).toBeVisible();
   await page.getByRole('button', { name: /ルナ/ }).click();
   await expect(page.getByRole('region', { name: 'ルナの表示' })).toBeVisible();
   await expect(page.getByRole('region', { name: 'ルナのステータス' })).toBeVisible();
   await expect(page.getByRole('button', { name: /レベルアップ/ })).toBeDisabled();
   await expect(page.getByText('素材が足りません。')).toBeVisible();
-  await page.getByRole('button', { name: '← 仲間一覧に戻る' }).click();
+  await page.getByRole('button', { name: '← キャラクター一覧に戻る' }).click();
   await expect(page.getByRole('group', { name: 'キャラクター選択' })).toBeVisible();
   // 狭い画面でもページ全体に横スクロールが発生しないこと
   await page.setViewportSize({ width: 375, height: 800 });
@@ -101,12 +134,12 @@ test('施設一覧から詳細を開いて戻れる', async ({ page }) => {
   await expect(page.getByRole('heading', { name: '施設' })).toBeVisible();
 });
 
-test('ショップと倉庫が表示される', async ({ page }) => {
+test('ショップとかばんが表示される', async ({ page }) => {
   await page.goto('/shop');
   await expect(page.getByRole('heading', { name: 'ショップ' })).toBeVisible();
   await expect(page.getByRole('button', { name: /強化/ }).first()).toBeVisible();
-  await page.goto('/storage');
-  await expect(page.getByRole('heading', { name: '倉庫' })).toBeVisible();
+  await page.goto('/inventory');
+  await expect(page.getByRole('heading', { name: 'かばん' })).toBeVisible();
   await expect(page.getByRole('heading', { name: '報酬履歴' })).toBeVisible();
 });
 
@@ -123,7 +156,7 @@ test('合成画面で結晶の種類とレシピを確認できる', async ({ pa
 });
 
 test('週間カレンダーで予定と繰り返しを作成できる', async ({ page }) => {
-  await page.goto('/calendar');
+  await page.goto('/plan');
   await expect(page.getByRole('heading', { name: '週間カレンダー' })).toBeVisible();
   await expect(page.getByRole('heading', { name: '直近の記録' })).toBeVisible();
 
@@ -137,10 +170,14 @@ test('週間カレンダーで予定と繰り返しを作成できる', async ({
   const repeatDialog = page.getByRole('dialog', { name: '予定を追加' });
   await repeatDialog.getByLabel('予定名（必須）').fill('毎朝の復習');
   await repeatDialog.getByLabel('毎週くり返す').check();
+  await repeatDialog.getByRole('button', { name: 'すべて' }).click();
   await repeatDialog.getByRole('button', { name: '予定を追加' }).click();
   await expect(page.getByRole('heading', { name: '繰り返し予定' })).toBeVisible();
   await expect(page.getByText('毎朝の復習', { exact: true }).first()).toBeVisible();
   const recurrencePanel = page.getByRole('region', { name: '繰り返し予定' });
+  await expect(
+    recurrencePanel.getByText('月・火・水・木・金・土・日', { exact: false }),
+  ).toBeVisible();
   const notClipped = await recurrencePanel.evaluate(
     (element) => element.scrollHeight <= element.clientHeight + 1,
   );
@@ -149,7 +186,7 @@ test('週間カレンダーで予定と繰り返しを作成できる', async ({
 
 test('週間カレンダーは狭い画面で横スクロールしない', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 800 });
-  await page.goto('/calendar');
+  await page.goto('/plan');
   await expect(page.getByRole('heading', { name: '週間カレンダー' })).toBeVisible();
   const noOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth <= window.innerWidth,

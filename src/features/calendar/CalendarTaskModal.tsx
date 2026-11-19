@@ -18,6 +18,8 @@ const TIMER_MODE_OPTIONS: ReadonlyArray<{ value: TimerMode; label: string }> = [
   { value: 'stopwatch', label: 'ストップウォッチ' },
 ];
 
+const ALL_WEEKDAYS = WEEKDAY_LABELS.map((_, index) => index + 1);
+
 interface CalendarTaskModalProps {
   open: boolean;
   initialDate: string;
@@ -97,6 +99,14 @@ export function CalendarTaskModal({ open, initialDate, task, onClose }: Calendar
   const toggleDay = (day: number) => {
     setDaysOfWeek((previous) =>
       previous.includes(day) ? previous.filter((value) => value !== day) : [...previous, day].sort(),
+    );
+  };
+
+  const allDaysSelected = daysOfWeek.length === ALL_WEEKDAYS.length;
+
+  const toggleAllDays = () => {
+    setDaysOfWeek((previous) =>
+      previous.length === ALL_WEEKDAYS.length ? [] : [...ALL_WEEKDAYS],
     );
   };
 
@@ -297,6 +307,15 @@ export function CalendarTaskModal({ open, initialDate, task, onClose }: Calendar
                 <div className="field">
                   <span className="field__label">繰り返す曜日</span>
                   <div className="weekday-picker" role="group" aria-label="繰り返す曜日">
+                    <button
+                      type="button"
+                      className={`weekday-pill weekday-pill--all${allDaysSelected ? ' is-selected' : ''}`}
+                      aria-pressed={allDaysSelected}
+                      title={allDaysSelected ? '全曜日の選択を解除' : '全曜日を選択'}
+                      onClick={toggleAllDays}
+                    >
+                      すべて
+                    </button>
                     {WEEKDAY_LABELS.map((label, index) => {
                       const day = index + 1;
                       const selected = daysOfWeek.includes(day);

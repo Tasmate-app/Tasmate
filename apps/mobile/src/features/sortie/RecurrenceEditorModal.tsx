@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { RecurrenceRule } from '@tasmate/types';
 import {
   WEEKDAY_LABELS,
@@ -12,7 +12,7 @@ import {
 import { useMobileAppStore } from '../../stores/appStore';
 import { ChipGroup, FormField, GameButton, GameTextInput, ModalSheet } from '../../ui';
 import { CategoryPicker, type CategorySelection } from '../taxonomy/CategoryPicker';
-import { colors, fontSize, spacing } from '../../theme/tokens';
+import { colors, fontSize, radius, spacing } from '../../theme/tokens';
 
 interface RecurrenceEditorModalProps {
   open: boolean;
@@ -24,6 +24,8 @@ const DAY_OPTIONS = WEEKDAY_LABELS.map((label, index) => ({
   value: String(index + 1),
   label,
 }));
+
+const ALL_DAY_VALUES = DAY_OPTIONS.map((option) => option.value);
 
 export function RecurrenceEditorModal({ open, rule, onClose }: RecurrenceEditorModalProps) {
   const createRecurrenceRule = useMobileAppStore((s) => s.createRecurrenceRule);
@@ -69,6 +71,14 @@ export function RecurrenceEditorModal({ open, rule, onClose }: RecurrenceEditorM
       current.includes(value)
         ? current.filter((day) => day !== value)
         : [...current, value].sort((a, b) => Number(a) - Number(b)),
+    );
+  };
+
+  const allDaysSelected = days.length === ALL_DAY_VALUES.length;
+
+  const toggleAllDays = () => {
+    setDays((current) =>
+      current.length === ALL_DAY_VALUES.length ? [] : [...ALL_DAY_VALUES],
     );
   };
 
@@ -201,7 +211,28 @@ export function RecurrenceEditorModal({ open, rule, onClose }: RecurrenceEditorM
       </FormField>
 
       <FormField label="繰り返す曜日">
-        <ChipGroup options={DAY_OPTIONS} selected={days} onToggle={toggleDay} multi />
+        <View style={styles.dayPicker}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={
+              allDaysSelected ? 'すべての曜日の選択を解除' : 'すべての曜日を選択'
+            }
+            accessibilityState={{ selected: allDaysSelected }}
+            onPress={toggleAllDays}
+            style={({ pressed }) => [
+              styles.allDaysChip,
+              allDaysSelected ? styles.allDaysChipSelected : null,
+              pressed ? styles.pressed : null,
+            ]}
+          >
+            <Text
+              style={[styles.allDaysLabel, allDaysSelected ? styles.allDaysLabelSelected : null]}
+            >
+              すべて
+            </Text>
+          </Pressable>
+          <ChipGroup options={DAY_OPTIONS} selected={days} onToggle={toggleDay} multi />
+        </View>
       </FormField>
 
       <View style={styles.timeRow}>
@@ -265,6 +296,35 @@ export function RecurrenceEditorModal({ open, rule, onClose }: RecurrenceEditorM
 }
 
 const styles = StyleSheet.create({
+  dayPicker: {
+    gap: spacing.sm,
+  },
+  allDaysChip: {
+    alignSelf: 'flex-start',
+    minHeight: 40,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceMuted,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 7,
+  },
+  allDaysChipSelected: {
+    backgroundColor: colors.primarySoft,
+    borderColor: colors.primary,
+    borderBottomWidth: 2,
+  },
+  allDaysLabel: {
+    color: colors.textMuted,
+    fontSize: fontSize.sm,
+    fontWeight: '800',
+  },
+  allDaysLabelSelected: {
+    color: colors.primaryDark,
+  },
+  pressed: {
+    opacity: 0.75,
+  },
   timeRow: {
     flexDirection: 'row',
     gap: spacing.sm,
