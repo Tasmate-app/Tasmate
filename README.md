@@ -5,7 +5,7 @@
 
 ## 必要環境
 
-- Node.js 20 以上（推奨 22）
+- Node.js 20.12 以上（推奨 22）
 - npm 10 以上
 
 Windows では PowerShell が基本シェル。`npm.ps1` の実行が制限される環境では
@@ -65,12 +65,33 @@ npm run apk:release -w tasmate-mobile
 adb install -r apps/mobile/android/app/build/outputs/apk/release/app-release.apk
 ```
 
-- `release` は Expo テンプレートの debug キーで署名されるため、そのまま端末へ導入できる。
+- `apk:release` は `.env` の署名情報が必須。未設定時は debug 署名へフォールバックせずエラーで停止する。
 - `debug` APK は Metro の起動が必要なため、単体確認には `release` を使う。
 - ネイティブ設定を変更した場合は `npm run prebuild:android -w tasmate-mobile -- --clean` で再生成する。
 - `expo-notifications` のプラグイン設定（通知アイコン・チャンネル・`SCHEDULE_EXACT_ALARM`）を含むため、通知機能の確認にはAPK/開発ビルドを再作成する。Expo Goでは設定の一部が反映されない。
 - `apps/mobile/android/` は生成物のためコミットしない。
 - 初回は Gradle・Android SDK・NDK のダウンロードで数 GB と時間がかかる。
+
+### リリース署名でビルドする場合
+
+リポジトリ直下の `.env`（Git 管理対象外）に署名情報を設定する。`.env.example` をコピーして値を埋める。
+
+```dotenv
+TASMATE_UPLOAD_STORE_FILE=C:/path/to/tasmate-release.keystore
+TASMATE_UPLOAD_STORE_PASSWORD=...
+TASMATE_UPLOAD_KEY_ALIAS=tasmate
+TASMATE_UPLOAD_KEY_PASSWORD=...
+```
+
+```powershell
+npm run apk:release -w tasmate-mobile
+```
+
+`npm run apk:release -w tasmate-mobile` は `.env` と `.env.local` を読み込み、release 署名で APK をビルドする。シェルで設定した環境変数は `.env` より優先される。4つの値が不足している場合や keystore が見つからない場合はエラーで停止する。署名なしの debug APK は `npm run apk:debug -w tasmate-mobile` を使う。
+
+`TASMATE_UPLOAD_STORE_FILE` は絶対パス、またはリポジトリ直下からの相対パスで指定する。Windows のパスは `C:/...` のようにスラッシュ区切りにすると確実。
+
+署名設定は `apps/mobile/plugins/withAndroidReleaseSigning.js` が prebuild 時に `android/app/build.gradle` へ反映する。`.env` はコミットしない。
 
 ## テスト・検証
 
@@ -82,6 +103,80 @@ npm run build      # 型チェック + 本番ビルド
 npx playwright install chromium  # E2E 初回のみ
 npm run e2e        # Playwright スモークテスト（dev サーバーを自動起動）
 ```
+
+## CI/CD
+
+### CI
+
+`.github/workflows/ci.yml` は Pull Request、main への push、手動実行で次を確認する。
+
+- `npm run lint`
+- `npm run typecheck`
+- `npm run test`
+- `npm run build`
+- `npm run typecheck -w tasmate-mobile`
+- `npm run licenses:generate` 後の生成物差分
+- Playwright E2E（Chromium）
+
+main の Branch protection では `CI / web` と `CI / e2e` を必須チェックにする。
+
+### リリース
+
+`vX.Y.Z` 形式のタグを main 上のコミットに付けて push すると `.github/workflows/release.yml` が実行される。
+
+1. version を更新する
+   - ルート `package.json`
+   - `apps/mobile/package.json`
+   - `apps/mobile/app.json` の `expo.version`
+   - `apps/mobile/app.json` の `expo.android.versionCode`（リリースごとに増加）
+2. main へマージし、CI の成功を確認する
+3. タグを作成して push する
+
+```powershell
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+Release workflow は次を行う。
+
+- タグが `vX.Y.Z` 形式で main 上にあり、3つの version がタグと一致することを検証
+- Web をビルドして Cloudflare Pages へ本番デプロイ
+- Android の release APK をローカル Gradle でビルド（全4ABI）
+- APK を GitHub Release（prerelease）へ `tasmate-vX.Y.Z.apk` として添付
+
+失敗時は Actions の `Release` を `workflow_dispatch` で同じタグを指定して再実行できる。タグの付け替えは行わない。
+
+### Cloudflare Pages の準備
+
+1. Cloudflare Pages で Direct Upload のプロジェクトを作成する（例: `tasmate-web`）。production branch は `main` にする。
+2. API トークンを作成する（Account → Cloudflare Pages → Edit）。
+3. GitHub の Settings → Secrets and variables → Actions に登録する。
+
+| 種別 | 名前 | 値 |
+| --- | --- | --- |
+| Secret | `CLOUDFLARE_API_TOKEN` | Pages:Edit の API トークン |
+| Variable | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare アカウントID |
+| Variable | `CLOUDFLARE_PAGES_PROJECT` | Pages プロジェクト名 |
+
+SPA の直リンクは `public/_redirects`（`/* /index.html 200`）で `index.html` にフォールバックする。
+
+### Android 署名の準備
+
+リポジトリ外で keystore を作成し、Base64 にして Secrets へ登録する。keystore とパスワードは失うと更新できなくなるため厳重にバックアップする。
+
+```powershell
+keytool -genkeypair -v -storetype PKCS12 -keystore "$env:USERPROFILE\tasmate-release.keystore" -alias tasmate -keyalg RSA -keysize 2048 -validity 10000
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("$env:USERPROFILE\tasmate-release.keystore")) | Set-Clipboard
+```
+
+| Secret | 内容 |
+| --- | --- |
+| `ANDROID_KEYSTORE_BASE64` | keystore の Base64 |
+| `ANDROID_KEYSTORE_PASSWORD` | keystore のパスワード |
+| `ANDROID_KEY_ALIAS` | キーエイリアス |
+| `ANDROID_KEY_PASSWORD` | キーのパスワード |
+
+CI は keystore を `$RUNNER_TEMP` に展開し、ビルド後に削除する。APK が debug 署名でないことを `apksigner` で検証する。
 
 ## 画面
 

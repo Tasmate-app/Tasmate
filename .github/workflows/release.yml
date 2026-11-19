@@ -1,0 +1,214 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to build and deploy (e.g. v0.1.0)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+          fetch-depth: 0
+      - name: Validate release tag
+        run: |
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Release tag must be vX.Y.Z (got: $RELEASE_TAG)"
+            exit 1
+          fi
+          git fetch origin main --no-tags
+          if ! git merge-base --is-ancestor HEAD origin/main; then
+            echo "::error::Release tag $RELEASE_TAG is not on main"
+            exit 1
+          fi
+      - name: Validate versions
+        env:
+          TAG_VERSION: ${{ env.RELEASE_TAG }}
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const expected = process.env.TAG_VERSION.replace(/^v/, '');
+          const read = (path) => JSON.parse(fs.readFileSync(path, 'utf8'));
+          const versions = {
+            'package.json': read('package.json').version,
+            'apps/mobile/package.json': read('apps/mobile/package.json').version,
+            'apps/mobile/app.json': read('apps/mobile/app.json').expo.version,
+          };
+          const mismatches = Object.entries(versions).filter(([, value]) => value !== expected);
+          if (mismatches.length > 0) {
+            for (const [path, value] of mismatches) {
+              console.error(`${path}: expected ${expected}, got ${value}`);
+            }
+            process.exit(1);
+          }
+          const versionCode = read('apps/mobile/app.json').expo.android?.versionCode;
+          if (!Number.isInteger(versionCode) || versionCode < 1) {
+            console.error('apps/mobile/app.json: expo.android.versionCode must be a positive integer');
+            process.exit(1);
+          }
+          NODE
+
+  web:
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Validate Cloudflare configuration
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_PAGES_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
+        run: |
+          for name in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_PAGES_PROJECT; do
+            if [ -z "${!name}" ]; then
+              echo "::error::$name is not set"
+              exit 1
+            fi
+          done
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=main --commit-dirty=true
+
+  android:
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      EXPO_NO_TELEMETRY: '1'
+      TASMATE_UPLOAD_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      TASMATE_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      TASMATE_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: |
+            platforms;android-37
+            build-tools;37.0.0
+            ndk;27.1.12297006
+            cmake;3.31.6
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('package-lock.json', 'apps/mobile/package.json', 'apps/mobile/app.json') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+      - run: npm ci
+      - name: Validate signing secrets
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "::error::$name is not set"
+              exit 1
+            fi
+          done
+      - name: Decode release keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          TASMATE_UPLOAD_STORE_FILE: ${{ runner.temp }}/tasmate-release.keystore
+        run: printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$TASMATE_UPLOAD_STORE_FILE"
+      - name: Prebuild Android project
+        run: npm run prebuild:android -w tasmate-mobile
+      - name: Configure Android SDK path
+        run: echo "sdk.dir=${ANDROID_HOME:-$ANDROID_SDK_ROOT}" > apps/mobile/android/local.properties
+      - name: Make Gradle wrapper executable
+        run: chmod +x apps/mobile/android/gradlew
+      - name: Build release APK
+        working-directory: apps/mobile/android
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+          GRADLE_OPTS: -Dorg.gradle.daemon=false
+          TASMATE_UPLOAD_STORE_FILE: ${{ runner.temp }}/tasmate-release.keystore
+        run: ./gradlew :app:assembleRelease --no-daemon --stacktrace
+      - name: Verify APK signing
+        run: |
+          APK="apps/mobile/android/app/build/outputs/apk/release/app-release.apk"
+          test -f "$APK"
+          APKSIGNER="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/37.0.0/apksigner"
+          "$APKSIGNER" verify --verbose --print-certs "$APK" | tee "$RUNNER_TEMP/apksigner.txt"
+          if grep -qi "Android Debug" "$RUNNER_TEMP/apksigner.txt"; then
+            echo "::error::APK is signed with the debug key"
+            exit 1
+          fi
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          retention-days: 7
+      - name: Remove release keystore
+        if: always()
+        env:
+          TASMATE_UPLOAD_STORE_FILE: ${{ runner.temp }}/tasmate-release.keystore
+        run: rm -f "$TASMATE_UPLOAD_STORE_FILE"
+
+  release:
+    needs: [web, android]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: android-apk
+          path: android-apk
+      - name: Rename APK
+        run: mv android-apk/app-release.apk "android-apk/tasmate-${RELEASE_TAG}.apk"
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: ${{ env.RELEASE_TAG }}
+          prerelease: true
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: android-apk/tasmate-${{ env.RELEASE_TAG }}.apk
