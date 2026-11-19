@@ -13,6 +13,7 @@ import {
   ScreenBackground,
   ScreenHeader,
   StatTile,
+  screenContent,
 } from '../ui';
 import { colors, fontSize, radius, shadows, spacing, withAlpha } from '../theme/tokens';
 
@@ -119,11 +120,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
   },
-  content: {
-    padding: spacing.lg,
-    gap: spacing.md,
-    paddingBottom: spacing.xxl,
-  },
+  content: screenContent,
   stats: {
     flexDirection: 'row',
     gap: spacing.xs,

@@ -4,8 +4,7 @@ import type { RecurrenceRule, Task } from '@tasmate/types';
 import { RecurrenceEditorModal } from '../features/sortie/RecurrenceEditorModal';
 import { TaskEditorModal } from '../features/sortie/TaskEditorModal';
 import { WeeklyPlannerSection } from '../features/sortie/WeeklyPlannerSection';
-import { ScreenBackground, ScreenHeader } from '../ui';
-import { spacing } from '../theme/tokens';
+import { ScreenBackground, ScreenHeader, screenContent } from '../ui';
 
 interface EditorState {
   task?: Task;
@@ -59,9 +58,5 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
   },
-  content: {
-    padding: spacing.lg,
-    gap: spacing.md,
-    paddingBottom: spacing.xxl,
-  },
+  content: screenContent,
 });

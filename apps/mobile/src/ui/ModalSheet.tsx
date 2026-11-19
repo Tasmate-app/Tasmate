@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, fontSize, radius, shadows, spacing } from '../theme/tokens';
+import { colors, control, fontSize, radius, shadows, spacing } from '../theme/tokens';
 
 interface ModalSheetProps {
   visible: boolean;
@@ -158,8 +158,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   close: {
-    width: 38,
-    height: 38,
+    width: control.minTouch,
+    height: control.minTouch,
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',

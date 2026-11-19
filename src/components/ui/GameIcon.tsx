@@ -1,15 +1,6 @@
-export type GameIconName =
-  | 'home'
-  | 'sortie'
-  | 'calendar'
-  | 'companions'
-  | 'facility'
-  | 'shop'
-  | 'storage'
-  | 'synthesis'
-  | 'history'
-  | 'categories'
-  | 'settings';
+import type { NavIconName } from '@tasmate/design-tokens';
+
+export type GameIconName = NavIconName;
 
 /** ゲームメニュー用のオリジナル線画アイコン（外部素材不使用） */
 export function GameIcon({ name }: { name: GameIconName }) {
@@ -95,8 +86,10 @@ export function GameIcon({ name }: { name: GameIconName }) {
       )}
       {name === 'settings' && (
         <>
-          <circle cx="10" cy="10" r="2.6" />
-          <path d="M10 2.4v2.3M10 15.3v2.3M2.4 10h2.3M15.3 10h2.3M4.6 4.6l1.6 1.6M13.8 13.8l1.6 1.6M15.4 4.6l-1.6 1.6M6.2 13.8l-1.6 1.6" />
+          <path d="M3 6h4M11 6h6M3 10h8M15 10h2M3 14h2M9 14h8" />
+          <circle cx="9" cy="6" r="1.8" />
+          <circle cx="13" cy="10" r="1.8" />
+          <circle cx="7" cy="14" r="1.8" />
         </>
       )}
     </svg>

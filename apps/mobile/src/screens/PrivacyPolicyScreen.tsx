@@ -2,7 +2,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PRIVACY_POLICY } from '@tasmate/core';
-import { GameButton, Panel, ScreenBackground, ScreenHeader } from '../ui';
+import { GameButton, Panel, ScreenBackground, ScreenHeader, screenContent } from '../ui';
 import { colors, fontSize, spacing } from '../theme/tokens';
 
 /** プライバシーポリシー画面。設定画面から遷移して全文を表示する */
@@ -76,10 +76,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingHorizontal: spacing.md,
+    ...screenContent,
     paddingTop: spacing.md,
-    paddingBottom: spacing.xxl,
-    gap: spacing.md,
   },
   section: {
     gap: spacing.sm,

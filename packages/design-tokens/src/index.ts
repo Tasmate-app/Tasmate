@@ -1,8 +1,12 @@
-import type { CharacterAttribute } from '@tasmate/types';
+import type {
+  CharacterAttribute,
+  ItemRarity,
+  TaskStatus,
+} from '@tasmate/types';
 
 /**
  * Tasmate 共通デザイントークン。
- * モバイル版の Blue Archive 風デザインを正とし、Web 版もこの値を使用する。
+ * モバイル版を正とし、Web 版もこの値を使用する。
  * 値はプラットフォーム非依存（色・余白・角丸・影・モーション）に保つ。
  */
 export const colors = {
@@ -67,14 +71,71 @@ export function attributeColor(attribute: CharacterAttribute | undefined): strin
   return attributePalette[attribute ?? 'none'].color;
 }
 
+/**
+ * カテゴリー色。ユーザーがカテゴリーを追加できるため、
+ * 固定名ではなく ID のハッシュでパレットを割り当てる。
+ */
+export const categoryPalette = [
+  '#0891b2',
+  '#4f46e5',
+  '#0f9f6e',
+  '#d97706',
+  '#7c3aed',
+  '#c026d3',
+  '#0284c7',
+  '#64748b',
+] as const;
+
+export function categoryColorFor(key: string): string {
+  let hash = 0;
+  for (let index = 0; index < key.length; index += 1) {
+    hash = (hash * 31 + key.charCodeAt(index)) >>> 0;
+  }
+  return categoryPalette[hash % categoryPalette.length];
+}
+
+export const rarityPalette: Record<ItemRarity, { color: string; soft: string; label: string }> = {
+  N: { color: '#64748b', soft: '#eef2f7', label: 'ノーマル' },
+  R: { color: '#0284c7', soft: '#e0f2fe', label: 'レア' },
+  SR: { color: '#7c3aed', soft: '#ede9fe', label: 'スーパーレア' },
+  SSR: { color: '#d97706', soft: '#fef3c7', label: 'スペシャル' },
+  UR: { color: '#e11d48', soft: '#ffe4e6', label: 'ウルトラレア' },
+};
+
+export const taskStatusPalette: Record<TaskStatus, { color: string; soft: string; label: string }> = {
+  planned: { color: '#587195', soft: '#eef4fa', label: '予定' },
+  active: { color: '#12a878', soft: '#d9f8ec', label: '進行中' },
+  interrupted: { color: '#c47a0a', soft: '#fff1d3', label: '中断中' },
+  completed: { color: '#1aa3df', soft: '#e8f9ff', label: '完了' },
+  cancelled: { color: '#e04669', soft: '#ffe4ea', label: '中止' },
+};
+
+export const resourcePalette = {
+  currency: { color: '#8a5600', soft: colors.goldSoft, glyph: '◈', label: '通貨' },
+  stardust: { color: colors.accent, soft: colors.accentSoft, glyph: '✦', label: '星屑' },
+  shard_sun: { color: attributePalette.sun.color, soft: colors.goldSoft, glyph: attributePalette.sun.glyph, label: '太陽' },
+  shard_moon: { color: attributePalette.moon.color, soft: colors.accentSoft, glyph: attributePalette.moon.glyph, label: '月' },
+  shard_star: { color: attributePalette.star.color, soft: colors.pinkSoft, glyph: attributePalette.star.glyph, label: '星' },
+} as const;
+
+export type ResourceId = keyof typeof resourcePalette;
+
 export function withAlpha(hex: string, opacity: number): string {
   const clamped = Math.round(Math.max(0, Math.min(1, opacity)) * 255);
   return `${hex}${clamped.toString(16).padStart(2, '0')}`;
 }
 
+/**
+ * 余白スケール。
+ * xxs / tight / snug はバッジやチップなどのコントロール内部専用。
+ * ページ余白・セクション間隔などの構造リズムには xs〜xxl を使う。
+ */
 export const spacing = {
+  xxs: 2,
   xs: 4,
+  tight: 6,
   sm: 8,
+  snug: 10,
   md: 12,
   lg: 16,
   xl: 24,
@@ -111,7 +172,7 @@ export const fontWeight = {
 export const layout = {
   screenPadding: spacing.lg,
   hudMinHeight: 50,
-  hudHeight: 58,
+  hudHeight: 56,
   tabBarHeight: 64,
   tabBarPadding: 14,
   contentGap: spacing.md,
@@ -123,6 +184,52 @@ export const motion = {
   base: 240,
   slow: 380,
 } as const;
+
+/**
+ * 画面幅の基準。
+ * Web は 768px 未満でドロワー、以上で常設サイドバーに切り替える。
+ */
+export const breakpoints = {
+  compact: 480,
+  drawer: 768,
+  wide: 1024,
+  maxContent: 1200,
+} as const;
+
+/** 共通コントロールの寸法。タッチ領域は 44px 以上を確保する */
+export const control = {
+  minTouch: 44,
+  fieldHeight: 48,
+  iconButton: 40,
+  hudHeight: 56,
+  sidebarWidth: 248,
+  navItemHeight: 48,
+} as const;
+
+/** Android の elevation と Web の shadow を対応させるための段階 */
+export const elevation = {
+  none: 0,
+  low: 2,
+  medium: 8,
+  high: 16,
+} as const;
+
+/**
+ * タイポグラフィの最小セット。
+ * Web の rem 直値と Native の px 直値をこの段階へ寄せる。
+ */
+export const typography = {
+  display: { fontSize: 32, lineHeight: 40, fontWeight: '700' },
+  title: { fontSize: 24, lineHeight: 32, fontWeight: '700' },
+  heading: { fontSize: 20, lineHeight: 28, fontWeight: '700' },
+  body: { fontSize: 16, lineHeight: 26, fontWeight: '400' },
+  bodySmall: { fontSize: 14, lineHeight: 22, fontWeight: '400' },
+  label: { fontSize: 14, lineHeight: 20, fontWeight: '600' },
+  caption: { fontSize: 12, lineHeight: 18, fontWeight: '600' },
+} as const;
+
+export type TypographyRole = keyof typeof typography;
+
 
 export const shadows = {
   card: {
@@ -206,8 +313,11 @@ export const cssVariables: Record<string, string> = {
   '--attr-moon': attributePalette.moon.color,
   '--attr-star': attributePalette.star.color,
   '--attr-none': attributePalette.none.color,
+  '--space-xxs': `${spacing.xxs}px`,
   '--space-xs': `${spacing.xs}px`,
+  '--space-tight': `${spacing.tight}px`,
   '--space-sm': `${spacing.sm}px`,
+  '--space-snug': `${spacing.snug}px`,
   '--space-md': `${spacing.md}px`,
   '--space-lg': `${spacing.lg}px`,
   '--space-xl': `${spacing.xl}px`,
@@ -235,4 +345,48 @@ export const cssVariables: Record<string, string> = {
   '--shadow-glow': shadows.glow.boxShadow,
   '--shadow-gold': shadows.gold.boxShadow,
   '--shadow-accent': shadows.accent.boxShadow,
+  '--font-weight-regular': fontWeight.regular,
+  '--font-weight-medium': fontWeight.medium,
+  '--font-weight-bold': fontWeight.bold,
+  '--font-weight-black': fontWeight.black,
+  '--line-height-display': `${typography.display.lineHeight}px`,
+  '--line-height-title': `${typography.title.lineHeight}px`,
+  '--line-height-heading': `${typography.heading.lineHeight}px`,
+  '--line-height-body': `${typography.body.lineHeight}px`,
+  '--line-height-body-small': `${typography.bodySmall.lineHeight}px`,
+  '--line-height-label': `${typography.label.lineHeight}px`,
+  '--line-height-caption': `${typography.caption.lineHeight}px`,
+  '--font-display': `${typography.display.fontSize}px`,
+  '--font-title': `${typography.title.fontSize}px`,
+  '--font-heading': `${typography.heading.fontSize}px`,
+  '--font-body': `${typography.body.fontSize}px`,
+  '--font-body-small': `${typography.bodySmall.fontSize}px`,
+  '--font-label': `${typography.label.fontSize}px`,
+  '--font-caption': `${typography.caption.fontSize}px`,
+  '--breakpoint-compact': `${breakpoints.compact}px`,
+  '--breakpoint-drawer': `${breakpoints.drawer}px`,
+  '--breakpoint-wide': `${breakpoints.wide}px`,
+  '--control-min-touch': `${control.minTouch}px`,
+  '--control-field-height': `${control.fieldHeight}px`,
+  '--control-icon-button': `${control.iconButton}px`,
+  '--hud-height': `${control.hudHeight}px`,
+  '--sidebar-width': `${control.sidebarWidth}px`,
+  '--nav-item-height': `${control.navItemHeight}px`,
+  '--cat-1': categoryPalette[0],
+  '--cat-2': categoryPalette[1],
+  '--cat-3': categoryPalette[2],
+  '--cat-4': categoryPalette[3],
+  '--cat-5': categoryPalette[4],
+  '--rarity-n': rarityPalette.N.color,
+  '--rarity-r': rarityPalette.R.color,
+  '--rarity-sr': rarityPalette.SR.color,
+  '--rarity-ssr': rarityPalette.SSR.color,
+  '--rarity-ur': rarityPalette.UR.color,
+  '--status-planned': taskStatusPalette.planned.color,
+  '--status-active': taskStatusPalette.active.color,
+  '--status-interrupted': taskStatusPalette.interrupted.color,
+  '--status-completed': taskStatusPalette.completed.color,
+  '--status-cancelled': taskStatusPalette.cancelled.color,
 };
+
+export * from './navigation';

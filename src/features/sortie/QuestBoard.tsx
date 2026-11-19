@@ -34,7 +34,7 @@ export function QuestBoard() {
   };
 
   return (
-    <div className="sortie-grid">
+    <div className="sortie-grid" id="quest-board">
       <Card title="クエスト選択">
         <div className="btn-row" style={{ marginTop: 0, marginBottom: 12 }}>
           <Button variant="secondary" onClick={() => setModalOpen(true)}>

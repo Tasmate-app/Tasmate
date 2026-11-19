@@ -1,4 +1,4 @@
-import { Component, Suspense, useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { Component, Suspense, useMemo, useRef, type ReactNode } from 'react';
 import { Canvas, useFrame, useLoader } from '@react-three/fiber/native';
 import { useIsFocused } from 'expo-router';
 import * as THREE from 'three';
@@ -50,8 +50,6 @@ interface RoomSceneProps {
   onSelectCharacter: (definitionId: string) => void;
   onSelectFacility: (definitionId: string) => void;
   onClearSelection: () => void;
-  onModelReady: () => void;
-  onModelError: () => void;
 }
 
 const CHARACTER_POSITIONS: Record<string, [number, number, number]> = {
@@ -71,8 +69,6 @@ export function RoomScene({
   onSelectCharacter,
   onSelectFacility,
   onClearSelection,
-  onModelReady,
-  onModelError,
 }: RoomSceneProps) {
   const isFocused = useIsFocused();
   const hasLuna = characters.some((character) => character.definitionId === 'c-luna');
@@ -128,13 +124,11 @@ export function RoomScene({
               onSelect={() => onSelectCharacter('c-luna')}
             />
           }
-          onError={onModelError}
         >
           <Suspense fallback={<LoadingCube />}>
             <LunaCharacter
               selected={selectedCharacterId === 'c-luna'}
               onSelect={() => onSelectCharacter('c-luna')}
-              onReady={onModelReady}
             />
           </Suspense>
         </ModelBoundary>
@@ -364,20 +358,14 @@ function PlaceholderCharacter({
 function LunaCharacter({
   selected,
   onSelect,
-  onReady,
 }: {
   selected: boolean;
   onSelect: () => void;
-  onReady: () => void;
 }) {
   const gltf = useLoader(GLTFLoader, lunaAsset as unknown as string);
   const model = useMemo(() => prepareLuna(gltf.scene), [gltf.scene]);
   const modelRef = useRef<THREE.Group>(null);
   const ringMaterialRef = useRef<THREE.MeshBasicMaterial>(null);
-
-  useEffect(() => {
-    onReady();
-  }, [onReady]);
 
   useFrame((state, delta) => {
     const time = state.clock.elapsedTime;
@@ -436,17 +424,13 @@ function prepareLuna(source: THREE.Group): THREE.Group {
 }
 
 class ModelBoundary extends Component<
-  { children: ReactNode; fallback: ReactNode; onError: () => void },
+  { children: ReactNode; fallback: ReactNode },
   { failed: boolean }
 > {
   state = { failed: false };
 
   static getDerivedStateFromError() {
     return { failed: true };
-  }
-
-  componentDidCatch() {
-    this.props.onError();
   }
 
   render() {

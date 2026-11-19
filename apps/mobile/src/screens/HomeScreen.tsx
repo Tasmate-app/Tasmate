@@ -30,6 +30,7 @@ import {
   QuestCard,
   ScreenBackground,
   ScreenHeader,
+  screenContent,
 } from '../ui';
 import {
   colors,
@@ -382,11 +383,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
   },
-  content: {
-    padding: spacing.lg,
-    gap: spacing.md,
-    paddingBottom: spacing.xxl,
-  },
+  content: screenContent,
   streakPill: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -14,7 +14,7 @@
     "android": {
       "package": "dev.tasmate.mobile",
       "adaptiveIcon": {
-        "backgroundColor": "#0B5FE3",
+        "backgroundColor": "#0B76A8",
         "foregroundImage": "./assets/android-icon-foreground.png"
       },
       "permissions": [

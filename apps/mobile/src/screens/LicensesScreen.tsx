@@ -9,6 +9,7 @@ import {
   Panel,
   ScreenBackground,
   ScreenHeader,
+  screenContent,
 } from '../ui';
 import { colors, fontSize, radius, shadows, spacing } from '../theme/tokens';
 
@@ -126,10 +127,7 @@ const styles = StyleSheet.create({
   list: {
     flex: 1,
   },
-  content: {
-    paddingHorizontal: spacing.md,
-    gap: spacing.sm,
-  },
+  content: screenContent,
   header: {
     gap: spacing.md,
     marginBottom: spacing.xs,

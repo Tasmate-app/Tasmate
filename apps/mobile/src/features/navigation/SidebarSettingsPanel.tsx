@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { PINNED_MOBILE_NAV_ITEM_ID } from '@tasmate/core';
 import { useMobileAppStore } from '../../stores/appStore';
 import { GameButton, Panel } from '../../ui';
-import { colors, fontSize, radius, spacing, withAlpha } from '../../theme/tokens';
+import { colors, control, fontSize, fontWeight, radius, spacing, withAlpha } from '../../theme/tokens';
 import { MOBILE_NAV_META } from './navItems';
 
 export function SidebarSettingsPanel() {
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   glyph: {
     color: colors.textSubtle,
     fontSize: fontSize.md,
-    fontWeight: '900',
+    fontWeight: fontWeight.bold,
   },
   glyphVisible: {
     color: colors.white,
@@ -188,12 +188,12 @@ const styles = StyleSheet.create({
   label: {
     color: colors.text,
     fontSize: fontSize.md,
-    fontWeight: '900',
+    fontWeight: fontWeight.bold,
   },
   dish: {
     color: colors.textSubtle,
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: fontWeight.bold,
   },
   actions: {
     flexDirection: 'row',
@@ -201,8 +201,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   moveButton: {
-    width: 28,
-    height: 28,
+    width: control.minTouch,
+    height: control.minTouch,
     borderRadius: radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
@@ -216,15 +216,15 @@ const styles = StyleSheet.create({
   },
   moveGlyph: {
     color: colors.primaryDark,
-    fontSize: 9,
-    fontWeight: '900',
+    fontSize: 10,
+    fontWeight: fontWeight.bold,
   },
   moveGlyphDisabled: {
     color: colors.textSubtle,
   },
   toggle: {
-    minWidth: 48,
-    height: 28,
+    minWidth: 56,
+    height: control.minTouch,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
@@ -240,8 +240,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   toggleText: {
-    fontSize: 10,
-    fontWeight: '900',
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
   },
   toggleTextOn: {
     color: colors.primaryDark,
@@ -250,8 +250,8 @@ const styles = StyleSheet.create({
     color: colors.textSubtle,
   },
   pinnedBadge: {
-    minWidth: 48,
-    height: 28,
+    minWidth: 56,
+    height: control.minTouch,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
@@ -262,8 +262,8 @@ const styles = StyleSheet.create({
   },
   pinnedText: {
     color: colors.warning,
-    fontSize: 10,
-    fontWeight: '900',
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
   },
   pressed: {
     opacity: 0.72,
