@@ -2,14 +2,20 @@ import { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import type { Category, SubCategory } from '@tasmate/types';
+import type { Category, CrystalType, SubCategory } from '@tasmate/types';
 import {
   activeCategories,
   activeSubCategories,
+  CRYSTAL_TYPE_LABELS,
+  CRYSTAL_TYPES,
+  formatKeywordInput,
+  inferCategoryCrystalType,
+  parseKeywordInput,
   sortSubCategories,
 } from '@tasmate/core';
 import { useMobileAppStore } from '../stores/appStore';
 import {
+  ChipGroup,
   GameButton,
   GameTextInput,
   FormField,
@@ -19,6 +25,61 @@ import {
 } from '../ui';
 import { colors, fontSize, radius, spacing } from '../theme/tokens';
 
+interface CategoryMetadataFieldsProps {
+  crystalType: CrystalType | '';
+  keywords: string;
+  onCrystalTypeChange: (value: CrystalType | '') => void;
+  onKeywordsChange: (value: string) => void;
+}
+
+function CategoryMetadataFields({
+  crystalType,
+  keywords,
+  onCrystalTypeChange,
+  onKeywordsChange,
+}: CategoryMetadataFieldsProps) {
+  return (
+    <>
+      <FormField label="既定の結晶タイプ">
+        <ChipGroup
+          options={[
+            { value: '', label: '自動' },
+            ...CRYSTAL_TYPES.map((type) => ({
+              value: type,
+              label: CRYSTAL_TYPE_LABELS[type],
+            })),
+          ]}
+          selected={[crystalType]}
+          onToggle={(value) => onCrystalTypeChange(value as CrystalType | '')}
+          accessibilityLabel="既定の結晶タイプ"
+        />
+      </FormField>
+      <FormField
+        label="キーワード（任意）"
+        hint="カンマ・読点・改行区切り。タスク名や説明に含まれると、このカテゴリの既定タイプを優先します。"
+      >
+        <GameTextInput
+          value={keywords}
+          onChangeText={onKeywordsChange}
+          placeholder="例：技術書、論文、単語"
+          maxLength={400}
+          multiline
+        />
+      </FormField>
+    </>
+  );
+}
+
+function categoryTypeLabel(category: Category): string {
+  if (category.defaultCrystalType !== undefined) {
+    return CRYSTAL_TYPE_LABELS[category.defaultCrystalType];
+  }
+  const inferred = inferCategoryCrystalType(category.name);
+  return inferred === undefined
+    ? '自動（知識の結晶）'
+    : `自動（${CRYSTAL_TYPE_LABELS[inferred]}）`;
+}
+
 interface CategoryPanelProps {
   category: Category;
   categories: Category[];
@@ -27,6 +88,7 @@ interface CategoryPanelProps {
 
 function CategoryPanel({ category, categories, subCategories }: CategoryPanelProps) {
   const renameCategory = useMobileAppStore((s) => s.renameCategory);
+  const updateCategoryMetadata = useMobileAppStore((s) => s.updateCategoryMetadata);
   const deleteCategory = useMobileAppStore((s) => s.deleteCategory);
   const moveCategory = useMobileAppStore((s) => s.moveCategory);
   const addSubCategory = useMobileAppStore((s) => s.addSubCategory);
@@ -36,6 +98,10 @@ function CategoryPanel({ category, categories, subCategories }: CategoryPanelPro
 
   const [editingCategory, setEditingCategory] = useState(false);
   const [categoryDraft, setCategoryDraft] = useState(category.name);
+  const [crystalDraft, setCrystalDraft] = useState<CrystalType | ''>(
+    category.defaultCrystalType ?? '',
+  );
+  const [keywordsDraft, setKeywordsDraft] = useState(formatKeywordInput(category.keywords));
   const [newSubName, setNewSubName] = useState('');
   const [editingSubId, setEditingSubId] = useState<string | null>(null);
   const [subDraft, setSubDraft] = useState('');
@@ -51,8 +117,12 @@ function CategoryPanel({ category, categories, subCategories }: CategoryPanelPro
   const saveCategoryName = () => {
     if (categoryDraft.trim() === '') return;
     renameCategory(category.id, categoryDraft);
+    updateCategoryMetadata(category.id, {
+      keywords: parseKeywordInput(keywordsDraft),
+      defaultCrystalType: crystalDraft === '' ? undefined : crystalDraft,
+    });
     setEditingCategory(false);
-    setFeedback('カテゴリー名を変更しました。');
+    setFeedback('カテゴリーを更新しました。');
   };
 
   const handleAddSub = () => {
@@ -132,6 +202,12 @@ function CategoryPanel({ category, categories, subCategories }: CategoryPanelPro
               maxLength={40}
             />
           </FormField>
+          <CategoryMetadataFields
+            crystalType={crystalDraft}
+            keywords={keywordsDraft}
+            onCrystalTypeChange={setCrystalDraft}
+            onKeywordsChange={setKeywordsDraft}
+          />
           <View style={styles.row}>
             <GameButton label="保存" size="sm" onPress={saveCategoryName} />
             <GameButton
@@ -141,6 +217,8 @@ function CategoryPanel({ category, categories, subCategories }: CategoryPanelPro
               onPress={() => {
                 setEditingCategory(false);
                 setCategoryDraft(category.name);
+                setCrystalDraft(category.defaultCrystalType ?? '');
+                setKeywordsDraft(formatKeywordInput(category.keywords));
               }}
             />
           </View>
@@ -148,11 +226,13 @@ function CategoryPanel({ category, categories, subCategories }: CategoryPanelPro
       ) : (
         <View style={styles.row}>
           <GameButton
-            label="名前変更"
+            label="編集"
             size="sm"
             variant="secondary"
             onPress={() => {
               setCategoryDraft(category.name);
+              setCrystalDraft(category.defaultCrystalType ?? '');
+              setKeywordsDraft(formatKeywordInput(category.keywords));
               setEditingCategory(true);
             }}
           />
@@ -162,6 +242,18 @@ function CategoryPanel({ category, categories, subCategories }: CategoryPanelPro
             variant="danger"
             onPress={confirmDeleteCategory}
           />
+        </View>
+      )}
+
+      {!editingCategory && (
+        <View style={styles.metaBlock}>
+          <Text style={styles.metaText}>結晶タイプ：{categoryTypeLabel(category)}</Text>
+          <Text style={styles.metaText}>
+            キーワード：
+            {category.keywords !== undefined && category.keywords.length > 0
+              ? category.keywords.join('、')
+              : '未設定'}
+          </Text>
         </View>
       )}
 
@@ -267,18 +359,26 @@ export function CategoriesScreen() {
   const addCategory = useMobileAppStore((s) => s.addCategory);
 
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryCrystalType, setNewCategoryCrystalType] = useState<CrystalType | ''>('');
+  const [newCategoryKeywords, setNewCategoryKeywords] = useState('');
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const active = activeCategories(categories);
   const archived = categories.filter((category) => category.archivedAt !== undefined);
 
   const handleAdd = () => {
-    const id = addCategory(newCategoryName);
+    const id = addCategory(newCategoryName, {
+      keywords: parseKeywordInput(newCategoryKeywords),
+      defaultCrystalType:
+        newCategoryCrystalType === '' ? undefined : newCategoryCrystalType,
+    });
     if (id === '') {
       setFeedback('同じ名前のカテゴリーがあるか、名前が空です。');
       return;
     }
     setNewCategoryName('');
+    setNewCategoryCrystalType('');
+    setNewCategoryKeywords('');
     setFeedback('カテゴリーを追加しました。');
   };
 
@@ -319,6 +419,12 @@ export function CategoriesScreen() {
               maxLength={40}
             />
           </FormField>
+          <CategoryMetadataFields
+            crystalType={newCategoryCrystalType}
+            keywords={newCategoryKeywords}
+            onCrystalTypeChange={setNewCategoryCrystalType}
+            onKeywordsChange={setNewCategoryKeywords}
+          />
           <GameButton
             label="カテゴリーを追加"
             disabled={newCategoryName.trim() === ''}
@@ -390,6 +496,16 @@ const styles = StyleSheet.create({
   editBlock: {
     gap: spacing.xs,
     flex: 1,
+  },
+  metaBlock: {
+    gap: 2,
+    marginTop: spacing.xs,
+  },
+  metaText: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontWeight: '700',
+    lineHeight: 17,
   },
   subList: {
     gap: spacing.xs,

@@ -4062,7 +4062,8 @@ h3 {
 
 .category-add-form {
   display: flex;
-  align-items: flex-end;
+  flex-direction: column;
+  align-items: stretch;
   gap: var(--space-md);
 }
 
@@ -4085,13 +4086,14 @@ h3 {
 
 .category-card__edit {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
   gap: var(--space-sm);
   flex: 1;
-  flex-wrap: wrap;
 }
 
-.category-card__edit input {
+.category-card__edit input,
+.category-card__edit select {
   font-family: inherit;
   font-size: 0.88rem;
   min-height: 38px;
@@ -4101,6 +4103,17 @@ h3 {
   background: var(--color-surface-muted);
   color: var(--color-text);
   flex: 1;
+}
+
+.category-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: var(--space-sm);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
 }
 
 .category-actions {

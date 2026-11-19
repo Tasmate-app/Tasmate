@@ -82,6 +82,46 @@ describe('タスク完了報酬', () => {
     expect(second.reward.materials).toEqual([]);
   });
 
+  it('カテゴリーのキーワードを結晶判定に使う', () => {
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0);
+    try {
+      const store = createAppStore({
+        initialState: { ...initialAppState(), tasks: [], activeSession: null },
+      });
+      const categoryId = store.getState().addCategory('読書', {
+        keywords: ['技術書'],
+        defaultCrystalType: 'knowledge_crystal',
+      });
+      const task: Task = {
+        ...TASK,
+        id: 'task-category-keyword',
+        title: '技術書を読む',
+        category: '読書',
+        categoryId,
+        subject: undefined,
+        subCategoryId: undefined,
+        subCategoryName: undefined,
+      };
+      store.setState({ tasks: [task] });
+
+      store.getState().startSession(task.id, 'd-hills', ['c-hinata']);
+      store.setState((state) => ({
+        activeSession:
+          state.activeSession === null
+            ? null
+            : { ...state.activeSession, accumulatedSeconds: 25 * 60 },
+      }));
+      store.getState().finishSession();
+
+      const reward = store.getState().taskRewards[0];
+      expect(reward?.aiEvaluation.materialType).toBe('knowledge_crystal');
+      expect(reward?.aiEvaluation.source).toBe('keyword');
+      expect(reward?.crystals[0]?.itemId).toBe('knowledge_crystal_N');
+    } finally {
+      random.mockRestore();
+    }
+  });
+
   it('ストアで報酬を一度だけ反映する', () => {
     const initial = {
       ...initialAppState(),

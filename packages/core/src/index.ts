@@ -9,6 +9,7 @@ export * from './facility';
 export * from './rest';
 export * from './session';
 export * from './categories';
+export { inferCategoryCrystalType } from '@tasmate/ai-rewards';
 export * from './analytics';
 export * from './weekly';
 export * from './notifications';

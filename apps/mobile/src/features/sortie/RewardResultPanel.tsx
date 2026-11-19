@@ -93,7 +93,7 @@ export function RewardResultPanel({ rewardId, onClose }: RewardResultPanelProps)
         </View>
         {taskReward !== undefined && (
           <Text style={styles.meta}>
-            判定: {taskReward.aiEvaluation.source === 'ai' ? 'AI' : '簡易判定'} ・ 難易度{' '}
+            判定: {taskReward.aiEvaluation.source === 'ai' ? 'AI' : 'キーワード判定'} ・ 難易度{' '}
             {taskReward.aiEvaluation.difficulty}
             {droppedItems.length === 0 ? ' ・ 結晶・素材なし' : ''}
           </Text>

@@ -71,7 +71,7 @@ export function SortieResult({ rewardId, onClose }: SortieResultProps) {
               <p className="list-item__meta">結晶・素材のドロップはありませんでした。</p>
             )}
             <p className="list-item__meta">
-              判定: {taskReward.aiEvaluation.source === 'ai' ? 'AI' : '簡易判定'} ・ 難易度{' '}
+              判定: {taskReward.aiEvaluation.source === 'ai' ? 'AI' : 'キーワード判定'} ・ 難易度{' '}
               {taskReward.aiEvaluation.difficulty}
             </p>
           </div>
