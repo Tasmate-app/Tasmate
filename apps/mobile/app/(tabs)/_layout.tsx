@@ -24,7 +24,10 @@ export default function TabsLayout() {
     <View style={[styles.root, docked ? styles.rootDocked : null]}>
       {docked && <GameSidebar docked />}
       <View style={styles.main}>
-        <GameHUD onOpenNavigation={docked ? undefined : () => setSidebarOpen(true)} />
+        <GameHUD
+          docked={docked}
+          onOpenNavigation={docked ? undefined : () => setSidebarOpen(true)}
+        />
         {storageError !== null && <StorageErrorBanner message={storageError} />}
         <SafeAreaView edges={['bottom']} style={styles.tabs}>
           <Tabs

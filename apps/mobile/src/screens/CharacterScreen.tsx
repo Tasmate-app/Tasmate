@@ -27,6 +27,7 @@ import {
   ScreenHeader,
   SegmentedControl,
   StatTile,
+  screenContent,
 } from '../ui';
 import {
   attributePalette,
@@ -470,11 +471,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
   },
-  content: {
-    padding: spacing.lg,
-    gap: spacing.md,
-    paddingBottom: spacing.xxl,
-  },
+  content: screenContent,
   rosterChip: {
     flexDirection: 'row',
     alignItems: 'baseline',

@@ -27,7 +27,13 @@ const MATERIAL_META = {
   shard_star: resourcePalette.shard_star,
 } as const;
 
-export function GameHUD({ onOpenNavigation }: { onOpenNavigation?: () => void }) {
+export function GameHUD({
+  onOpenNavigation,
+  docked = false,
+}: {
+  onOpenNavigation?: () => void;
+  docked?: boolean;
+}) {
   const router = useRouter();
   const inventory = useMobileAppStore((s) => s.inventory);
   const itemInventory = useMobileAppStore((s) => s.itemInventory);
@@ -42,85 +48,99 @@ export function GameHUD({ onOpenNavigation }: { onOpenNavigation?: () => void })
   const restRemaining = restSession !== null ? remainingRestSeconds(restSession, now) : 0;
   const activeTaskTitle = tasks.find((t) => t.id === activeSession?.taskId)?.title;
 
+  const settingsButton = (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="設定を開く"
+      hitSlop={8}
+      android_ripple={{ color: colors.primarySoft, borderless: true }}
+      onPress={() => router.push('/settings')}
+      style={({ pressed }) => [styles.settingsButton, pressed ? styles.settingsButtonPressed : null]}
+    >
+      <Text style={styles.settingsGlyph}>⚙</Text>
+    </Pressable>
+  );
+
+  const resourceChips = (
+    <>
+      <ResourceChip
+        glyph={resourcePalette.currency.glyph}
+        value={inventory.currency}
+        color={resourcePalette.currency.color}
+        label={resourcePalette.currency.label}
+        highlight
+      />
+      <ResourceChip
+        glyph={resourcePalette.stardust.glyph}
+        value={itemInventory['stardust'] ?? 0}
+        color={resourcePalette.stardust.color}
+        label={resourcePalette.stardust.label}
+      />
+      <ResourceChip
+        glyph={MATERIAL_META.shard_sun.glyph}
+        value={inventory.materials.shard_sun}
+        color={MATERIAL_META.shard_sun.color}
+        label={MATERIAL_NAMES.shard_sun ?? '太陽のかけら'}
+      />
+      <ResourceChip
+        glyph={MATERIAL_META.shard_moon.glyph}
+        value={inventory.materials.shard_moon}
+        color={MATERIAL_META.shard_moon.color}
+        label={MATERIAL_NAMES.shard_moon ?? '月のかけら'}
+      />
+      <ResourceChip
+        glyph={MATERIAL_META.shard_star.glyph}
+        value={inventory.materials.shard_star}
+        color={MATERIAL_META.shard_star.color}
+        label={MATERIAL_NAMES.shard_star ?? '星のかけら'}
+      />
+    </>
+  );
+
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
       <View style={styles.bar}>
-        <View style={styles.mainRow}>
-          {onOpenNavigation !== undefined && (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="メニューを開く"
-              hitSlop={8}
-              android_ripple={{ color: colors.primarySoft, borderless: true }}
-              onPress={onOpenNavigation}
-              style={({ pressed }) => [
-                styles.menuButton,
-                pressed ? styles.settingsButtonPressed : null,
-              ]}
-            >
-              <Text style={styles.menuGlyph}>☰</Text>
-            </Pressable>
-          )}
-          <View style={styles.brand}>
-            <Image
-              source={require('../../assets/icon.png')}
-              style={styles.brandMark}
-              resizeMode="cover"
-              accessibilityIgnoresInvertColors
-            />
-            <View>
-              <Text style={styles.brandWord}>Tasmate</Text>
-              <Text style={styles.brandSub}>STUDY QUEST</Text>
-            </View>
+        {docked ? (
+          <View style={styles.mainRow}>
+            <View style={styles.resourcesDocked}>{resourceChips}</View>
+            {settingsButton}
           </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="設定を開く"
-            hitSlop={8}
-            android_ripple={{ color: colors.primarySoft, borderless: true }}
-            onPress={() => router.push('/settings')}
-            style={({ pressed }) => [
-              styles.settingsButton,
-              pressed ? styles.settingsButtonPressed : null,
-            ]}
-          >
-            <Text style={styles.settingsGlyph}>⚙</Text>
-          </Pressable>
-        </View>
+        ) : (
+          <>
+            <View style={styles.mainRow}>
+              {onOpenNavigation !== undefined && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="メニューを開く"
+                  hitSlop={8}
+                  android_ripple={{ color: colors.primarySoft, borderless: true }}
+                  onPress={onOpenNavigation}
+                  style={({ pressed }) => [
+                    styles.menuButton,
+                    pressed ? styles.settingsButtonPressed : null,
+                  ]}
+                >
+                  <Text style={styles.menuGlyph}>☰</Text>
+                </Pressable>
+              )}
+              <View style={styles.brand}>
+                <Image
+                  source={require('../../assets/icon.png')}
+                  style={styles.brandMark}
+                  resizeMode="cover"
+                  accessibilityIgnoresInvertColors
+                />
+                <View>
+                  <Text style={styles.brandWord}>Tasmate</Text>
+                  <Text style={styles.brandSub}>STUDY QUEST</Text>
+                </View>
+              </View>
+              {settingsButton}
+            </View>
 
-        <View style={styles.resources}>
-          <ResourceChip
-            glyph={resourcePalette.currency.glyph}
-            value={inventory.currency}
-            color={resourcePalette.currency.color}
-            label={resourcePalette.currency.label}
-            highlight
-          />
-          <ResourceChip
-            glyph={resourcePalette.stardust.glyph}
-            value={itemInventory['stardust'] ?? 0}
-            color={resourcePalette.stardust.color}
-            label={resourcePalette.stardust.label}
-          />
-          <ResourceChip
-            glyph={MATERIAL_META.shard_sun.glyph}
-            value={inventory.materials.shard_sun}
-            color={MATERIAL_META.shard_sun.color}
-            label={MATERIAL_NAMES.shard_sun ?? '太陽のかけら'}
-          />
-          <ResourceChip
-            glyph={MATERIAL_META.shard_moon.glyph}
-            value={inventory.materials.shard_moon}
-            color={MATERIAL_META.shard_moon.color}
-            label={MATERIAL_NAMES.shard_moon ?? '月のかけら'}
-          />
-          <ResourceChip
-            glyph={MATERIAL_META.shard_star.glyph}
-            value={inventory.materials.shard_star}
-            color={MATERIAL_META.shard_star.color}
-            label={MATERIAL_NAMES.shard_star ?? '星のかけら'}
-          />
-        </View>
+            <View style={styles.resources}>{resourceChips}</View>
+          </>
+        )}
 
         {(isWorking || isResting) && (
           <View style={styles.sessionRow}>
@@ -201,9 +221,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: spacing.lg,
-    paddingTop: 5,
-    paddingBottom: 7,
-    gap: 5,
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.tight,
+    gap: spacing.xs,
     ...shadows.card,
   },
   mainRow: {
@@ -215,7 +235,7 @@ const styles = StyleSheet.create({
   brand: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
+    gap: spacing.tight,
     flexShrink: 0,
   },
   brandMark: {
@@ -280,20 +300,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
-    gap: 4,
+    gap: spacing.xs,
     width: '100%',
+  },
+  resourcesDocked: {
+    flex: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   resource: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    gap: spacing.xxs,
     backgroundColor: colors.surfaceMuted,
     borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.border,
-    paddingLeft: 3,
-    paddingRight: 7,
-    paddingVertical: 2,
+    paddingLeft: spacing.xs,
+    paddingRight: spacing.tight,
+    paddingVertical: spacing.xxs,
   },
   resourceHighlight: {
     backgroundColor: colors.goldSoft,
@@ -318,13 +345,13 @@ const styles = StyleSheet.create({
   sessionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: spacing.xs,
     backgroundColor: colors.primaryPale,
     borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.border,
-    paddingHorizontal: 9,
-    paddingVertical: 3,
+    paddingHorizontal: spacing.snug,
+    paddingVertical: spacing.xxs,
     alignSelf: 'flex-start',
     maxWidth: '100%',
   },

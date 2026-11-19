@@ -25,6 +25,7 @@ import {
   ScreenHeader,
   SegmentedControl,
   StatTile,
+  screenContent,
 } from '../ui';
 import { colors, fontSize, radius, spacing } from '../theme/tokens';
 
@@ -349,11 +350,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
   },
-  content: {
-    padding: spacing.lg,
-    gap: spacing.md,
-    paddingBottom: spacing.xxl,
-  },
+  content: screenContent,
   stats: {
     flexDirection: 'row',
     flexWrap: 'wrap',

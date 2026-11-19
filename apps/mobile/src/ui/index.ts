@@ -11,5 +11,6 @@ export * from './ProgressBar';
 export * from './QuestCard';
 export * from './ScreenBackground';
 export * from './ScreenHeader';
+export * from './screenLayout';
 export * from './SegmentedControl';
 export * from './StatTile';
