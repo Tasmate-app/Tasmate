@@ -5,7 +5,7 @@
 
 ## 必要環境
 
-- Node.js 20 以上（推奨 22）
+- Node.js 20.12 以上（推奨 22）
 - npm 10 以上
 
 Windows では PowerShell が基本シェル。`npm.ps1` の実行が制限される環境では
@@ -65,7 +65,7 @@ npm run apk:release -w tasmate-mobile
 adb install -r apps/mobile/android/app/build/outputs/apk/release/app-release.apk
 ```
 
-- 署名用の環境変数が未設定の場合は、Expo テンプレートの debug キーで署名される。
+- `apk:release` は `.env` の署名情報が必須。未設定時は debug 署名へフォールバックせずエラーで停止する。
 - `debug` APK は Metro の起動が必要なため、単体確認には `release` を使う。
 - ネイティブ設定を変更した場合は `npm run prebuild:android -w tasmate-mobile -- --clean` で再生成する。
 - `expo-notifications` のプラグイン設定（通知アイコン・チャンネル・`SCHEDULE_EXACT_ALARM`）を含むため、通知機能の確認にはAPK/開発ビルドを再作成する。Expo Goでは設定の一部が反映されない。
@@ -74,17 +74,24 @@ adb install -r apps/mobile/android/app/build/outputs/apk/release/app-release.apk
 
 ### リリース署名でビルドする場合
 
-`TASMATE_UPLOAD_*` 環境変数を設定すると release 署名でビルドされる。値は keystore とパスワードで、リポジトリへコミットしない。
+リポジトリ直下の `.env`（Git 管理対象外）に署名情報を設定する。`.env.example` をコピーして値を埋める。
+
+```dotenv
+TASMATE_UPLOAD_STORE_FILE=C:/path/to/tasmate-release.keystore
+TASMATE_UPLOAD_STORE_PASSWORD=...
+TASMATE_UPLOAD_KEY_ALIAS=tasmate
+TASMATE_UPLOAD_KEY_PASSWORD=...
+```
 
 ```powershell
-$env:TASMATE_UPLOAD_STORE_FILE = "C:\path\to\tasmate-release.keystore"
-$env:TASMATE_UPLOAD_STORE_PASSWORD = "..."
-$env:TASMATE_UPLOAD_KEY_ALIAS = "tasmate"
-$env:TASMATE_UPLOAD_KEY_PASSWORD = "..."
 npm run apk:release -w tasmate-mobile
 ```
 
-署名設定は `apps/mobile/plugins/withAndroidReleaseSigning.js` が prebuild 時に `android/app/build.gradle` へ反映する。環境変数が無い場合は debug 署名にフォールバックする。
+`npm run apk:release -w tasmate-mobile` は `.env` と `.env.local` を読み込み、release 署名で APK をビルドする。シェルで設定した環境変数は `.env` より優先される。4つの値が不足している場合や keystore が見つからない場合はエラーで停止する。署名なしの debug APK は `npm run apk:debug -w tasmate-mobile` を使う。
+
+`TASMATE_UPLOAD_STORE_FILE` は絶対パス、またはリポジトリ直下からの相対パスで指定する。Windows のパスは `C:/...` のようにスラッシュ区切りにすると確実。
+
+署名設定は `apps/mobile/plugins/withAndroidReleaseSigning.js` が prebuild 時に `android/app/build.gradle` へ反映する。`.env` はコミットしない。
 
 ## テスト・検証
 

@@ -40,7 +40,7 @@
     "android": "expo run:android",
     "build:android": "eas build --platform android --profile preview",
     "prebuild:android": "expo prebuild --platform android --no-install",
-    "apk:release": "npm run prebuild:android && cd android && gradlew.bat :app:assembleRelease",
+    "apk:release": "node ../../scripts/build-android-release.mjs",
     "apk:debug": "npm run prebuild:android && cd android && gradlew.bat :app:assembleDebug",
     "ios": "expo run:ios",
     "typecheck": "tsc --noEmit",

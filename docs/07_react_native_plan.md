@@ -473,4 +473,5 @@ Web / Native とも次の9タブで統一する。
 - WebはCloudflare Pages（Direct Upload）へ`wrangler`でデプロイする。SPAの直リンクは`public/_redirects`でフォールバックする。
 - NativeはUbuntuランナー上で`expo prebuild`とローカルGradleを使い、全4ABIのrelease APKをビルドする。EAS Buildは使わない。
 - 署名は`apps/mobile/plugins/withAndroidReleaseSigning.js`が`android/app/build.gradle`へrelease署名設定を追加する。秘密情報は`TASMATE_UPLOAD_*`環境変数から読み、リポジトリへコミットしない。
+- ローカルの`npm run apk:release -w tasmate-mobile`は`scripts/build-android-release.mjs`を経由し、リポジトリ直下の`.env`と`.env.local`から`TASMATE_UPLOAD_*`を読み込む。未設定時はdebug署名へフォールバックせず停止する。
 - `apps/mobile/android/`は引き続き生成物でありコミットしない。手順の詳細はREADMEのCI/CDを参照する。
