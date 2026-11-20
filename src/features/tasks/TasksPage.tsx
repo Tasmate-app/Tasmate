@@ -8,7 +8,7 @@ export function TasksPage() {
   return (
     <div>
       <div className="notice notice--provisional">
-        報酬ルール・数値はすべて仮実装です（AI 報酬は未接続）。タイマーは開始時刻を基準に計算され、
+        報酬ルール・数値はすべて仮実装です。タイマーは開始時刻を基準に計算され、
         ページを再読み込みしても作業状態が復元されます。
       </div>
       <div className="page-grid page-grid--two">

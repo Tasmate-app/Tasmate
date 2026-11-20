@@ -1,46 +1,219 @@
-# Tasmate — 現実の行動を報酬に変える生活支援ゲーム（プロトタイプ）
+<div align="center">
+  <img src="public/assets/brand/appicon.png" width="112" alt="Tasmate app icon" />
+  <h1>Tasmate</h1>
+  <p><strong>タスク管理を、「クエスト」に変えよう。</strong></p>
+  <p>現実の勉強・作業を、キャラクターの成長と拠点づくりにつなげる生活支援ゲーム。</p>
+  <p>
+    <a href="#日本語">日本語</a> ・ <a href="#english">English</a>
+  </p>
+  <p>
+    <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue.svg" />
+    <a href="https://github.com/Tasmate-app/Tasmate/actions/workflows/ci.yml">
+      <img alt="CI" src="https://github.com/Tasmate-app/Tasmate/actions/workflows/ci.yml/badge.svg" />
+    </a>
+  </p>
+</div>
 
-タスク・勉強への取り組みを、キャラクターの成長・素材収集・拠点発展につなげる生活支援型育成ゲーム。
-まずはローカルで動作するプロトタイプとして、基本ループ（タスク → タイマー → 報酬 → 育成）を検証する。
+---
 
-## 必要環境
+## 日本語
 
-- Node.js 20.12 以上（推奨 22）
-- npm 10 以上
+### Tasmateとは
 
-Windows では PowerShell が基本シェル。`npm.ps1` の実行が制限される環境では
-`npm.cmd` を直接呼ぶ（例：`& "C:\Program Files\nodejs\npm.cmd" install`）。
+Tasmate は、現実のタスク・勉強・作業時間をゲームの進行に結びつける生活支援型の育成ゲームです。取り組んだ時間に応じて通貨・素材・経験値を獲得し、キャラクターの育成や施設の強化、3Dシェアハウスの拠点づくりを進められます。
 
-## セットアップ・起動
+タスク管理とタイマーの使いやすさを土台に、現実で頑張ることがゲーム内の成長につながる体験を目指しています。Web版とAndroid版（Expo / React Native）でゲームロジックを共有しています。
+
+### 主な特徴
+
+- **クエストとしてタスクを管理** — タスク名・カテゴリ・予定時間を登録し、タイマーで作業を記録。中断・再開や作業履歴の確認にも対応します。
+- **作業が報酬になる** — 実作業時間に応じて通貨・経験値・星屑・結晶・キャラクター専用素材を獲得します。
+- **タスク内容をキーワードで評価** — カテゴリのユーザーキーワードと組み込みキーワードから、結晶タイプと難易度を判定します。外部AIは使用しません。
+- **キャラクターと拠点を育てる** — 素材でキャラクターを強化し、施設を稼働・強化。3Dシェアハウスで拠点の様子を眺められます。
+- **週間計画と継続を支援** — 週間カレンダー、繰り返し予定、80%の週間達成判定、連続達成に応じた報酬倍率、休息週を扱います。
+- **Web / Android 対応** — 共通のゲームロジックをWebとNativeで共有します。
+
+### はじめかた
+
+#### Web版
+
+必要環境は Node.js 20以上（推奨22）と npm 10以上です。
 
 ```powershell
 npm install
-npm run dev      # 開発サーバー起動（http://localhost:5173）
-npm run preview  # 本番ビルドの確認用サーバー（事前に npm run build）
+npm run dev
 ```
 
-## モノレポ構成
+開発サーバーは http://localhost:5173 で起動します。
 
-Web版とExpo React Native版で型・ゲームロジックを共有する。
-
-- `src/` … 既存Web版（ルートの `package.json` から起動）
-- `apps/mobile/` … Expo React Native版
-- `packages/types/` … 共通型 `@tasmate/types`
-- `packages/core/` … 共通ゲームロジック・アプリ状態・ストア・保存抽象 `@tasmate/core`
-- `packages/design-tokens/` … Web/Native 共通デザイントークン `@tasmate/design-tokens`
+本番ビルドを確認する場合:
 
 ```powershell
-npm run typecheck -w tasmate-mobile
-npm run doctor -w tasmate-mobile
-npm run export:android -w tasmate-mobile
-npm run export:ios -w tasmate-mobile
+npm run build
+npm run preview
 ```
 
-## Android APK のローカルビルド（Windows）
+> WindowsのPowerShellで `npm.ps1` の実行が制限される場合は、`npm.cmd` を使用してください。
 
-Expo の prebuild とローカルの Android SDK（Gradle）を使い、EAS を介さず APK を作成する。
+#### Android版
 
-### 必要環境
+[GitHub Releases](https://github.com/Tasmate-app/Tasmate/releases) からAPKをダウンロードできます。
+
+Expoで起動する場合:
+
+```powershell
+npm run start -w tasmate-mobile
+```
+
+APKのローカルビルド手順は、末尾の「開発・運用の詳細」にある「Android APK のローカルビルド」を参照してください。
+
+### 技術スタック
+
+| 領域 | 使用技術 |
+| --- | --- |
+| Web | React 19 / TypeScript / Vite / React Router / Zustand |
+| 3D | Three.js / React Three Fiber |
+| Native | Expo / React Native / Expo Router / AsyncStorage / expo-gl |
+| 共通 | npm workspaces / `@tasmate/core` / `@tasmate/types` / `@tasmate/design-tokens` / `@tasmate/task-evaluation` |
+| テスト | Vitest / Playwright |
+
+### リポジトリ構成
+
+```
+src/                       Web版
+apps/mobile/               Expo React Native版
+packages/core/             Web/Native共通のゲームロジック・ストア・保存
+packages/types/            共有型
+packages/design-tokens/    共通デザイントークン
+packages/task-evaluation/  キーワードによるタスク評価
+tests/                     Vitest単体テスト / Playwright E2E
+docs/                      仕様・設計ドキュメント
+public/assets/             Web用アセット
+```
+
+### 開発
+
+| コマンド | 内容 |
+| --- | --- |
+| `npm run dev` | 開発サーバーを起動 |
+| `npm run build` | 型チェック + 本番ビルド |
+| `npm run preview` | 本番ビルドのプレビュー |
+| `npm run lint` | ESLint |
+| `npm run typecheck` | TypeScript型チェック |
+| `npm run test` | Vitest単体テスト |
+| `npm run e2e:install` | Playwright Chromiumの初回導入 |
+| `npm run e2e` | Playwright E2E |
+| `npm run typecheck -w tasmate-mobile` | Native版の型チェック |
+
+### データとプライバシー
+
+- データは端末内に保存します。Webは `localStorage`（キー `tasmate:state:v1`）、Nativeは `AsyncStorage` を使用します。
+- 設定画面からアプリ状態をJSONファイルとして書き出し・復元できます（最大5MB）。
+- Nativeの予定クエスト通知は端末内で予約・表示し、外部サーバーへ送信しません。
+- 現時点でアカウント登録・クラウド同期・外部AIへの送信はありません。
+- 詳細は [プライバシーポリシー](docs/privacy-policy.md) を参照してください。
+
+### ドキュメント
+
+- [`docs/01_project_overview.md`](docs/01_project_overview.md)：目的、コンセプト、主な画面
+- [`docs/02_game_design.md`](docs/02_game_design.md)：ゲームループ、タスク・報酬、育成、施設、拠点
+- [`docs/03_feature_list.md`](docs/03_feature_list.md)：機能一覧、優先度、MVPの範囲
+- [`docs/04_data_design.md`](docs/04_data_design.md)：データモデル、保存、タスク評価の入出力
+- [`docs/05_roadmap_and_open_questions.md`](docs/05_roadmap_and_open_questions.md)：開発段階、未決定事項
+- [`docs/06_weekly_calendar_and_streak.md`](docs/06_weekly_calendar_and_streak.md)：週間カレンダー、繰り返し、達成判定、継続報酬
+- [`docs/07_react_native_plan.md`](docs/07_react_native_plan.md)：Native版・モノレポ化の計画
+- [`docs/characters/voxel-character-standard.md`](docs/characters/voxel-character-standard.md)：ボクセルキャラクターの規格
+- [`docs/characters/parts-and-naming.md`](docs/characters/parts-and-naming.md)：パーツ階層と命名規則
+
+### ライセンス
+
+本リポジトリで作成したソースコードは [MIT License](LICENSE) の下で公開しています。
+
+Copyright (c) 2026 Tasmate-app contributors.
+
+外部から取得したSkillや第三者提供の素材は、それぞれのライセンスに従います。詳細は「Skills とライセンス」を参照してください。
+
+### 開発・運用の詳細
+
+<details>
+<summary>画面とルーティング</summary>
+
+ゲーム一体型のUIです。上部HUD（ロゴ・通貨・素材・作業状態）とナビゲーションから各画面を操作します。768px未満ではHUDのメニューボタンから左ドロワーを開き、768px以上では常設の左サイドバーを表示します。表示項目と並び順は設定画面から変更でき、ホームは常に表示されます。
+
+ブレークポイントは480 / 768 / 1024pxの3段階です。ページ本文は最大1200pxで中央寄せし、狭い画面では左右余白を12pxにします。
+
+| パス | 画面 |
+| --- | --- |
+| `/` | ホーム：今週の進捗、次のクエスト、クエストボード、タイマー、探索進行、リザルト |
+| `/history` | 履歴：作業時間の集計・推移・カテゴリー別内訳、セッション一覧 |
+| `/plan` | 計画：週間カレンダー、繰り返し予定、週間達成、連続達成ランク、休息週 |
+| `/base` | 拠点：3Dシェアハウス、キャラクターと施設の状況 |
+| `/character` | キャラクター：一覧とステータス画面 |
+| `/facilities` | 施設：生産・コスト・稼働切替・強化 |
+| `/inventory` | かばん：所持アイテム・報酬履歴 |
+| `/shop` | ショップ：施設強化の購入 |
+| `/synthesis` | 合成：かけらと硬貨から結晶を作成 |
+| `/settings` | 設定：通知、サイドバー、バックアップ、アプリ情報、ライセンス |
+| `/categories` | 分類管理：履歴画面から開く |
+| `/settings/licenses` | OSSライセンス一覧 |
+
+旧URLは次の正規URLへリダイレクトします。
+
+- `/sortie` → `/`
+- `/calendar` → `/plan`
+- `/companions` → `/character`
+- `/storage` → `/inventory`
+- `/house` → `/base`
+
+</details>
+
+<details>
+<summary>CI/CD</summary>
+
+`.github/workflows/ci.yml` はPull Request、mainへのpush、手動実行で次を確認します。
+
+- `npm run lint`
+- `npm run typecheck`
+- `npm run test`
+- `npm run build`
+- `npm run typecheck -w tasmate-mobile`
+- `npm run licenses:generate` 後の生成物差分
+- Playwright E2E（Chromium）
+
+mainのBranch protectionでは `CI / web` と `CI / e2e` を必須チェックにします。
+
+`vX.Y.Z` 形式のタグをmain上のコミットに付けてpushすると、`.github/workflows/release.yml` が実行されます。
+
+1. 次のversionを更新します。
+   - ルート `package.json`
+   - `apps/mobile/package.json`
+   - `apps/mobile/app.json` の `expo.version`
+   - `apps/mobile/app.json` の `expo.android.versionCode`（リリースごとに増加）
+2. mainへマージし、CIの成功を確認します。
+3. タグを作成してpushします。
+
+```powershell
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+Release workflowは次を行います。
+
+- タグが `vX.Y.Z` 形式でmain上にあり、3つのversionがタグと一致することを検証
+- WebをビルドしてCloudflare Pagesへ本番デプロイ
+- Androidのrelease APKをローカルGradleでビルド（全4ABI）
+- APKをGitHub Release（prerelease）へ `tasmate-vX.Y.Z.apk` として添付
+
+失敗時はActionsの `Release` を `workflow_dispatch` で同じタグを指定して再実行できます。タグの付け替えは行いません。
+
+</details>
+
+<details>
+<summary>Android APK のローカルビルド</summary>
+
+ExpoのprebuildとローカルのAndroid SDK（Gradle）を使い、EASを介さずAPKを作成します。
+
+#### 必要環境
 
 - JDK 17（`JAVA_HOME` を設定）
 - Android Studio / Android SDK
@@ -48,10 +221,10 @@ Expo の prebuild とローカルの Android SDK（Gradle）を使い、EAS を�
   - Build-Tools 37.0.0
   - Platform-Tools
   - NDK 27.1.12297006
-  - CMake 3.31.6（Windows の長いパス対策）
+  - CMake 3.31.6（Windowsの長いパス対策）
 - 環境変数 `ANDROID_HOME`（例: `%LOCALAPPDATA%\Android\Sdk`）
 
-### ビルド
+#### ビルド
 
 ```powershell
 npm run apk:release -w tasmate-mobile
@@ -65,16 +238,16 @@ npm run apk:release -w tasmate-mobile
 adb install -r apps/mobile/android/app/build/outputs/apk/release/app-release.apk
 ```
 
-- `apk:release` は `.env` の署名情報が必須。未設定時は debug 署名へフォールバックせずエラーで停止する。
-- `debug` APK は Metro の起動が必要なため、単体確認には `release` を使う。
-- ネイティブ設定を変更した場合は `npm run prebuild:android -w tasmate-mobile -- --clean` で再生成する。
-- `expo-notifications` のプラグイン設定（通知アイコン・チャンネル・`SCHEDULE_EXACT_ALARM`）を含むため、通知機能の確認にはAPK/開発ビルドを再作成する。Expo Goでは設定の一部が反映されない。
-- `apps/mobile/android/` は生成物のためコミットしない。
-- 初回は Gradle・Android SDK・NDK のダウンロードで数 GB と時間がかかる。
+- `apk:release` は `.env` の署名情報が必須です。未設定時はdebug署名へフォールバックせずエラーで停止します。
+- `debug` APKはMetroの起動が必要なため、単体確認には `release` を使います。
+- ネイティブ設定を変更した場合は `npm run prebuild:android -w tasmate-mobile -- --clean` で再生成します。
+- `expo-notifications` のプラグイン設定（通知アイコン・チャンネル・`SCHEDULE_EXACT_ALARM`）を含むため、通知機能の確認にはAPK/開発ビルドを再作成します。Expo Goでは設定の一部が反映されません。
+- `apps/mobile/android/` は生成物のためコミットしません。
+- 初回はGradle・Android SDK・NDKのダウンロードで数GBと時間がかかります。
 
-### リリース署名でビルドする場合
+#### リリース署名でビルドする場合
 
-リポジトリ直下の `.env`（Git 管理対象外）に署名情報を設定する。`.env.example` をコピーして値を埋める。
+リポジトリ直下の `.env`（Git管理対象外）に署名情報を設定します。`.env.example` をコピーして値を埋めます。
 
 ```dotenv
 TASMATE_UPLOAD_STORE_FILE=C:/path/to/tasmate-release.keystore
@@ -83,86 +256,32 @@ TASMATE_UPLOAD_KEY_ALIAS=tasmate
 TASMATE_UPLOAD_KEY_PASSWORD=...
 ```
 
-```powershell
-npm run apk:release -w tasmate-mobile
-```
+`npm run apk:release -w tasmate-mobile` は `.env` と `.env.local` を読み込み、release署名でAPKをビルドします。シェルで設定した環境変数は `.env` より優先されます。4つの値が不足している場合やkeystoreが見つからない場合はエラーで停止します。署名なしのdebug APKは `npm run apk:debug -w tasmate-mobile` を使います。
 
-`npm run apk:release -w tasmate-mobile` は `.env` と `.env.local` を読み込み、release 署名で APK をビルドする。シェルで設定した環境変数は `.env` より優先される。4つの値が不足している場合や keystore が見つからない場合はエラーで停止する。署名なしの debug APK は `npm run apk:debug -w tasmate-mobile` を使う。
+`TASMATE_UPLOAD_STORE_FILE` は絶対パス、またはリポジトリ直下からの相対パスで指定します。Windowsのパスは `C:/...` のようにスラッシュ区切りにすると確実です。
 
-`TASMATE_UPLOAD_STORE_FILE` は絶対パス、またはリポジトリ直下からの相対パスで指定する。Windows のパスは `C:/...` のようにスラッシュ区切りにすると確実。
+署名設定は `apps/mobile/plugins/withAndroidReleaseSigning.js` がprebuild時に `android/app/build.gradle` へ反映します。`.env` はコミットしません。
 
-署名設定は `apps/mobile/plugins/withAndroidReleaseSigning.js` が prebuild 時に `android/app/build.gradle` へ反映する。`.env` はコミットしない。
+</details>
 
-## テスト・検証
+<details>
+<summary>Cloudflare Pages の準備</summary>
 
-```powershell
-npm run typecheck  # TypeScript 型チェック
-npm run test       # Vitest 単体テスト（ゲームロジック中心）
-npm run licenses:generate  # OSSライセンス一覧を再生成（依存関係の変更時）
-npm run build      # 型チェック + 本番ビルド
-npx playwright install chromium  # E2E 初回のみ
-npm run e2e        # Playwright スモークテスト（dev サーバーを自動起動）
-```
-
-## CI/CD
-
-### CI
-
-`.github/workflows/ci.yml` は Pull Request、main への push、手動実行で次を確認する。
-
-- `npm run lint`
-- `npm run typecheck`
-- `npm run test`
-- `npm run build`
-- `npm run typecheck -w tasmate-mobile`
-- `npm run licenses:generate` 後の生成物差分
-- Playwright E2E（Chromium）
-
-main の Branch protection では `CI / web` と `CI / e2e` を必須チェックにする。
-
-### リリース
-
-`vX.Y.Z` 形式のタグを main 上のコミットに付けて push すると `.github/workflows/release.yml` が実行される。
-
-1. version を更新する
-   - ルート `package.json`
-   - `apps/mobile/package.json`
-   - `apps/mobile/app.json` の `expo.version`
-   - `apps/mobile/app.json` の `expo.android.versionCode`（リリースごとに増加）
-2. main へマージし、CI の成功を確認する
-3. タグを作成して push する
-
-```powershell
-git tag v0.1.0
-git push origin v0.1.0
-```
-
-Release workflow は次を行う。
-
-- タグが `vX.Y.Z` 形式で main 上にあり、3つの version がタグと一致することを検証
-- Web をビルドして Cloudflare Pages へ本番デプロイ
-- Android の release APK をローカル Gradle でビルド（全4ABI）
-- APK を GitHub Release（prerelease）へ `tasmate-vX.Y.Z.apk` として添付
-
-失敗時は Actions の `Release` を `workflow_dispatch` で同じタグを指定して再実行できる。タグの付け替えは行わない。
-
-### Cloudflare Pages の準備
-
-1. Cloudflare Pages で Direct Upload のプロジェクトを作成する（例: `tasmate-web`）。production branch は `main` にする。
-2. API トークンを作成する（Account → Cloudflare Pages → Edit）。
-3. GitHub の Settings → Secrets and variables → Actions に登録する。
+1. Cloudflare PagesでDirect Uploadのプロジェクトを作成します（例: `tasmate-web`）。production branchは `main` にします。
+2. APIトークンを作成します（Account → Cloudflare Pages → Edit）。
+3. GitHubのSettings → Secrets and variables → Actionsに登録します。
 
 | 種別 | 名前 | 値 |
 | --- | --- | --- |
-| Secret | `CLOUDFLARE_API_TOKEN` | Pages:Edit の API トークン |
-| Variable | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare アカウントID |
-| Variable | `CLOUDFLARE_PAGES_PROJECT` | Pages プロジェクト名 |
+| Secret | `CLOUDFLARE_API_TOKEN` | Pages:EditのAPIトークン |
+| Variable | `CLOUDFLARE_ACCOUNT_ID` | CloudflareアカウントID |
+| Variable | `CLOUDFLARE_PAGES_PROJECT` | Pagesプロジェクト名 |
 
-SPA の直リンクは `public/_redirects`（`/* /index.html 200`）で `index.html` にフォールバックする。
+SPAの直リンクは `public/_redirects`（`/* /index.html 200`）で `index.html` にフォールバックします。
 
-### Android 署名の準備
+#### Android署名の準備
 
-リポジトリ外で keystore を作成し、Base64 にして Secrets へ登録する。keystore とパスワードは失うと更新できなくなるため厳重にバックアップする。
+リポジトリ外でkeystoreを作成し、Base64にしてSecretsへ登録します。keystoreとパスワードは失うと更新できなくなるため厳重にバックアップしてください。
 
 ```powershell
 keytool -genkeypair -v -storetype PKCS12 -keystore "$env:USERPROFILE\tasmate-release.keystore" -alias tasmate -keyalg RSA -keysize 2048 -validity 10000
@@ -171,135 +290,97 @@ keytool -genkeypair -v -storetype PKCS12 -keystore "$env:USERPROFILE\tasmate-rel
 
 | Secret | 内容 |
 | --- | --- |
-| `ANDROID_KEYSTORE_BASE64` | keystore の Base64 |
-| `ANDROID_KEYSTORE_PASSWORD` | keystore のパスワード |
+| `ANDROID_KEYSTORE_BASE64` | keystoreのBase64 |
+| `ANDROID_KEYSTORE_PASSWORD` | keystoreのパスワード |
 | `ANDROID_KEY_ALIAS` | キーエイリアス |
 | `ANDROID_KEY_PASSWORD` | キーのパスワード |
 
-CI は keystore を `$RUNNER_TEMP` に展開し、ビルド後に削除する。APK が debug 署名でないことを `apksigner` で検証する。
+CIはkeystoreを `$RUNNER_TEMP` に展開し、ビルド後に削除します。APKがdebug署名でないことを `apksigner` で検証します。
 
-## 画面
+</details>
 
-ゲーム一体型UI。上部HUD（ロゴ・通貨・素材・作業状態）とナビで全画面を操作する。
-モバイルでは768px未満はHUDのメニューボタンから開く左ドロワー、768px以上は
-常設の左サイドバーに切り替わる。常設時はサイドバーが画面全体の高さを占め、
-HUDは本文側の上に置く。表示項目と並び順は設定画面の「サイドバー」から
-変更でき、ホームは常に表示される。デザインは `packages/design-tokens/` を正とし、
-Webでは起動時にCSS変数へ適用する。
+<details>
+<summary>Skills とライセンス</summary>
 
-ブレークポイントは480 / 768 / 1024pxの3段階。ページ本文は最大1200pxで中央寄せし、
-狭い画面では左右余白を12pxに詰める。ページ見出しはH1＋説明＋操作の共通ヘッダーを使う。
-
-タブは ホーム / 履歴 / 計画 / 拠点 / キャラクター / 施設 / かばん / ショップ / 合成 の9種類。
-分類管理は履歴画面から開く。
-
-- `/` ホーム：見出し、今週の進捗（達成率・曜日ごとの予定・連続週数）、次のクエスト、
-  クエストボードの順に並ぶ。作業中はタイマー・探索進行、完了後はリザルトを分離表示。
-  クエスト作成は独立したモーダル。完了後はキャラクターが休憩を提案し、
-  設定した休憩時間はHUDに表示される。連続作業時は応援イベントが発生する
-- `/history` 履歴：作業時間の集計・推移・カテゴリー別内訳とセッション一覧。
-  終了済みセッションは確認付きで削除でき、直後は取り消せる。分類管理への導線を持つ
-- `/plan` 計画：週間カレンダー、繰り返し予定、80%週間達成、連続達成ランク、
-  報酬倍率、休息週、週次判定履歴。予定は時刻付き・時刻なしの両方に対応
-- `/base` 拠点：3Dシェアハウスを表示し、キャラクターと施設の状況を確認する。
-  施設の強化・稼働切替は施設タブで行う
-- `/character` キャラクター：一覧から選んで専用ステータス画面を開く（戻る操作で一覧へ）
-- `/facilities` 施設：一覧から選んで詳細（生産・コスト・稼働切替・強化）を開く
-- `/inventory` かばん：所持アイテム・報酬履歴の確認
-- `/shop` ショップ：施設強化の購入（家具・コスチュームは準備中）
-- `/synthesis` 合成：かけらと硬貨から結晶を作成
-- `/settings` 設定：通知（開始時刻・未完了リマインダー）、サイドバーの表示項目・並び順、
-  データのバックアップ書き出し・復元・リセット、アプリ情報、OSSライセンス一覧への導線
-- `/categories` 分類管理：履歴画面から開く
-- `/settings/licenses` OSSライセンス：直接・間接依存のライブラリとライセンス全文
-
-旧URLは次の正規URLへリダイレクトする（旧URL互換）。
-
-- `/sortie` → `/`
-- `/calendar` → `/plan`
-- `/companions` → `/character`
-- `/storage` → `/inventory`
-- `/house` → `/base`
-
-## データ保存
-
-- アプリ状態とストアは `packages/core/` で共有する。UI は直接保存先を触らず、
-  ストアのアクション経由で保存する。
-- Web は `localStorage`（キー `tasmate:state:v1`）へ保存し、起動時は同期読み込みで復元する。
-  Native は同じキー・JSON構造を `AsyncStorage` に保存し、起動後に非同期で復元する。
-- 保存は 150ms のデバウンスと直列キューで行い、復元前の状態は保存しない。
-  保存失敗時は `storageError` に記録し、アプリの動作は継続する。
-- タイマーは開始時刻を基準に経過時間を算出するため、再読み込み・バックグラウンド化後も
-  作業状態が復元される。
-- `/settings` からアプリ状態を JSON ファイルとして書き出し・復元できる。バックアップには
-  進行中のタイマー・休憩を含めず、復元時は現在の状態を上書きして進行中セッションを解除する。
-  ファイルは最大 5MB。Web はダウンロードとファイル選択、Native は共有シートとファイル選択を使う。
-  最終バックアップ日時は `AppState.settings.lastBackupAt` に保存する。
-- Nativeの予定クエスト通知は端末内で予約・表示し、外部サーバーへ送信しない。設定は
-  `AppState.settings.notifications` に保存し、タスクの変更・完了・削除やアプリ復帰時に予約を同期する。
-  Android 13以降は通知権限、Android 12以降は正確なアラーム権限の許可が必要（未許可でも近似時刻で通知）。
-- 週次判定は未判定の過去週を古い順に処理し、`weekStart` 単位で冪等に記録する。
-  週の開始は月曜 00:00（ローカル時刻）、達成条件は80%以上。
-- 週間カレンダー・継続報酬の仕様は
-  [`docs/06_weekly_calendar_and_streak.md`](docs/06_weekly_calendar_and_streak.md) を参照。
-- Supabase / AI API の接続は後続フェーズ。現在の結晶タイプ判定は `packages/ai-rewards` の
-  キーワード判定（カテゴリのユーザーキーワード、組み込みキーワード、カテゴリ既定タイプ）を使い、
-  AI 接続後はその判定をフォールバックとして使う。
-
-## 仮実装の一覧（仕様未確定のため固定しないこと）
-
-- 報酬ルール・全数値（`src/domain/constants.ts` の `BALANCE`）
-- 属性は3種＋無属性、相性倍率 1.5（`docs/02` §4 は未決定）
-- 同時進行セッションは1件まで
-- キャラ初期所持2人、施設2種、素材3種（`src/data/seed.ts`）
-- 通貨初期値 100、中断時報酬係数 0.5、下限 60 秒未満は報酬なし
-- 結晶タイプのキーワード判定とカテゴリ初期キーワード（`packages/ai-rewards/src/keywordAnalyzer.ts`、`packages/core/src/categories.ts`）
-- 仕様確定後は `docs/` とテストを合わせて更新すること
-
-## 設計資料
-
-- [`docs/01_project_overview.md`](docs/01_project_overview.md)：目的、コンセプト、成功条件
-- [`docs/02_game_design.md`](docs/02_game_design.md)：ゲームループ、タスク・報酬、育成、施設、拠点の仕様案
-- [`docs/03_feature_list.md`](docs/03_feature_list.md)：機能一覧、優先度、MVP の範囲
-- [`docs/04_data_design.md`](docs/04_data_design.md)：データモデルのたたき台
-- [`docs/05_roadmap_and_open_questions.md`](docs/05_roadmap_and_open_questions.md)：開発段階、未決定事項
-- [`docs/06_weekly_calendar_and_streak.md`](docs/06_weekly_calendar_and_streak.md)：週間カレンダー、繰り返し、達成判定、継続報酬
-- [`docs/characters/voxel-character-standard.md`](docs/characters/voxel-character-standard.md)：基準ボクセルキャラクターの寸法・座標・テクスチャ・書き出し規格
-- [`docs/characters/parts-and-naming.md`](docs/characters/parts-and-naming.md)：パーツ階層と命名規則
-
-## Skills とライセンス
-
-`.agents/skills/` に配置している Skill のライセンス一覧。外部から取得した Skill は
-`skills-lock.json` で取得元を管理している。
+`.agents/skills/` に配置しているSkillのライセンス一覧です。外部から取得したSkillは `skills-lock.json` で取得元を管理しています。
 
 | Skill | 提供元 | ライセンス |
 | --- | --- | --- |
 | `eas-app-stores`<br>`eas-simulator`<br>`expo-design-system`<br>`expo-examples`<br>`expo-native-ui`<br>`expo-overview`<br>`expo-router`<br>`expo-upgrade` | [expo/skills](https://github.com/expo/skills) | MIT |
 | `frontend-design` | 外部（[`LICENSE.txt`](.agents/skills/frontend-design/LICENSE.txt) 同梱） | Apache-2.0 |
-| `ai-integration`<br>`data-security`<br>`game-domain`<br>`game-ui-design`<br>`task-timer`<br>`testing-quality`<br>`threejs-development` | 本リポジトリで作成 | MIT（[`LICENSE`](LICENSE)） |
+| `data-security`<br>`game-domain`<br>`game-ui-design`<br>`task-timer`<br>`testing-quality`<br>`threejs-development` | 本リポジトリで作成 | MIT（[`LICENSE`](LICENSE)） |
 
-補足:
+Skillを再配布する場合は、各ライセンスの条件（著作権表示・ライセンス全文の保持など）に従ってください。
 
-- Skill を再配布する場合は、各ライセンスの条件（著作権表示・ライセンス全文の保持など）に従う。
+</details>
 
-## キャラクター素材
+<details>
+<summary>仮実装の一覧（仕様未確定のため固定しないこと）</summary>
 
-基準モデルは `public/assets/characters/base/` に格納している。
+- 報酬ルール・全数値（`packages/core/src/rewards/rewardConfig.ts`、`src/domain/constants.ts` の `BALANCE`）
+- 属性は3種＋無属性、相性倍率1.5（`docs/02` §4は未決定）
+- 同時進行セッションは1件まで
+- キャラ初期所持2人、施設2種、素材3種（`src/data/seed.ts`）
+- 通貨初期値100、中断時報酬係数0.5、下限60秒未満は報酬なし
+- 結晶タイプのキーワード判定とカテゴリ初期キーワード（`packages/task-evaluation/src/keywordAnalyzer.ts`、`packages/core/src/categories.ts`）
+- 仕様確定後は `docs/` とテストを合わせて更新すること
 
-- `tasmate_character_base.bbmodel`：Blockbench 編集用の原本
-- `tasmate_character_base.glb`：ゲーム読み込み用（身長 24 unit、1 unit = 1 ボクセル）
-- `tasmate_base_atlas.png`：単一アトラステクスチャ（256×256、顔領域込み）
-- `screenshots/`：正面・側面・背面・斜めからの確認画像
+</details>
 
-GLB は 1 unit = 1 ボクセルで出力している。three.js 側では用途に応じて
-`scale`（例：身長 1.6m 相当なら `1.6 / 24 ≈ 0.067`）を設定する。
+---
 
-数値、報酬式、属性倍率、施設生産量などは未確定。実装時に推測で固定せず、仕様決定後に更新する。
+## English
 
-## ライセンス
+### Overview
 
-本リポジトリで作成したソースコードは [MIT License](LICENSE) の下で公開する。
+Tasmate is a life-support game that turns real study and work time into character growth, resource gathering, and base building. Complete tasks and focus sessions, earn currency and materials, then invest them in characters and facilities.
+
+
+### Features
+
+- **Quest-style task management** — Create tasks with categories and planned durations, track work with a timer, and pause or resume sessions.
+- **Rewards for real effort** — Earn currency, experience, stardust, crystals, and character-specific materials based on actual work time.
+- **Keyword-based task evaluation** — Crystal types and difficulty are determined from category keywords and built-in keywords. No external AI is used.
+- **Character and base progression** — Strengthen characters, run and upgrade facilities, and view your 3D share house.
+- **Weekly planning and streaks** — Weekly calendar, recurring plans, 80% completion goals, streak multipliers, and rest weeks.
+- **Web and Android** — Shared game logic across the Web and Native apps.
+
+### Quick Start
+
+Requirements: Node.js 20+ (22 recommended) and npm 10+.
+
+```powershell
+npm install
+npm run dev
+```
+
+Open http://localhost:5173.
+
+Android APKs are available from [GitHub Releases](https://github.com/Tasmate-app/Tasmate/releases). To start the Expo app:
+
+```powershell
+npm run start -w tasmate-mobile
+```
+
+### Tech Stack
+
+React 19 / TypeScript / Vite / React Router / Zustand / Three.js / React Three Fiber / Expo / React Native / Expo Router / AsyncStorage / Vitest / Playwright.
+
+### Documentation
+
+- [Project overview](docs/01_project_overview.md)
+- [Game design](docs/02_game_design.md)
+- [Feature list](docs/03_feature_list.md)
+- [Data design](docs/04_data_design.md)
+- [Roadmap and open questions](docs/05_roadmap_and_open_questions.md)
+- [Weekly calendar and streaks](docs/06_weekly_calendar_and_streak.md)
+- [React Native plan](docs/07_react_native_plan.md)
+- [Privacy policy](docs/privacy-policy.md)
+
+### License
+
+Source code created in this repository is released under the [MIT License](LICENSE).
+
 Copyright (c) 2026 Tasmate-app contributors.
 
-外部から取得した Skill や第三者提供の素材は、それぞれのライセンスに従う
-（Skill については「[Skills とライセンス](#skills-とライセンス)」を参照）。
+Third-party skills and assets follow their respective licenses.

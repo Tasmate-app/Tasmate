@@ -1,8 +1,8 @@
 import type {
-  AIRewardEvaluation,
   CrystalType,
-  TaskAnalysisInput,
   TaskDifficulty,
+  TaskEvaluation,
+  TaskEvaluationInput,
 } from '@tasmate/types';
 
 interface KeywordGroup {
@@ -160,13 +160,13 @@ export function inferCategoryCrystalType(categoryName: string): CrystalType | un
   return best?.type;
 }
 
-function analysisText(input: TaskAnalysisInput): string {
+function analysisText(input: TaskEvaluationInput): string {
   return normalizeKeywordText(
     `${input.title} ${input.description} ${input.subject ?? ''}`,
   );
 }
 
-function categoryDefaultType(input: TaskAnalysisInput): CrystalType {
+function categoryDefaultType(input: TaskEvaluationInput): CrystalType {
   return (
     input.categoryDefaultType ??
     inferCategoryCrystalType(input.category) ??
@@ -174,7 +174,7 @@ function categoryDefaultType(input: TaskAnalysisInput): CrystalType {
   );
 }
 
-function findUserKeywordMatch(input: TaskAnalysisInput): string | null {
+function findUserKeywordMatch(input: TaskEvaluationInput): string | null {
   const keywords = input.categoryKeywords ?? [];
   if (keywords.length === 0) return null;
   const text = analysisText(input);
@@ -187,7 +187,7 @@ function findUserKeywordMatch(input: TaskAnalysisInput): string | null {
   return best;
 }
 
-function findBuiltInType(input: TaskAnalysisInput): CrystalType | null {
+function findBuiltInType(input: TaskEvaluationInput): CrystalType | null {
   const text = analysisText(input);
   let best: { type: CrystalType; count: number; longest: number } | null = null;
 
@@ -213,7 +213,7 @@ function findBuiltInType(input: TaskAnalysisInput): CrystalType | null {
   return best?.type ?? null;
 }
 
-function inferDifficulty(input: TaskAnalysisInput): TaskDifficulty {
+function inferDifficulty(input: TaskEvaluationInput): TaskDifficulty {
   const minutes = Math.max(input.actualMinutes, input.estimatedMinutes);
   const text = `${input.title} ${input.description}`.toLowerCase();
   if (minutes >= 120 || text.includes('大量') || text.includes('長時間') || text.includes('集中')) {
@@ -229,7 +229,7 @@ function inferDifficulty(input: TaskAnalysisInput): TaskDifficulty {
  * タスク内容とカテゴリ設定から結晶タイプを決める。
  * 優先順位はユーザー定義キーワード、組み込みキーワード、カテゴリ既定タイプ、知識の結晶。
  */
-export function analyzeTaskByKeywords(input: TaskAnalysisInput): AIRewardEvaluation {
+export function analyzeTaskByKeywords(input: TaskEvaluationInput): TaskEvaluation {
   const userKeyword = findUserKeywordMatch(input);
   const builtInType = userKeyword === null ? findBuiltInType(input) : null;
   const materialType = userKeyword !== null
@@ -251,7 +251,3 @@ export function analyzeTaskByKeywords(input: TaskAnalysisInput): AIRewardEvaluat
   };
 }
 
-/** 旧APIとの互換用。キーワード判定をそのまま返す */
-export function analyzeTaskFallback(input: TaskAnalysisInput): AIRewardEvaluation {
-  return analyzeTaskByKeywords(input);
-}
