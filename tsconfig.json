@@ -22,7 +22,7 @@
       "@tasmate/types": ["packages/types/src/index.ts"],
       "@tasmate/core": ["packages/core/src/index.ts"],
       "@tasmate/core/*": ["packages/core/src/*"],
-      "@tasmate/ai-rewards": ["packages/ai-rewards/src/index.ts"],
+      "@tasmate/task-evaluation": ["packages/task-evaluation/src/index.ts"],
       "@tasmate/design-tokens": ["packages/design-tokens/src/index.ts"]
     },
     "types": ["vite/client", "node"]

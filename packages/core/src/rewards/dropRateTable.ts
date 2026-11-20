@@ -2,7 +2,7 @@ import type { ItemRarity, TaskDifficulty } from '@tasmate/types';
 
 /**
  * 難易度ごとの結晶レアリティ抽選表（合計100）。
- * AIは難易度のみを返し、レアリティはプログラム側で抽選する。
+ * タスク評価は難易度のみを返し、レアリティはプログラム側で抽選する。
  */
 export const CRYSTAL_RARITY_TABLE: Record<TaskDifficulty, Record<ItemRarity, number>> = {
   1: { N: 70, R: 25, SR: 5, SSR: 0, UR: 0 },

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { AIRewardEvaluation, Task } from '@tasmate/types';
+import type { Task, TaskEvaluation } from '@tasmate/types';
 import {
   createAppStore,
   initialAppState,
@@ -20,7 +20,7 @@ const TASK: Task = {
   updatedAt: '2026-11-09T00:00:00.000Z',
 };
 
-const EVALUATION: AIRewardEvaluation = {
+const EVALUATION: TaskEvaluation = {
   materialType: 'thought_crystal',
   difficulty: 3,
   confidence: 0.35,

@@ -32,7 +32,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@tasmate/ai-rewards": "*",
+    "@tasmate/task-evaluation": "*",
     "@tasmate/types": "*",
     "zustand": "^5.0.2"
   }

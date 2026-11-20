@@ -14,7 +14,7 @@
     "baseUrl": ".",
     "paths": {
       "@tasmate/types": ["../types/src/index.ts"],
-      "@tasmate/ai-rewards": ["../ai-rewards/src/index.ts"]
+      "@tasmate/task-evaluation": ["../task-evaluation/src/index.ts"]
     }
   },
   "include": ["src"]

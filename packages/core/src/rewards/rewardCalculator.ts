@@ -1,13 +1,13 @@
 import type {
-  AIRewardEvaluation,
   Category,
   ItemStack,
   Task,
-  TaskAnalysisInput,
   TaskCompletionReward,
+  TaskEvaluation,
+  TaskEvaluationInput,
   TaskRewardRoll,
 } from '@tasmate/types';
-import { analyzeTaskByKeywords } from '@tasmate/ai-rewards';
+import { analyzeTaskByKeywords } from '@tasmate/task-evaluation';
 import { pickRarity } from './dropRateTable';
 import {
   decideDrop,
@@ -16,18 +16,18 @@ import {
 } from './dropTable';
 import { TASK_REWARD_CONFIG } from './rewardConfig';
 
-export interface BuildTaskAnalysisInputArgs {
+export interface BuildTaskEvaluationInputArgs {
   task: Task | undefined;
   actualMinutes: number;
   /** タスクが属するカテゴリー。キーワードと既定タイプの判定に使う */
   category?: Category;
 }
 
-export function buildTaskAnalysisInput({
+export function buildTaskEvaluationInput({
   task,
   actualMinutes,
   category,
-}: BuildTaskAnalysisInputArgs): TaskAnalysisInput {
+}: BuildTaskEvaluationInputArgs): TaskEvaluationInput {
   return {
     taskId: task?.id ?? 'unknown-task',
     title: task?.title ?? 'タスク',
@@ -49,7 +49,7 @@ export interface RollTaskRewardArgs {
   actualMinutes: number;
   coins: number;
   completed: boolean;
-  evaluation: AIRewardEvaluation;
+  evaluation: TaskEvaluation;
   targetCharacterId: string | null;
   previousStardustCarry: number;
   nowIso: string;
@@ -133,14 +133,9 @@ export function rollTaskReward(args: RollTaskRewardArgs): RollTaskRewardResult {
   };
 }
 
-/** キーワード判定で評価する。AIアダプター導入後も失敗時の共通経路として使う */
-export function evaluateTaskByKeywords(args: BuildTaskAnalysisInputArgs): AIRewardEvaluation {
-  return analyzeTaskByKeywords(buildTaskAnalysisInput(args));
-}
-
-/** 旧APIとの互換用 */
-export function evaluateTaskWithFallback(args: BuildTaskAnalysisInputArgs): AIRewardEvaluation {
-  return evaluateTaskByKeywords(args);
+/** キーワード判定でタスクを評価する */
+export function evaluateTaskByKeywords(args: BuildTaskEvaluationInputArgs): TaskEvaluation {
+  return analyzeTaskByKeywords(buildTaskEvaluationInput(args));
 }
 
 export function hasTaskRewardForTask(

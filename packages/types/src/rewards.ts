@@ -1,23 +1,23 @@
-/** タスク完了報酬・AI判定の型定義 */
+/** タスク完了報酬・タスク評価の型定義 */
 
 import type { CrystalType, ItemRarity, ItemStack } from './inventory';
 
-/** AI が判定するタスク難易度 */
+/** タスク評価で決まる難易度 */
 export type TaskDifficulty = 1 | 2 | 3 | 4 | 5;
 
-/** AI（またはフォールバック）によるタスク分析結果 */
-export interface AIRewardEvaluation {
+/** タスク評価の結果 */
+export interface TaskEvaluation {
   /** 結晶の種類。定義済みの識別子のみ */
   materialType: CrystalType;
   difficulty: TaskDifficulty;
   confidence: number;
   reason: string;
-  /** ai = モデル推論、keyword = キーワード判定、fallback = 旧形式の代替判定 */
+  /** 現状は keyword のみ。旧データ互換のため型は維持する */
   source: 'ai' | 'keyword' | 'fallback';
 }
 
-/** AI へ渡すタスク情報 */
-export interface TaskAnalysisInput {
+/** キーワード評価に渡すタスク情報 */
+export interface TaskEvaluationInput {
   taskId: string;
   title: string;
   description: string;
@@ -59,7 +59,8 @@ export interface TaskCompletionReward {
   stardust: number;
   crystals: ItemStack[];
   materials: ItemStack[];
-  aiEvaluation: AIRewardEvaluation;
+  /** フィールド名は既存保存データとの互換のため維持する */
+  aiEvaluation: TaskEvaluation;
   roll: TaskRewardRoll;
   createdAt: string;
 }

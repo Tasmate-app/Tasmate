@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import type { TaskAnalysisInput } from '@tasmate/types';
+import type { TaskEvaluationInput } from '@tasmate/types';
 import {
   analyzeTaskByKeywords,
   inferCategoryCrystalType,
-} from '@tasmate/ai-rewards';
+} from '@tasmate/task-evaluation';
 
-function input(overrides: Partial<TaskAnalysisInput> = {}): TaskAnalysisInput {
+function input(overrides: Partial<TaskEvaluationInput> = {}): TaskEvaluationInput {
   return {
     taskId: 'task-keyword',
     title: 'タスク',
