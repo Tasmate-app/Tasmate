@@ -14,7 +14,7 @@
   2. **localStorage依存の同期ストア**（React NativeはAsyncStorageで非同期。起動時ハイドレーションの再設計が必要）
   3. **Web専用UI・ブラウザAPI・3Dのプラットフォーム依存部分**の分離
 - 現在の3Dは比較的移植しやすい構成である。利用しているDreiは `OrbitControls` のみ、LunaのGLBは**外部テクスチャなし・アニメーションなし・DRACOなしの自己完結GLB（約454KB）**でした。ただし `OrbitControls` はNativeで既知の問題があるため、初期検証では固定カメラまたは独自タッチ操作を推奨する。
-- APIクライアント層は**まだ存在しない**。`packages/api` はSupabase/AI接続のフェーズまで作らない方が安全である。
+- APIクライアント層は**まだ存在しない**。`packages/api` はSupabase接続のフェーズまで作らない方が安全である。
 
 ## 2. 既存Web版のベースライン確認
 
@@ -73,7 +73,7 @@ public/assets/    Luna GLB、ベースキャラクター素材
 | 繰り返し予定 | `src/domain/recurrence.ts` | 純粋 |
 | マスタデータ | `src/data/seed.ts` | 純粋。GLBパスはプラットフォーム側で解決 |
 | 状態の検証・正規化 | `src/services/appState.ts` | `Date` のみ依存。純粋に近い |
-| 報酬サービス | `src/services/rewardService.ts` | 現状はローカル計算。AI未接続 |
+| 報酬サービス | `src/services/rewardService.ts` | 現状はローカル計算 |
 
 `src/domain` 配下はReact・DOM・ブラウザAPIに依存していないため、**`packages/core` の最初の移行対象**として最適である。
 
@@ -88,7 +88,7 @@ public/assets/    Luna GLB、ベースキャラクター素材
 | 画面遷移の状態 | `location.state` | Expo Routerのクエリパラメータ/ストアに置換 |
 | 3D | `src/game3d/RoomScene.tsx` | シーン内容は参考にできるが、Canvas・GLB読込・操作系はプラットフォーム分割 |
 | デザイントークン | `packages/design-tokens/`（`@tasmate/design-tokens`） | 色・余白・角丸・影・モーションをTSで共有。Webは起動時にCSS変数へ適用し、RNはそのまま参照する |
-| API | 未実装 | Supabase/AI接続時に `packages/api` を新設 |
+| API | 未実装 | Supabase接続時に `packages/api` を新設 |
 
 ## 5. Zustandストアの依存関係
 
@@ -278,7 +278,7 @@ LunaのGLB表示・タップ選択・カメラ操作・フレームレートは�
   packages/
     types/                      # 共通型
     core/                       # domain, data, state, reward logic
-    api/                        # 将来のSupabase/AI通信
+    api/                        # 将来のSupabase通信
   apps/
     mobile/                     # Expoアプリ
   src/                          # 既存Web版（当面は移動しない）
@@ -337,7 +337,7 @@ LunaのGLB表示・タップ選択・カメラ操作・フレームレートは�
    - 3Dは別実装。共有ストアとドメインロジックを利用。
 
 8. **API層は後回し**
-   - Supabase/AI接続時に `packages/api` を新設。
+   - Supabase接続時に `packages/api` を新設。
    - 現在の `rewardService.ts` はローカル計算のまま維持。
 
 ### 9.3 npm workspaces利用時の注意
@@ -406,7 +406,6 @@ LunaのGLB表示・タップ選択・カメラ操作・フレームレートは�
 - `packages/api` を新設。
 - Supabase Auth / RLS / Edge Functionsを検討。
 - ローカル保存とクラウド同期の競合解決を設計。
-- AI報酬はサーバー側検証を前提にする。
 
 ## 11. 移行で発生しそうな問題
 

@@ -10,7 +10,7 @@
 - 施設による素材・通貨の生産
 - 家具・施設・コスチューム
 - 3Dシェアハウス
-- 将来的なAI報酬評価・複数ユーザー対応
+- 将来的な複数ユーザー対応
 
 ゲーム要素は現実の作業継続を支援するためのもの。タスク管理とタイマーの信頼性・使いやすさを損なわない。
 
@@ -38,7 +38,7 @@
 - `packages/core/`：Web/Native共通のゲームロジック、ストア、保存抽象、バックアップ、週次判定
 - `packages/types/`：共有型定義
 - `packages/design-tokens/`：色・余白・角丸・影・モーションなどの共通デザイントークン
-- `packages/ai-rewards/`：タスク解析インターフェース、AI出力スキーマ、プロンプト、キーワードフォールバック
+- `packages/task-evaluation/`：キーワードによるタスク評価（結晶タイプ・難易度）
 - `src/`：Web版。`src/domain/` と `src/services/` は共有パッケージの再エクスポートやWeb専用アダプタ
 - `tests/`：Vitest単体テストとPlaywright E2E
 - `docs/`：仕様・設計ドキュメント
@@ -58,7 +58,7 @@
 | `docs/01_project_overview.md` | 目的、コンセプト、主な画面 |
 | `docs/02_game_design.md` | ゲームループ、タスク・報酬、育成、施設、拠点 |
 | `docs/03_feature_list.md` | 機能一覧、優先度、MVP範囲 |
-| `docs/04_data_design.md` | データモデル、保存、AI報酬の入出力 |
+| `docs/04_data_design.md` | データモデル、保存、タスク評価の入出力 |
 | `docs/05_roadmap_and_open_questions.md` | 開発段階、未決定事項、意思決定ログ |
 | `docs/06_weekly_calendar_and_streak.md` | 週間カレンダー、繰り返し、達成判定、継続報酬 |
 | `docs/07_react_native_plan.md` | Native版・モノレポ化の調査と実装計画 |
@@ -78,7 +78,7 @@
 | データ構造、保存、移行、バックアップ | `docs/04_data_design.md`、`docs/privacy-policy.md`、`README.md` のデータ保存 |
 | 画面、HUD、ナビゲーション | `docs/01_project_overview.md`、`README.md` の画面、Nativeは `docs/07_react_native_plan.md` |
 | 機能追加、優先度、MVP範囲 | `docs/03_feature_list.md`、`docs/05_roadmap_and_open_questions.md` |
-| AI報酬、タスク解析、外部AI連携 | `docs/02_game_design.md`、`docs/04_data_design.md`、`docs/05_roadmap_and_open_questions.md`、`docs/privacy-policy.md` |
+| 報酬判定（キーワード評価）、タスク解析 | `docs/02_game_design.md`、`docs/04_data_design.md`、`docs/05_roadmap_and_open_questions.md` |
 | キャラクター、3Dモデル、3D操作 | `docs/02_game_design.md`、`docs/characters/*.md`、Nativeは `docs/07_react_native_plan.md` |
 | Native、モノレポ、ビルド、配布 | `docs/07_react_native_plan.md`、`README.md` のモノレポ・APK |
 | プライバシー、外部送信、保存先 | `docs/privacy-policy.md`、`docs/04_data_design.md` |
@@ -98,7 +98,7 @@
 - `@tasmate/core`：プラットフォーム非依存のゲームロジック・ストア・保存抽象
 - `@tasmate/types`：共有型
 - `@tasmate/design-tokens`：デザイントークン
-- `@tasmate/ai-rewards`：タスク解析インターフェースとフォールバック
+- `@tasmate/task-evaluation`：キーワードによるタスク評価
 
 実際の採用ライブラリとバージョンは `package.json` とロックファイルを確認する。技術選定を変更する場合は理由・利点・欠点・移行影響を説明する。
 
@@ -146,7 +146,7 @@ Native版：
 - 永続データと一時的な画面状態を区別し、同じデータを重複管理しない。
 - コンポーネント内だけの状態はReact State、複数画面で共有する状態はZustand（`createAppStore`）を利用する。
 - 3Dシーンは通常UIやゲームの正規データから分離する。3D側の状態を正規データとして扱わない。
-- AI解析は `@tasmate/ai-rewards` の `TaskAnalyzer` 境界を経由し、出力を検証してからゲームロジックへ渡す。失敗時はキーワードフォールバックを使う。
+- タスク評価は `@tasmate/task-evaluation` のキーワード判定を正式な判定として使う。外部AIは使用しない。
 - サーバーデータを導入する場合も、UIから取得・更新の詳細へ直接依存させない。
 
 ## コーディング規約
@@ -236,7 +236,6 @@ Native：
 | タスク、タイマー、作業履歴、中断・再開 | `task-timer` | `game-domain` |
 | 3Dシーン、モデル、カメラ、3D操作 | `threejs-development` | `expo-overview`（Native） |
 | 保存、バックアップ、認証、Supabase、RLS | `data-security` | `game-domain` |
-| AI報酬、タスク解析、外部AI連携 | `ai-integration` | `data-security` |
 | 型チェック、テスト、ビルド、回帰確認 | `testing-quality` | — |
 
 ルール：
